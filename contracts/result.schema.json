@@ -1,0 +1,560 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://promptpres.local/contracts/result.schema.json",
+  "title": "PromptPre's Result Contract",
+  "description": "JSON that the analysis worker hands to the web app (Spec v2.3, D-046 + D-050, 8 criteria C1 C2 S1 S2 S3 N1 N2 T1; 1.2 adds coach item kind, 1.3 adds the optional evidence label). Times are seconds from the start of the video. Changing any field after lock requires bumping contract_version.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "session_id",
+    "status",
+    "created_at",
+    "duration_s",
+    "target_duration_s",
+    "video_url",
+    "versions",
+    "criteria",
+    "topics",
+    "coach",
+    "error"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "1.3"
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "processing",
+        "done",
+        "failed"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration_s": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "target_duration_s": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0
+    },
+    "video_url": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "versions": {
+      "$ref": "#/$defs/versions"
+    },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/criterion"
+      }
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/topic"
+      }
+    },
+    "coach": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/coach"
+        }
+      ]
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "failed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "error": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "done"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "criteria": {
+            "minItems": 8,
+            "maxItems": 8
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "criteria": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rubric",
+        "asr",
+        "llm",
+        "prompt",
+        "config"
+      ],
+      "properties": {
+        "rubric": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "asr": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "llm": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "prompt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "config": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start_s",
+        "end_s",
+        "note"
+      ],
+      "properties": {
+        "start_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "end_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "skill",
+        "status",
+        "level",
+        "values",
+        "evidence",
+        "feedback_id",
+        "reason"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "C1",
+            "C2",
+            "S1",
+            "S2",
+            "S3",
+            "N1",
+            "N2",
+            "T1"
+          ]
+        },
+        "skill": {
+          "enum": [
+            "content",
+            "speech",
+            "body",
+            "time"
+          ]
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "unanalyzable"
+          ]
+        },
+        "level": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 4
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "description": "Measured values with units implied by key. Keys listed in config/thresholds-*.yaml scored_values determine the level; any other key is supporting info (e.g. hands_active_pct in N1) and must never be used to compute the level."
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        },
+        "feedback_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "ok"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "level": {
+                "type": "integer"
+              },
+              "feedback_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "level": {
+                "type": "null"
+              },
+              "feedback_id": {
+                "type": "null"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "pattern": "^C"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "skill": {
+                "const": "content"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "pattern": "^S"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "skill": {
+                "const": "speech"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "pattern": "^N"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "skill": {
+                "const": "body"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "pattern": "^T"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "skill": {
+                "const": "time"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "topic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "order",
+        "coverage",
+        "first_mention_s",
+        "evidence_quote"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Intended order from the confirmed topic list"
+        },
+        "coverage": {
+          "enum": [
+            "clear",
+            "brief",
+            "not_mentioned"
+          ],
+          "description": "ชัดเจน / ผ่าน ๆ / ไม่พูดถึง"
+        },
+        "first_mention_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "evidence_quote": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "coach": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "items",
+        "hidden_count"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "ok",
+            "skipped",
+            "failed"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "code",
+              "text",
+              "cite_s"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "strength",
+                  "focus",
+                  "plan"
+                ],
+                "description": "strength = จุดที่ทำได้ดี (ระดับ 3-4) / focus = จุดที่ควรโฟกัสก่อน / plan = แผนฝึกรอบหน้า"
+              },
+              "code": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "enum": [
+                      "C1",
+                      "C2",
+                      "S1",
+                      "S2",
+                      "S3",
+                      "N1",
+                      "N2",
+                      "T1"
+                    ]
+                  }
+                ]
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cite_s": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "description": "Times quoted in text as [m:ss]; each matched evidence of the same criterion (Evidence Verification Guard)"
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "focus"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "cite_s": {
+                      "minItems": 1
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "strength"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "hidden_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Coach messages dropped because the LLM gave more than the allowed number per section; a message that fails any evidence rule drops the whole coach instead (coach = null)"
+        }
+      }
+    }
+  }
+}

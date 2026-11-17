@@ -1,0 +1,133 @@
+{
+ "contract_version": "1.1",
+ "session_id": "demo_C",
+ "status": "done",
+ "duration_s": 60.0,
+ "versions": {
+  "config": "SYNTHETIC example"
+ },
+ "criteria": [
+  {
+   "code": "C1",
+   "status": "ok",
+   "level": 3,
+   "values": {
+    "kendall_tau": 1.0
+   },
+   "evidence": []
+  },
+  {
+   "code": "C2",
+   "status": "ok",
+   "level": 4,
+   "values": {
+    "coverage_clear_pct": 90.0
+   },
+   "evidence": []
+  },
+  {
+   "code": "S1",
+   "status": "ok",
+   "level": 2,
+   "values": {
+    "syllables_per_s": 5.9,
+    "syllables": 300
+   },
+   "evidence": []
+  },
+  {
+   "code": "S2",
+   "status": "ok",
+   "level": 4,
+   "values": {
+    "long_pauses_per_min": 0,
+    "max_pause_s": 3.0,
+    "long_pauses": 0
+   },
+   "evidence": []
+  },
+  {
+   "code": "S3",
+   "status": "ok",
+   "level": 4,
+   "values": {
+    "fillers_per_min": 1,
+    "fillers": 1
+   },
+   "evidence": [
+    {
+     "start_s": 33.0,
+     "end_s": 33.4,
+     "note": "SYNTHETIC"
+    }
+   ]
+  },
+  {
+   "code": "N1",
+   "status": "ok",
+   "level": 2,
+   "values": {
+    "long_still_per_min": 2,
+    "max_still_s": 18.0,
+    "long_still_spans": 2
+   },
+   "evidence": [
+    {
+     "start_s": 12.0,
+     "end_s": 30.0,
+     "note": "SYNTHETIC"
+    },
+    {
+     "start_s": 40.0,
+     "end_s": 47.0,
+     "note": "SYNTHETIC"
+    }
+   ]
+  },
+  {
+   "code": "N2",
+   "status": "ok",
+   "level": 4,
+   "values": {
+    "front_pct": 85.0
+   },
+   "evidence": []
+  },
+  {
+   "code": "T1",
+   "status": "ok",
+   "level": 2,
+   "values": {
+    "speech_span_s": 52.0,
+    "deviation_pct": 13.3
+   },
+   "evidence": []
+  }
+ ],
+ "topics": [
+  {
+   "id": "H01",
+   "title": "หัวข้อ 1",
+   "order": 1,
+   "coverage": "clear"
+  },
+  {
+   "id": "H02",
+   "title": "หัวข้อ 2",
+   "order": 2,
+   "coverage": "clear"
+  },
+  {
+   "id": "H03",
+   "title": "หัวข้อ 3",
+   "order": 3,
+   "coverage": "clear"
+  },
+  {
+   "id": "H04",
+   "title": "หัวข้อ 4",
+   "order": 4,
+   "coverage": "clear"
+  }
+ ]
+}

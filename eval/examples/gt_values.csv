@@ -1,0 +1,4 @@
+﻿clip_id,rater,T1.speech_span_s,S1.syllables,S2.long_pauses,S3.fillers,N1.long_still_spans,N2.front_pct,notes
+demo_A,ผู้นับ 1,58.0,250,2,4,1,70,
+demo_B,ผู้นับ 1,60.0,185,1,4,0,45,
+demo_C,ผู้นับ 1,53.5,290,0,1,2,80,

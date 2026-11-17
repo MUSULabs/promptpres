@@ -1,0 +1,65 @@
+# Evaluation settings v0 (chapter 3/4 statistics in eval/). Every number the eval scripts use lives here.
+#   SOURCE  = taken from a cited source (check the page before writing chapter 4)
+#   PLAN    = decided by the team in Knowledge/00_Control/PLAN.md
+#   DUMMY_VALUE = placeholder, no source yet; change after a first look at real labels
+version: eval-v0
+
+ioc:
+  pass_min: 0.60      # PLAN: item passes when the sum of 5 expert scores >= 3, i.e. IOC >= 0.60 (form v0.9, 16 items)
+  alt_min: 0.50       # SOURCE: Rovinelli & Hambleton (1977) usual cut-off; shown as a second column only
+  scores: [-1, 0, 1]
+
+measurement:
+  # Event matching: a system event matches a human event when their start times differ by at most tol_s.
+  tol_s:
+    S2: 0.5           # DUMMY_VALUE: long pause onset
+    S3: 0.5           # DUMMY_VALUE: onset of a filler sound or verbal tic (Thai fillers ~0.34 s long)
+    N1: 1.0           # DUMMY_VALUE: still-hand span onset (pose sampled about every 0.1 s, smoothed 0.5 s)
+  time_bin_s: 0.5     # DUMMY_VALUE: bin size for the second-by-second accuracy / kappa of events
+  c2_labels: [not_mentioned, brief, clear]   # ordered low -> high (for weighted kappa)
+
+agreement:
+  levels: [1, 2, 3, 4]
+  adjacent_within: 1  # PLAN: "ห่างไม่เกิน 1 ระดับ"
+
+calibration:
+  exclude_prefixes: [smoke_]         # early pipeline smoke tests: repeats of one S04 clip
+  reference_scenarios: [S01, web]   # natural practice only; S02-S12 are induced behaviours (SPEC_V2 A1)
+  # Percentile suggestions only where the bands describe how people usually behave. Not for T1 (bands are a
+  # share of the user's own target, programme rule) nor C1 / C2 (bands follow the topic rules in the rubric).
+  suggest_criteria: [S1, S2, S3, N1, N2]
+  min_n: 10                         # DUMMY_VALUE: fewer reference clips than this -> suggested cutoffs are flagged
+  # Percentiles of the reference pool used as level bounds (bigger percentile = more of the pool above/below).
+  quantiles:
+    higher: {4: 75, 3: 50, 2: 25}                  # level 4 when value >= P75 ...
+    lower:  {4: 25, 3: 50, 2: 75}                  # level 4 when value <= P25 ...
+    range:  {4: [25, 75], 3: [10, 90], 2: [5, 95]} # level 4 when P25 <= value <= P75 ...
+  # Controlled scenarios (SPEC_V2 A1): median of the scenario vs median of S01, expected direction.
+  #   higher / lower = median should be above / below S01;  unanalyzable = cards should be "วิเคราะห์ไม่ได้"
+  scenario_checks:
+    - {scenario: S02, criterion: S1, value: syllables_per_s, expect: higher, note: พูดเร็ว}
+    - {scenario: S03, criterion: S1, value: syllables_per_s, expect: lower, note: พูดช้า}
+    - {scenario: S04, criterion: S2, value: long_pauses_per_min, expect: higher, note: แทรกการหยุด 2–4 วินาที}
+    - {scenario: S05, criterion: S3, value: fillers_per_min, expect: higher, note: เสียงเติม เอ่อ/เอิ่ม (รูบริก v0.9 นับคำติดปากตามบริบทรวมด้วย)}
+    - {scenario: S06, criterion: N1, value: long_still_per_min, expect: lower, note: มือขยับ (ต้องไม่ถูกนับว่านิ่ง)}
+    - {scenario: S08, criterion: N1, value: long_still_per_min, expect: higher, note: มือนิ่ง}
+    - {scenario: S08, criterion: N1, value: max_still_s, expect: higher, note: มือนิ่ง (ช่วงนิ่งนานสุด)}
+    - {scenario: S09, criterion: N2, value: front_pct, expect: lower, note: หันศีรษะ / ก้มดูโน้ต}
+    - {scenario: S10, criterion: C1, value: kendall_tau, expect: lower, note: สลับลำดับหัวข้อ}
+    - {scenario: S11, criterion: C2, value: coverage_clear_pct, expect: lower, note: พูดหัวข้อไม่ครบ}
+    - {scenario: S12, criterion: N1, value: null, expect: unanalyzable, note: มือถูกบัง}
+
+sus:
+  # SOURCE: Brooke (1996) scoring. Bands: verify against the papers before chapter 4.
+  acceptability:      # SOURCE: Bangor, Kortum & Miller (2008) acceptability ranges
+    - {min: 70, label: ยอมรับได้ (acceptable)}
+    - {min: 50, label: ก้ำกึ่ง (marginal)}
+    - {min: 0, label: ยอมรับไม่ได้ (not acceptable)}
+  adjective:          # SOURCE: Bangor, Kortum & Miller (2009) mean SUS score per adjective, used as lower bounds
+    - {min: 90.9, label: ดีที่สุด (best imaginable)}
+    - {min: 85.5, label: ดีเยี่ยม (excellent)}
+    - {min: 71.4, label: ดี (good)}
+    - {min: 50.9, label: พอใช้ (OK)}
+    - {min: 35.7, label: ไม่ดี (poor)}
+    - {min: 20.3, label: แย่ (awful)}
+    - {min: 0, label: แย่ที่สุด (worst imaginable)}

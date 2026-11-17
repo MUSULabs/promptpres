@@ -1,0 +1,17 @@
+fastapi>=0.141,<0.142
+starlette>=1.6,<1.7
+uvicorn[standard]>=0.30
+pydantic>=2.8
+python-multipart>=0.0.9
+pyyaml>=6.0
+jsonschema>=4.23
+rfc3339-validator>=0.1.4   # makes jsonschema actually check "format": "date-time" (created_at)
+httpx>=0.27
+sqlalchemy>=2.0          # sessions / topics / results / queue (promptpres_shared/store.py)
+psycopg[binary]>=3.2     # only when DATABASE_URL is PostgreSQL (docker compose)
+# PDF -> draft topics runs inside the API request (promptpres_shared/topics.py)
+pymupdf>=1.28,<2
+openai>=2.53,<3
+python-dotenv
+truststore>=0.10
+pythainlp>=5.0      # word boundaries for the transcript view (promptpres_shared/transcript.py); same as the worker

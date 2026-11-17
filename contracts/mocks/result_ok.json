@@ -1,0 +1,290 @@
+{
+  "contract_version": "1.3",
+  "session_id": "s_mock_ok",
+  "status": "done",
+  "created_at": "2026-11-10T14:00:00+07:00",
+  "duration_s": 642.3,
+  "target_duration_s": 600,
+  "video_url": "/api/media/s_mock_ok",
+  "versions": {
+    "rubric": "0-mock",
+    "asr": "<asr-model>",
+    "llm": "<llm-model>",
+    "prompt": "coverage-v0",
+    "config": "thresholds-v0"
+  },
+  "criteria": [
+    {
+      "code": "C1",
+      "skill": "content",
+      "status": "ok",
+      "level": 3,
+      "values": {
+        "kendall_tau": 0.667,
+        "topics_ordered": 4,
+        "concordant_pairs": 5,
+        "swapped_pairs": 1
+      },
+      "evidence": [
+        {
+          "start_s": 12.5,
+          "end_s": 13.5,
+          "note": "เริ่มหัวข้อ 1"
+        },
+        {
+          "start_s": 150.2,
+          "end_s": 151.0,
+          "note": "หัวข้อ 3 มาก่อนหัวข้อ 4"
+        }
+      ],
+      "feedback_id": "C1_L3",
+      "reason": null
+    },
+    {
+      "code": "C2",
+      "skill": "content",
+      "status": "ok",
+      "level": 3,
+      "values": {
+        "coverage_clear_pct": 80.0,
+        "clear": 4,
+        "brief": 0,
+        "not_mentioned": 1,
+        "topics_total": 5,
+        "quotes_rejected": 0
+      },
+      "evidence": [
+        {
+          "start_s": 12.5,
+          "end_s": 40.0,
+          "note": "ที่มาและปัญหา"
+        },
+        {
+          "start_s": 210.4,
+          "end_s": 260.0,
+          "note": "วิธีดำเนินการ"
+        }
+      ],
+      "feedback_id": "C2_L3",
+      "reason": null
+    },
+    {
+      "code": "S1",
+      "skill": "speech",
+      "status": "ok",
+      "level": 4,
+      "values": {
+        "syllables_per_s": 4.8,
+        "articulation_time_s": 512.0
+      },
+      "evidence": [
+        {
+          "start_s": 301.0,
+          "end_s": 331.0,
+          "note": "ช่วงที่พูดเร็วที่สุด"
+        }
+      ],
+      "feedback_id": "S1_L4",
+      "reason": null
+    },
+    {
+      "code": "S2",
+      "skill": "speech",
+      "status": "ok",
+      "level": 3,
+      "values": {
+        "long_pauses_per_min": 1.8,
+        "max_pause_s": 4.2
+      },
+      "evidence": [
+        {
+          "start_s": 183.2,
+          "end_s": 187.4,
+          "note": "หยุด 4.2 วินาที"
+        },
+        {
+          "start_s": 402.0,
+          "end_s": 405.1,
+          "note": "หยุด 3.1 วินาที"
+        }
+      ],
+      "feedback_id": "S2_L3",
+      "reason": null
+    },
+    {
+      "code": "S3",
+      "skill": "speech",
+      "status": "ok",
+      "level": 4,
+      "values": {
+        "fillers_per_min": 2.4,
+        "fillers": 26
+      },
+      "evidence": [
+        {
+          "start_s": 95.3,
+          "end_s": 95.9,
+          "label": "เสียงเติม \"เอ่อ\"",
+          "note": "เสียงเติม 'เอ่อ'"
+        },
+        {
+          "start_s": 120.1,
+          "end_s": 120.6,
+          "label": "คำติดปาก \"แบบว่า\"",
+          "note": "คำติดปาก 'แบบว่า'"
+        }
+      ],
+      "feedback_id": "S3_L4",
+      "reason": null
+    },
+    {
+      "code": "N1",
+      "skill": "body",
+      "status": "ok",
+      "level": 1,
+      "values": {
+        "long_still_per_min": 0.4,
+        "max_still_s": 35.0,
+        "hands_active_pct": 22.0,
+        "hands_visible_pct": 91.0
+      },
+      "evidence": [
+        {
+          "start_s": 60.0,
+          "end_s": 95.0,
+          "note": "มือนิ่ง 35 วินาที"
+        },
+        {
+          "start_s": 480.0,
+          "end_s": 502.0,
+          "note": "มือนิ่ง 22 วินาที"
+        }
+      ],
+      "feedback_id": "N1_L1",
+      "reason": null
+    },
+    {
+      "code": "N2",
+      "skill": "body",
+      "status": "ok",
+      "level": 4,
+      "values": {
+        "front_pct": 84.0,
+        "side_pct": 9.0,
+        "down_pct": 5.0,
+        "up_other_pct": 2.0,
+        "face_visible_pct": 98.5
+      },
+      "evidence": [
+        {
+          "start_s": 440.0,
+          "end_s": 452.0,
+          "note": "หันข้างไปทางจอ 12 วินาที"
+        },
+        {
+          "start_s": 30.0,
+          "end_s": 36.0,
+          "note": "ก้มดูโน้ต 6 วินาที"
+        }
+      ],
+      "feedback_id": "N2_L4",
+      "reason": null
+    },
+    {
+      "code": "T1",
+      "skill": "time",
+      "status": "ok",
+      "level": 3,
+      "values": {
+        "speech_span_s": 635.0,
+        "deviation_pct": 5.8
+      },
+      "evidence": [
+        {
+          "start_s": 3.1,
+          "end_s": 638.1,
+          "note": "ช่วงนำเสนอ"
+        }
+      ],
+      "feedback_id": "T1_L3",
+      "reason": null
+    }
+  ],
+  "topics": [
+    {
+      "id": "t1",
+      "title": "ที่มาและปัญหา",
+      "order": 1,
+      "coverage": "clear",
+      "first_mention_s": 12.5,
+      "evidence_quote": "<ประโยคจาก transcript>"
+    },
+    {
+      "id": "t2",
+      "title": "วัตถุประสงค์",
+      "order": 2,
+      "coverage": "clear",
+      "first_mention_s": 88.0,
+      "evidence_quote": "<ประโยคจาก transcript>"
+    },
+    {
+      "id": "t3",
+      "title": "งานที่เกี่ยวข้อง",
+      "order": 3,
+      "coverage": "clear",
+      "first_mention_s": 150.2,
+      "evidence_quote": "<ประโยคจาก transcript>"
+    },
+    {
+      "id": "t4",
+      "title": "วิธีดำเนินการ",
+      "order": 4,
+      "coverage": "clear",
+      "first_mention_s": 210.4,
+      "evidence_quote": "<ประโยคจาก transcript>"
+    },
+    {
+      "id": "t5",
+      "title": "ผลการทดลอง",
+      "order": 5,
+      "coverage": "not_mentioned",
+      "first_mention_s": null,
+      "evidence_quote": null
+    }
+  ],
+  "coach": {
+    "status": "ok",
+    "items": [
+      {
+        "kind": "strength",
+        "code": "S1",
+        "text": "<จุดที่ทำได้ดี: ความเร็วการพูดอยู่ในช่วงแนะนำตลอดการนำเสนอ>",
+        "cite_s": []
+      },
+      {
+        "kind": "focus",
+        "code": "N1",
+        "text": "<ควรโฟกัส: มือนิ่งนาน 35 วินาทีที่ [1:00] ลองใช้มือชี้ประกอบเมื่อเปลี่ยนประเด็น>",
+        "cite_s": [
+          60.0
+        ]
+      },
+      {
+        "kind": "focus",
+        "code": "S2",
+        "text": "<ควรโฟกัส: หยุดเงียบ 4.2 วินาทีที่ [03:03] เตรียมประโยคเชื่อมหัวข้อไว้ล่วงหน้า>",
+        "cite_s": [
+          183.0
+        ]
+      },
+      {
+        "kind": "plan",
+        "code": null,
+        "text": "<แผนฝึกรอบหน้า: ซ้อมช่วงเปลี่ยนหัวข้อ 2 รอบ แล้วอัดใหม่>",
+        "cite_s": []
+      }
+    ],
+    "hidden_count": 0
+  },
+  "error": null
+}

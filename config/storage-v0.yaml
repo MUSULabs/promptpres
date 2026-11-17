@@ -1,0 +1,37 @@
+# Storage, upload and queue settings for the cloud deployment (D-062).
+# Kept apart from pipeline-v0.yaml on purpose: nothing here changes a measurement, and this file is not part of
+# the analysis settings snapshot, so the config digest recorded in every result stays the same.
+version: storage-v0
+
+upload:
+  chunk_mb: 8                 # one PUT per chunk; each must finish well inside Modal's 150 s request limit
+  ticket_ttl_s: 7200          # an upload ticket (signed with PROMPTPRES_SESSION_SECRET) is valid for 2 hours
+
+media:
+  link_ttl_s: 43200           # signed video link in GET /result is valid for 12 hours
+  cache_max_mb: 2048          # web container: local copies of played files, least recently used deleted first
+
+playback:                     # small copy for the result page player, made from media.mp4 after result.json
+  max_height: 480             # never upscales: smaller videos keep their height
+  crf: 28                     # H.264 quality (higher = smaller file)
+  preset: veryfast
+  audio_kbps: 64
+
+retention:                    # the maintenance job deletes video files only; scores and feedback stay
+  guest_video_days: 7
+  member_video_days: 30
+  failed_upload_days: 1       # raw upload of a failed round
+  window_days: 2              # each run looks only at rounds that crossed the line in this window
+
+queue:                        # repair for several GPU containers (store.sweep)
+  stale_processing_s: 4200    # GPU timeout (3600 s) + 10 min: the worker died without its exit handler
+  lost_queue_s: 1800          # queued this long with no worker: send the job again
+
+guard:                        # credit protection before a video joins the queue (D-063, api/app/uploads.py)
+  max_active_per_owner: 2     # queued + processing rounds of one account (a student needs one at a time)
+  max_active_total: 8         # queued + processing rounds of everyone (Analyser max 4 T4 x 2 rounds)
+  max_analyses_per_day: 80    # videos sent for analysis in the last 24 h, all users (about 2-8 USD of T4 time)
+  video_tickets_per_ip_hour: 120   # one classroom behind a campus NAT: 30 students x 2 rounds, twice over
+  staging_max_age_s: 7200     # unfinished chunk folders older than the upload ticket are deleted
+  pdf_reads_per_day: 100      # report PDFs sent to the LLM in 24 h, all users (D-066; < 0.01 USD each, so < 1 USD/day)
+  pdf_tickets_per_ip_hour: 30 # PDF uploads per caller address (only slows a script; the daily total is the stop)

@@ -1,0 +1,6 @@
+# eval/ only (the worker and api have their own requirements)
+numpy
+pandas
+scipy
+pyyaml
+openpyxl    # .xlsx input

@@ -1,0 +1,91 @@
+import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+
+// Runs against the second test API (port 18371) started with PROMPTPRES_REQUIRE_LOGIN=1.
+const GUEST = "ทดลองใช้งานทันที (สำหรับคณะกรรมการ / ผู้ทดสอบ)";
+const PASSWORD = "test-password-123";
+
+async function finishedRound(request: APIRequestContext) {
+  const created = await request.post("/api/sessions", { data: { target_duration_s: 900 } });
+  expect(created.status()).toBe(201);
+  const id = (await created.json()).session_id as string;
+  const clip = await (await request.get("/browser-test/clip")).body();
+  const upload = await request.post(`/api/sessions/${id}/video`, {
+    multipart: { video: { name: "test.webm", mimeType: "video/webm", buffer: clip } },
+  });
+  expect(upload.ok()).toBeTruthy();
+  expect((await request.post(`/browser-test/${id}/processing`)).ok()).toBeTruthy();
+  expect((await request.post(`/browser-test/${id}/done`)).ok()).toBeTruthy();
+  return id;
+}
+
+async function register(page: Page, name: string, email: string) {
+  await page.getByLabel("ชื่อที่แสดง", { exact: true }).fill(name);
+  await page.getByLabel("อีเมล", { exact: true }).fill(email);
+  await page.getByLabel("รหัสผ่าน", { exact: false }).fill(PASSWORD);
+  await page.getByRole("button", { name: "สร้างบัญชี", exact: true }).click();
+  await expect(page.locator(".account-menu")).toContainText(name);
+}
+
+test("without an account every page goes to /login and the API answers 401", async ({ page, request }) => {
+  expect((await request.get("/api/sessions")).status()).toBe(401);
+  expect((await request.post("/api/sessions", { data: { target_duration_s: 900 } })).status()).toBe(401);
+  for (const path of ["/", "/new", "/sessions/s_missing", "/sessions/s_missing/video"]) {
+    await page.goto(path);
+    await expect(page).toHaveURL((url) => url.pathname === "/login" && url.searchParams.get("next") === path);
+    await expect(page.getByRole("button", { name: GUEST })).toBeVisible();
+  }
+});
+
+test("Guest button opens the app and a rehearsal can be analysed", async ({ page }) => {
+  await page.goto("/");
+  await expect(page).toHaveURL((url) => url.pathname === "/login");
+  await page.getByRole("button", { name: GUEST }).click();
+  await expect(page).toHaveURL((url) => url.pathname === "/");
+  await expect(page.locator(".account-menu")).toContainText("ผู้ทดลองใช้งาน");
+  const id = await finishedRound(page.request);
+  await page.goto(`/sessions/${id}`);
+  await expect(page.locator(".card")).toHaveCount(8);
+});
+
+test("registering from Guest moves the rehearsal to the new account and other accounts cannot open it", async ({ page, browser }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: GUEST }).click();
+  await expect(page.locator(".account-menu")).toContainText("ผู้ทดลองใช้งาน");
+  const id = await finishedRound(page.request);
+  const email = `owner-${id}@example.com`;
+  await page.getByRole("link", { name: "สมัครสมาชิกเพื่อเก็บประวัติ" }).click();
+  // D-066: only registering moves Guest rounds, so the login tab says so before a Guest signs in elsewhere.
+  await page.getByRole("button", { name: "เข้าสู่ระบบ", exact: true }).first().click();
+  await expect(page.getByRole("note")).toContainText("จะไม่ย้ายตามไป");
+  await page.getByRole("button", { name: "สมัครสมาชิก", exact: true }).click();
+  await expect(page.getByRole("note")).toHaveCount(0);
+  await register(page, "เจ้าของรอบซ้อม", email);
+  await page.goto(`/sessions/${id}`);
+  await expect(page.locator(".card")).toHaveCount(8);
+
+  // The same member in a fresh browser: the rehearsal belongs to the account, not to the old Guest cookie.
+  const second = await browser.newContext();
+  const again = await second.newPage();
+  await again.goto(`/sessions/${id}`);
+  await expect(again).toHaveURL((url) => url.pathname === "/login" && url.searchParams.get("next") === `/sessions/${id}`);
+  await again.getByLabel("อีเมล", { exact: true }).fill(email);
+  await again.getByLabel("รหัสผ่าน", { exact: false }).fill(PASSWORD);
+  await again.getByRole("button", { name: "เข้าสู่ระบบ", exact: true }).last().click();
+  await expect(again.locator(".account-menu")).toContainText("เจ้าของรอบซ้อม");
+  await again.goto(`/sessions/${id}`);
+  await expect(again.locator(".card")).toHaveCount(8);
+  await again.getByRole("button", { name: "ออกจากระบบ", exact: true }).click();
+  await expect(again).toHaveURL((url) => url.pathname === "/login");
+  expect((await again.request.get(`/api/sessions/${id}`)).status()).toBe(401);
+  await second.close();
+
+  // A different Guest has an empty history and gets 404 for that rehearsal.
+  const third = await browser.newContext();
+  const stranger = await third.newPage();
+  await stranger.goto("/login");
+  await stranger.getByRole("button", { name: GUEST }).click();
+  await expect(stranger.locator(".account-menu")).toContainText("ผู้ทดลองใช้งาน");
+  expect((await stranger.request.get(`/api/sessions/${id}`)).status()).toBe(404);
+  expect(await (await stranger.request.get("/api/sessions")).json()).toEqual([]);
+  await third.close();
+});

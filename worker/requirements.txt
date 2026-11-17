@@ -1,0 +1,21 @@
+# Worker deps (GPU machine). Also needs FFmpeg (ffmpeg + ffprobe) on PATH or PROMPTPRES_FFMPEG_DIR.
+# CUDA: ctranslate2 needs cuBLAS 12 + cuDNN 9 -> the two nvidia-* wheels below (asr.py adds their bin/ folders on Windows).
+# Without them ASR falls back to CPU int8.
+faster-whisper>=1.2     # ASR + bundled Silero VAD (onnxruntime)
+nvidia-cublas-cu12      # GPU ASR (GTX 1650 4 GB: int8_float16, batch 2)
+nvidia-cudnn-cu12>=9,<10
+mediapipe>=0.10.35,<0.11               # brings opencv-contrib-python; do not add opencv-python (D-030)
+pythainlp>=5.0
+pymupdf
+openai                  # OpenAI-compatible client pointed at OpenRouter
+python-dotenv           # reads Code/promptpres/.env (OPENROUTER_API_KEY, OPENROUTER_MODEL)
+truststore>=0.10        # LLM HTTPS checked against the OS certificate store (Windows laptop fails with certifi only)
+numpy
+pandas
+pyarrow
+pyyaml
+jsonschema
+pydantic>=2.8           # result is also validated with promptpres_shared/contract.py
+
+sqlalchemy>=2.0
+rfc3339-validator>=0.1.4

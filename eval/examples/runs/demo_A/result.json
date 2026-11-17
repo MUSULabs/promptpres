@@ -1,0 +1,149 @@
+{
+ "contract_version": "1.1",
+ "session_id": "demo_A",
+ "status": "done",
+ "duration_s": 60.0,
+ "versions": {
+  "config": "SYNTHETIC example"
+ },
+ "criteria": [
+  {
+   "code": "C1",
+   "status": "ok",
+   "level": 4,
+   "values": {
+    "kendall_tau": 1.0
+   },
+   "evidence": []
+  },
+  {
+   "code": "C2",
+   "status": "ok",
+   "level": 4,
+   "values": {
+    "coverage_clear_pct": 90.0
+   },
+   "evidence": []
+  },
+  {
+   "code": "S1",
+   "status": "ok",
+   "level": 4,
+   "values": {
+    "syllables_per_s": 4.6,
+    "syllables": 240
+   },
+   "evidence": []
+  },
+  {
+   "code": "S2",
+   "status": "ok",
+   "level": 2,
+   "values": {
+    "long_pauses_per_min": 2,
+    "max_pause_s": 3.0,
+    "long_pauses": 2
+   },
+   "evidence": [
+    {
+     "start_s": 10.0,
+     "end_s": 12.5,
+     "note": "SYNTHETIC"
+    },
+    {
+     "start_s": 30.0,
+     "end_s": 33.0,
+     "note": "SYNTHETIC"
+    }
+   ]
+  },
+  {
+   "code": "S3",
+   "status": "ok",
+   "level": 3,
+   "values": {
+    "fillers_per_min": 3,
+    "fillers": 3
+   },
+   "evidence": [
+    {
+     "start_s": 5.0,
+     "end_s": 5.4,
+     "note": "SYNTHETIC"
+    },
+    {
+     "start_s": 20.0,
+     "end_s": 20.3,
+     "note": "SYNTHETIC"
+    },
+    {
+     "start_s": 41.0,
+     "end_s": 41.5,
+     "note": "SYNTHETIC"
+    }
+   ]
+  },
+  {
+   "code": "N1",
+   "status": "ok",
+   "level": 3,
+   "values": {
+    "long_still_per_min": 1,
+    "max_still_s": 18.0,
+    "long_still_spans": 1
+   },
+   "evidence": [
+    {
+     "start_s": 0.0,
+     "end_s": 8.0,
+     "note": "SYNTHETIC"
+    }
+   ]
+  },
+  {
+   "code": "N2",
+   "status": "ok",
+   "level": 3,
+   "values": {
+    "front_pct": 72.0
+   },
+   "evidence": []
+  },
+  {
+   "code": "T1",
+   "status": "ok",
+   "level": 3,
+   "values": {
+    "speech_span_s": 57.0,
+    "deviation_pct": 5.0
+   },
+   "evidence": []
+  }
+ ],
+ "topics": [
+  {
+   "id": "H01",
+   "title": "หัวข้อ 1",
+   "order": 1,
+   "coverage": "clear"
+  },
+  {
+   "id": "H02",
+   "title": "หัวข้อ 2",
+   "order": 2,
+   "coverage": "clear"
+  },
+  {
+   "id": "H03",
+   "title": "หัวข้อ 3",
+   "order": 3,
+   "coverage": "brief"
+  },
+  {
+   "id": "H04",
+   "title": "หัวข้อ 4",
+   "order": 4,
+   "coverage": "clear"
+  }
+ ]
+}

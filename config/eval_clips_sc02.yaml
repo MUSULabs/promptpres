@@ -1,0 +1,20 @@
+# Evaluation clips for the 3 human raters (D-051) — DRAFT, the project owner confirms before sending.
+# 8 SC02 clips of about 1-3 minutes, 8 different presenters: 3 natural presentations (S01, the only S01 clips
+# of at most 180 s) + 5 controlled scenarios so that every criterion has clips at more than one level.
+# Source: clips.csv of the SC02 dataset (read-only). in_dev_set = the clip was also used while developing
+# (config/dev_clips_sc02.yaml); report this in the thesis. Check each presenter's consent before sharing video.
+# The dataset also holds RATERS_S01_blind (18 anonymised S01 clips) as an alternative pool.
+# D-057: python -m eval.run_sc02 --preflight
+# After confirming consent for external transcript processing: python -m eval.run_sc02 --allow-openrouter
+# Rater sheet: eval/templates/ratings.csv (clip_id = sc02_<clip_id>); frozen copy: eval/templates/eval_clip_ids.txt
+status: draft_pending_owner
+rubric: v0.9
+clips:
+  - {clip_id: G01_P02_S01_T01, participant: P02, scenario: S01, duration_s: 175.0, target_s: 180, mp4: media/mp4/train/G01/P02/G01_P02_S01_T01.mp4, reference: references/P02.json, in_dev_set: false, covers: "การนำเสนอปกติ (ทุกเกณฑ์)"}
+  - {clip_id: G01_P03_S01_T01, participant: P03, scenario: S01, duration_s: 152.5, target_s: 180, mp4: media/mp4/train/G01/P03/G01_P03_S01_T01.mp4, reference: references/P03.json, in_dev_set: false, covers: "การนำเสนอปกติ (ทุกเกณฑ์)"}
+  - {clip_id: G06_P17_S01_T02, participant: P17, scenario: S01, duration_s: 115.4, target_s: 180, mp4: media/mp4/train/G06/P17/G06_P17_S01_T02.mp4, reference: references/P17.json, in_dev_set: false, covers: "การนำเสนอปกติ (ทุกเกณฑ์)"}
+  - {clip_id: G09_P18_S04_T01, participant: P18, scenario: S04, duration_s: 67.8, target_s: 60, mp4: media/mp4/train/G09/P18/G09_P18_S04_T01.mp4, reference: references/P18.json, in_dev_set: true, covers: "S2 แทรกการหยุด 2–4 วินาที"}
+  - {clip_id: G07_P05_S05_T01, participant: P05, scenario: S05, duration_s: 69.2, target_s: 60, mp4: media/mp4/train/G07/P05/G07_P05_S05_T01.mp4, reference: references/P05.json, in_dev_set: true, covers: "S3 เสียงเติม"}
+  - {clip_id: G03_P07_S08_T01, participant: P07, scenario: S08, duration_s: 74.3, target_s: 60, mp4: media/mp4/train/G03/P07/G03_P07_S08_T01.mp4, reference: references/P07.json, in_dev_set: true, covers: "N1 มือนิ่ง"}
+  - {clip_id: G09_P19_S09_T01, participant: P19, scenario: S09, duration_s: 61.1, target_s: 60, mp4: media/mp4/train/G09/P19/G09_P19_S09_T01.mp4, reference: references/P19.json, in_dev_set: false, covers: "N2 หันศีรษะ / ก้มดูโน้ต"}
+  - {clip_id: G05_P11_S10_T01, participant: P11, scenario: S10, duration_s: 97.5, target_s: 60, mp4: media/mp4/train/G05/P11/G05_P11_S10_T01.mp4, reference: references/P11.json, in_dev_set: false, covers: "C1 สลับลำดับหัวข้อ (C2 ครบ)"}

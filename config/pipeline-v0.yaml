@@ -1,0 +1,81 @@
+# Pipeline v0 — numbers for media prep, VAD and ASR (not scoring thresholds; those are in thresholds-v0.yaml).
+# Never hard-code these in Python.
+#   SOURCE = setting that passed in the earlier prototype (Oct 2026, 1 clip, no WER); prototype removed in D-060
+#   DUMMY_VALUE = no source yet, placeholder until calibration
+version: pipeline-v0.9
+
+prep:
+  max_duration_s: 1800             # upload processing limit; not a scoring threshold
+  audio_rate_hz: 16000              # mono PCM16 for VAD and ASR
+  video_fps: 30                     # re-encode to constant frame rate when the input is not H.264 CFR
+  min_duration_s: 10                # DUMMY_VALUE: shorter clips -> audio/time criteria unanalyzable
+  min_audio_dbfs: -55               # DUMMY_VALUE: mean RMS level below this -> "เสียงเบาเกินไป"
+
+vad:                                # Silero VAD (bundled with faster-whisper) — used by T1 S1 S2
+  threshold: 0.5                    # Silero default speech probability
+  min_speech_ms: 250                # Silero default
+  min_silence_ms: 100               # Silero default; keep small so long pauses are not merged away
+  speech_pad_ms: 30                 # Silero default; padding shrinks each pause by 2 x 30 ms
+
+landmarks:                          # MediaPipe pose / hand / face -> landmarks.parquet (used by N1 N2)
+  fps: 10                           # frames analysed per second (SPEC v2.3: ~10 fps)
+  pose_width: 960                   # pose + hand run on a copy this wide (enough for body and hands)
+  head_crop_min_half_px: 80         # face runs on a square around the nose, half side = shoulder width, at least this
+  hand_match_max_sw: 1.0            # DUMMY_VALUE: a detected hand belongs to a pose wrist if within this many shoulder widths
+
+asr:                                # faster-whisper
+  model: large-v3                   # files in models/whisper (Systran/faster-whisper-large-v3)
+  language: th
+  chunk_length: 10                  # SOURCE: default 30 s cut the end of every chunk in the prototype
+  batch_size: 2                     # prototype used 4; 2 keeps large-v3 inside the 4 GB GTX 1650 (dev laptop)
+  vad_min_silence_ms: 300           # SOURCE
+  vad_speech_pad_ms: 200            # SOURCE
+  beam_size: 5
+  initial_prompt: "เอ่อ อ่า อืม เอิ่ม"   # DUMMY_VALUE: try to keep filler sounds; recall not measured yet
+  devices:                          # tried in order; first that loads AND decodes wins
+    - [cuda, int8_float16]          # int8 weights: large-v3 fits a 4 GB GPU (float16 needs ~5 GB with batching)
+    - [cuda, int8]
+    - [cpu, int8]
+  cpu_threads: 8                    # CPU fallback only (Ryzen 5500U/5700U: 6-8 cores)
+
+llm:                                # OpenRouter (D-037): used by topics (PDF -> topic list), C2 coverage and the coach (D-046)
+  model: google/gemini-2.5-flash-lite   # fallback only; OPENROUTER_MODEL in .env wins. Pinned id, no :free / preview
+  base_url: https://openrouter.ai/api/v1
+  temperature: 0                    # CLAUDE.md rule 6
+  timeout_s: 90                     # DUMMY_VALUE: one request
+  max_retries: 2                    # DUMMY_VALUE: network / rate-limit / 5xx retries (openai SDK backoff)
+  max_tokens: 8000                  # DUMMY_VALUE: reply length cap
+  pdf_max_pages: 120                # DUMMY_VALUE: topics read at most this many PDF pages (a full report is ~80)
+  pdf_max_chars: 120000             # DUMMY_VALUE: token budget; over it every page is cut to the same length (topics.page_cap). An 80-page report is ~100k chars (~50k tokens, < 0.01 USD with flash-lite)
+  transcript_line_gap_s: 0.6        # DUMMY_VALUE: a pause this long starts a new transcript line for the LLM
+  transcript_line_max_s: 15         # DUMMY_VALUE: a line is cut after this many seconds
+  topics_timeout_s: 25              # per request; malformed JSON can be retried within the total budget
+  topics_deadline_s: 50             # PDF extraction and provider request budget, below the web timeout
+
+transcript_view:                    # D-046 interactive transcript (promptpres_shared/transcript.py, GET /api/sessions/{id}/transcript)
+  gap_s: 0.25                       # DUMMY_VALUE: a gap this long between Whisper pieces may end a phrase (only at a word boundary)
+  max_s: 6                          # DUMMY_VALUE: a phrase longer than this ends at the next word boundary
+
+coach:                              # D-046 evidence-grounded AI coach (worker/llm/coach.py, prompt coach-v2 since D-064); off in Pilot unless LLM approved
+  enabled: true
+  snippet_max_chars: 80             # D-050: transcript text sent per evidence span (characters)
+  topic_quote_max_chars: 160        # D-050: verified C2 quote sent per topic (characters)
+  prompt_revision: coach-v2         # recorded in the result and part of the cache key (D-064; was coach-v1-d050)
+  missing_text: ไม่มีข้อมูล            # sent in place of anything the run does not have (never an empty string)
+  coverage_labels: {clear: อธิบายชัดเจน, brief: กล่าวถึงบางส่วน, not_mentioned: ไม่ได้กล่าวถึง}
+  max_evidence_per_criterion: 5     # DUMMY_VALUE: evidence spans per criterion shown to the LLM (and allowed as citations)
+  match_tolerance_s: 1.0            # DUMMY_VALUE: a cited [m:ss] must lie within this many seconds of that criterion's evidence span
+  max_text_chars: 300               # DUMMY_VALUE: one coach message (about 2 Thai sentences)
+  banned_phrases: [คะแนนรวม, เกรด, ไม่ผ่าน, สอบผ่าน, ผ่านเกณฑ์, total score, grade, อารมณ์, มั่นใจ, ประหม่า, กังวล, ตื่นเต้น, สบตา, บุคลิก]   # no total score / pass-fail (Contract) and no inference of emotion or eye contact (CLAUDE.md rule 5)
+
+runner:                             # worker/runner.py: the queue is the sessions table (promptpres_shared/store.py)
+  poll_s: 3                         # DUMMY_VALUE: look for queued sessions every N seconds when idle
+  max_attempts: 2                   # DUMMY_VALUE: a session interrupted this many times is marked failed, not retried
+
+# D-050: project-proposed lexical rules, subject to IOC/calibration.
+fillers:
+  phrases: [แบบว่า, ก็แบบ, ก็แบบว่า, คือแบบ, คือแบบว่า, แบบคือ, อะไรอย่างนี้, อะไรแบบนี้]
+  hesitation_words: [แบบ, ก็คือ, คือ]
+  adjacent_sounds: [เอ่อ, อ่า, อืม, เอิ่ม, uh, um]
+  hesitation_gap_s: 0.5
+  protected_words: [ออกแบบ, แบบประเมิน, แบบจำลอง, กล่าวคือ]

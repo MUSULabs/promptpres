@@ -1,0 +1,210 @@
+{
+  "contract_version": "1.3",
+  "session_id": "s_mock_partial",
+  "status": "done",
+  "created_at": "2026-11-10T15:30:00+07:00",
+  "duration_s": 318.0,
+  "target_duration_s": 300,
+  "video_url": "/api/media/s_mock_partial",
+  "versions": {
+    "rubric": "0-mock",
+    "asr": "<asr-model>",
+    "llm": "<llm-model>",
+    "prompt": "coverage-v0",
+    "config": "thresholds-v0"
+  },
+  "criteria": [
+    {
+      "code": "C1",
+      "skill": "content",
+      "status": "unanalyzable",
+      "level": null,
+      "values": {
+        "topics_ordered": 1
+      },
+      "evidence": [],
+      "feedback_id": null,
+      "reason": "อธิบายหัวข้อที่ยืนยันไว้ชัดเจนเพียง 1 หัวข้อ ต้องมีอย่างน้อย 3 หัวข้อจึงวัดลำดับได้"
+    },
+    {
+      "code": "C2",
+      "skill": "content",
+      "status": "ok",
+      "level": 1,
+      "values": {
+        "coverage_clear_pct": 30.0,
+        "clear": 1,
+        "brief": 1,
+        "not_mentioned": 3,
+        "topics_total": 5,
+        "quotes_rejected": 0
+      },
+      "evidence": [
+        {
+          "start_s": 8.0,
+          "end_s": 30.0,
+          "note": "ที่มาและปัญหา"
+        }
+      ],
+      "feedback_id": "C2_L1",
+      "reason": null
+    },
+    {
+      "code": "S1",
+      "skill": "speech",
+      "status": "ok",
+      "level": 3,
+      "values": {
+        "syllables_per_s": 6.1,
+        "articulation_time_s": 250.0
+      },
+      "evidence": [
+        {
+          "start_s": 20.0,
+          "end_s": 50.0,
+          "note": "ช่วงที่พูดเร็วที่สุด"
+        }
+      ],
+      "feedback_id": "S1_L3",
+      "reason": null
+    },
+    {
+      "code": "S2",
+      "skill": "speech",
+      "status": "ok",
+      "level": 4,
+      "values": {
+        "long_pauses_per_min": 0.2,
+        "max_pause_s": 2.1
+      },
+      "evidence": [],
+      "feedback_id": "S2_L4",
+      "reason": null
+    },
+    {
+      "code": "S3",
+      "skill": "speech",
+      "status": "ok",
+      "level": 1,
+      "values": {
+        "fillers_per_min": 9.5,
+        "fillers": 50
+      },
+      "evidence": [
+        {
+          "start_s": 31.2,
+          "end_s": 31.7,
+          "note": "เอ่อ"
+        },
+        {
+          "start_s": 44.0,
+          "end_s": 44.4,
+          "note": "อ่า"
+        }
+      ],
+      "feedback_id": "S3_L1",
+      "reason": null
+    },
+    {
+      "code": "N1",
+      "skill": "body",
+      "status": "unanalyzable",
+      "level": null,
+      "values": {
+        "hands_visible_pct": 38.0
+      },
+      "evidence": [],
+      "feedback_id": null,
+      "reason": "มองไม่เห็นมือ 62% ของเวลา (มือหลุดเฟรมไม่นับว่ามือนิ่ง)"
+    },
+    {
+      "code": "N2",
+      "skill": "body",
+      "status": "ok",
+      "level": 3,
+      "values": {
+        "front_pct": 70.0,
+        "side_pct": 8.0,
+        "down_pct": 20.0,
+        "up_other_pct": 2.0,
+        "face_visible_pct": 95.0
+      },
+      "evidence": [
+        {
+          "start_s": 120.0,
+          "end_s": 140.0,
+          "note": "ก้มดูโน้ต 20 วินาที"
+        }
+      ],
+      "feedback_id": "N2_L3",
+      "reason": null
+    },
+    {
+      "code": "T1",
+      "skill": "time",
+      "status": "ok",
+      "level": 4,
+      "values": {
+        "speech_span_s": 305.0,
+        "deviation_pct": 1.7
+      },
+      "evidence": [
+        {
+          "start_s": 5.0,
+          "end_s": 310.0,
+          "note": "ช่วงนำเสนอ"
+        }
+      ],
+      "feedback_id": "T1_L4",
+      "reason": null
+    }
+  ],
+  "topics": [
+    {
+      "id": "t1",
+      "title": "ที่มาและปัญหา",
+      "order": 1,
+      "coverage": "clear",
+      "first_mention_s": 8.0,
+      "evidence_quote": "<ประโยคจาก transcript>"
+    },
+    {
+      "id": "t2",
+      "title": "วัตถุประสงค์",
+      "order": 2,
+      "coverage": "brief",
+      "first_mention_s": 95.0,
+      "evidence_quote": "<ประโยคจาก transcript>"
+    },
+    {
+      "id": "t3",
+      "title": "วิธีดำเนินการ",
+      "order": 3,
+      "coverage": "not_mentioned",
+      "first_mention_s": null,
+      "evidence_quote": null
+    },
+    {
+      "id": "t4",
+      "title": "ผลการทดลอง",
+      "order": 4,
+      "coverage": "not_mentioned",
+      "first_mention_s": null,
+      "evidence_quote": null
+    },
+    {
+      "id": "t5",
+      "title": "สรุป",
+      "order": 5,
+      "coverage": "not_mentioned",
+      "first_mention_s": null,
+      "evidence_quote": null
+    }
+  ],
+  "coach": {
+    "status": "skipped",
+    "items": [],
+    "hidden_count": 0
+  },
+  "error": null
+}

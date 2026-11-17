@@ -1,0 +1,53 @@
+# Fixed project name: volumes are promptpres_sessions / promptpres_models whatever the clone folder is called.
+name: promptpres
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: promptpres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: promptpres
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U promptpres]
+      interval: 5s
+      retries: 12
+    restart: unless-stopped
+  api:
+    build: {context: ., target: api}
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://promptpres:${POSTGRES_PASSWORD}@db/promptpres
+      PROMPTPRES_REQUIRE_LOGIN: '1'
+      PROMPTPRES_SESSION_SECRET: ${PROMPTPRES_SESSION_SECRET:?Set a persistent secret of at least 32 characters}
+      PROMPTPRES_PUBLIC_ORIGIN: ${PROMPTPRES_PUBLIC_ORIGIN:?Set the public HTTPS origin}
+      PROMPTPRES_TRUSTED_PROXY: '1'   # the HTTPS reverse proxy on this host sets X-Forwarded-For
+      PROMPTPRES_DATA: /data
+      PROMPTPRES_UPLOADS: /data/uploads
+      PROMPTPRES_RUNS: /data/runs
+    volumes: [sessions:/data]
+    ports: ['127.0.0.1:8000:8000']
+    depends_on:
+      db: {condition: service_healthy}
+    restart: unless-stopped
+  worker:
+    build: {context: ., target: worker}
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://promptpres:${POSTGRES_PASSWORD}@db/promptpres
+      PROMPTPRES_DATA: /data
+      PROMPTPRES_RUNS: /data/runs
+      PROMPTPRES_MODELS: /models
+    volumes: [sessions:/data, models:/models]
+    gpus: all
+    depends_on:
+      db: {condition: service_healthy}
+    restart: unless-stopped
+volumes:
+  pgdata:
+  sessions:
+  models:

@@ -1,0 +1,14 @@
+# Files Vercel never needs for the web build. A blocklist only: Git deployments (Root Directory = web)
+# evaluate this file against the repository root, so an allowlist such as "/*" + "!/index.html" removed
+# web/ itself (D-065). Patterns are unanchored so they mean the same from the repo root or from web/.
+node_modules/
+dist/
+.vercel/
+.env*
+playwright-report/
+test-results/
+*.tsbuildinfo
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/

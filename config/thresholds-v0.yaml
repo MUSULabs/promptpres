@@ -1,0 +1,131 @@
+# Thresholds v0 — draft values (Spec v2.3, 8 criteria). Never hard-code thresholds in Python.
+# Source of the numbers: rubric v0.9 sent to 5 experts = vault Tools/ioc_docs/content_v0_9.py (D-050: S3 also
+# counts contextual verbal tics, on-screen names of N1/N2 changed). The numbers are the same as the earlier drafts
+# v0.7-v0.8, so web/src/trend.ts shows v0.7-v0.9 levels together in the trend table.
+# The system does not wait for IOC (D-040): these drafts are used now; after IOC returns only the numbers change.
+#   DRAFT_VALUE = number in rubric v0.9, waiting for IOC and calibration
+#   DUMMY_VALUE = no source yet (rubric has no number); placeholder so the code can run, replace after calibration
+#
+# scored_values: the ONLY keys in Result.values that may be used to compute the level.
+#   Any other key a criterion reports (e.g. N1 hands_active_pct, *_visible_pct) is supporting info:
+#   shown on the card under "ข้อมูลประกอบ", never used for the level (D-028).
+#
+# How a level is computed (worker/criteria/base.py: level_from_bands):
+#   direction: higher -> value >= bound   (bigger is better)
+#              lower  -> value <= bound   (smaller is better)
+#              range  -> lo <= value <= hi (a middle band is best; too slow or too fast both drop)
+#   levels 4, 3, 2 are checked in that order; the first band the value fits is its level; no fit = level 1.
+#   Bounds are inclusive. With several scored_values the card takes the LOWEST level across them.
+version: thresholds-v0
+rubric_version: v0.9
+
+criteria:
+  C1:   # ลำดับหัวข้อเทียบกับแผน — order of first substantive explanation (from C2) vs confirmed order
+    scored_values: [kendall_tau]                  # -1..1
+    direction: higher
+    levels:
+      4: {kendall_tau: 0.80}                      # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      3: {kendall_tau: 0.50}                      # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      2: {kendall_tau: 0.0}                       # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+    counted_labels: [clear]                       # DRAFT_VALUE: only topics explained clearly enter tau (rubric v0.9)
+    unanalyzable:
+      min_topics_mentioned: 3                     # DRAFT_VALUE: show tau from 3 clear topics
+      min_topics_for_level: 4                     # DRAFT_VALUE: give a level only from 4 topics (rubric v0.9)
+      require_confirmed_topics: true
+  C2:   # ความครอบคลุมเชิงความหมาย — LLM label per topic + evidence quote verified in transcript (else not_mentioned)
+    scored_values: [coverage_clear_pct]           # % ; clear = 1, brief = 0.5 (rubric v0.9)
+    direction: higher
+    levels:
+      4: {coverage_clear_pct: 90}                 # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      3: {coverage_clear_pct: 75}                 # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      2: {coverage_clear_pct: 50}                 # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+    brief_weight: 0.5                             # DRAFT_VALUE: a brief topic counts half (rubric v0.9)
+    quote_min_ratio: 0.85                         # DUMMY_VALUE: fuzzy quote match accepted at this similarity (ASR spelling)
+    quote_min_chars: 8                            # DUMMY_VALUE: shorter quotes (after removing spaces) are rejected
+    requote_rounds: 1                             # DUMMY_VALUE: re-ask the LLM once for quotes not found (then not_mentioned)
+    max_topics: 15                                # DUMMY_VALUE: most topics in a list - topic editor (web TopicEditor.tsx), API confirm, LLM draft (longer drafts keep the first 15)
+    unanalyzable:
+      min_transcript_s: 30                        # DUMMY_VALUE: speech span (first to last speech); SC02 test clips are ~60 s
+      min_topics: 3                               # DRAFT_VALUE: a confirmed list needs at least 3 topics (rubric v0.9)
+      require_confirmed_topics: true
+  S1:   # อัตราการพูด — syllables per second, pauses and fillers excluded
+    scored_values: [syllables_per_s]
+    syllable_engine: dict                         # PyThaiNLP syllable_tokenize engine (han_solo needs python-crfsuite)
+    window_s: 20                                  # DUMMY_VALUE: window for pointing out the fastest / slowest part
+    window_min_voiced_ratio: 0.5                  # DUMMY_VALUE: a window needs this share of voiced time to be compared
+    direction: range
+    levels:
+      4: {syllables_per_s: [4.0, 6.0]}            # DUMMY_VALUE: รอปรับจากผล IOC และ Calibration
+      3: {syllables_per_s: [3.5, 6.5]}            # DUMMY_VALUE: รอปรับจากผล IOC และ Calibration
+      2: {syllables_per_s: [3.0, 7.0]}            # DUMMY_VALUE: รอปรับจากผล IOC และ Calibration
+    unanalyzable:
+      min_speech_s: 30                            # DUMMY_VALUE: speech span (first to last speech); SC02 test clips are ~60 s
+  S2:   # การหยุดพูดยาว
+    scored_values: [long_pauses_per_min, max_pause_s]
+    pause_min_s: 2.0                              # DRAFT_VALUE: silence of at least this long = one long pause
+    direction: lower
+    levels:
+      4: {long_pauses_per_min: 1, max_pause_s: 3} # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      3: {long_pauses_per_min: 2, max_pause_s: 5} # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      2: {long_pauses_per_min: 4, max_pause_s: 8} # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+    unanalyzable:
+      min_speech_s: 30                            # DUMMY_VALUE: speech span (first to last speech); SC02 test clips are ~60 s
+  S3:   # เสียงเติมและคำติดปาก — contextual rules in pipeline-v0.yaml; "เออ" is not counted
+    scored_values: [fillers_per_min]
+    filler_tokens: [เอ่อ, อ่า, อืม, เอิ่ม, uh, um]
+    max_filler_s: 1.5                             # DUMMY_VALUE: cap on one filler's length (Whisper piece times can stretch)
+    merge_gap_s: 0.3                              # DUMMY_VALUE: fillers closer than this = one event (one continuous filler)
+    acoustic:                                     # layer 2: VAD speech with no transcript word + DSP filter (fillers Whisper drops)
+      count_acoustic: false                       # DUMMY_VALUE: off — on SC02 S01-S05 the candidates do not separate S05 (STATUS 14 Nov)
+      min_s: 0.20                                 # DUMMY_VALUE: Thai fillers ~0.34 s (SOURCE_TABLE: Anansiripinyo & Onsuwan 2019)
+      max_s: 1.80                                 # DUMMY_VALUE
+      text_margin_s: 0.3                          # DUMMY_VALUE: gaps this close to a layer-1 filler are its tail, skip
+      min_rel_db: -6                              # DUMMY_VALUE: at least this loud vs the clip's median speech frame
+      max_zcr: 0.10                               # DUMMY_VALUE: zero-crossing rate per sample (vowel/nasal low; breath, s high)
+      max_flatness: 0.02                          # DUMMY_VALUE: spectral flatness (tone-like ~0, noise-like ~1)
+      max_centroid_hz: 800                        # DUMMY_VALUE: spectral centroid (vowel/nasal low; breath, cough high)
+    direction: lower
+    levels:
+      # D-050: verbal tics are counted too, so more events per minute than fillers alone; 3/6/9 kept for the experts
+      # to review and to be re-checked on the SC02 clips.
+      4: {fillers_per_min: 3}                     # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      3: {fillers_per_min: 6}                     # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      2: {fillers_per_min: 9}                     # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+    unanalyzable:
+      min_speech_s: 30                            # DUMMY_VALUE: speech span (first to last speech); SC02 test clips are ~60 s
+  N1:   # การใช้ท่าทางมือประกอบการพูด (วัดช่วงมือนิ่งต่อเนื่อง) — hands_active_pct is supporting info only
+    scored_values: [long_still_per_min, max_still_s]
+    motion_threshold: 0.35                        # DRAFT_VALUE: wrist speed in shoulder widths per second; below = still
+    long_still_s: 5.0                             # DRAFT_VALUE: continuous stillness of at least this long = one span
+    smooth_s: 0.5                                 # DUMMY_VALUE: centred moving average of wrist speed (removes landmark jitter)
+    direction: lower
+    levels:
+      4: {long_still_per_min: 0.5, max_still_s: 10} # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      3: {long_still_per_min: 1, max_still_s: 20}   # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      2: {long_still_per_min: 2, max_still_s: 30}   # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+    unanalyzable:
+      min_hands_visible_pct: 70                   # DRAFT_VALUE: hands out of frame != still
+  N2:   # การหันหน้าสื่อสารกับผู้ฟัง (วัดทิศทางศีรษะ) every 1 s, order: down (even if yawed) -> side -> up/other -> front (NOT eye contact)
+    scored_values: [front_pct]
+    yaw_side_deg: 20                              # DRAFT_VALUE: |yaw| above this = side
+    pitch_down_deg: -15                           # DRAFT_VALUE: pitch below this = down (checked first)
+    pitch_up_deg: 15                              # DRAFT_VALUE: pitch above this = up/other (after side)
+    min_face_frames_ratio: 0.5                    # DUMMY_VALUE: a second counts only if the face is found in this share of its frames
+    evidence_min_s: 3                             # DUMMY_VALUE: down/side runs at least this long are shown as evidence
+    max_evidence: 10                              # DUMMY_VALUE: keep the longest runs only
+    direction: higher
+    levels:
+      4: {front_pct: 80}                          # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      3: {front_pct: 65}                          # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      2: {front_pct: 50}                          # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+    unanalyzable:
+      min_face_visible_pct: 70                    # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+  T1:   # เวลาเทียบเป้าหมาย — same bands whether short or long
+    scored_values: [deviation_pct]                # |span - target| / target * 100
+    direction: lower
+    levels:
+      4: {deviation_pct: 5}                       # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      3: {deviation_pct: 10}                      # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+      2: {deviation_pct: 15}                      # DRAFT_VALUE: ร่างรูบริก v0.9 รอผล IOC และ Calibration
+    default_target_s: 900                         # 15 min when the user leaves the target empty; programme rule 15–20 min (D-038)
+    unanalyzable: {require_target: true}

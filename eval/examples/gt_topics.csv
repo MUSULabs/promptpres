@@ -1,0 +1,13 @@
+﻿clip_id,topic_id,label
+demo_A,H01,clear
+demo_A,H02,clear
+demo_A,H03,brief
+demo_A,H04,brief
+demo_B,H01,clear
+demo_B,H02,not_mentioned
+demo_B,H03,not_mentioned
+demo_B,H04,clear
+demo_C,H01,clear
+demo_C,H02,brief
+demo_C,H03,clear
+demo_C,H04,clear
