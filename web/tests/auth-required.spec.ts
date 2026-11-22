@@ -96,9 +96,27 @@ test("Guest button opens the app and a rehearsal can be analysed", async ({ page
   const id = await finishedRound(page.request);
   await page.getByRole("link", { name: "ประวัติ", exact: true }).click();
   await expect(page.getByRole("heading", { name: "ประวัติการซ้อม" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "ดูผล", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "รอบซ้อมล่าสุด" }).getByRole("link", { name: "ดูผล", exact: true }))
+    .toHaveAttribute("href", `/sessions/${id}`);
   await page.goto(`/sessions/${id}`);
   await expect(page.locator(".card")).toHaveCount(8);
+});
+
+test("dashboard shows an empty state, then a real unfinished round with a resume link", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByRole("button", { name: GUEST }).click();
+  await expect(page.getByRole("heading", { name: "ยังไม่มีรอบซ้อม" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "เริ่มซ้อม", exact: true })).toBeInViewport();
+  await expect(page.getByRole("region", { name: "แนวโน้มผลการฝึกซ้อมข้ามรอบ" })).toHaveCount(0);
+  const response = await page.request.post("/api/sessions", { data: { target_duration_s: 900 } });
+  expect(response.status()).toBe(201);
+  const { session_id: id } = await response.json();
+  await page.reload();
+  const active = page.getByRole("region", { name: "กำลังดำเนินการ" });
+  await expect(active.getByText("ยังไม่ส่งวิดีโอ")).toBeVisible();
+  await active.getByRole("link", { name: "ทำต่อ" }).press("Enter");
+  await expect(page).toHaveURL(`/sessions/${id}/video`);
 });
 
 test("registering from Guest moves the rehearsal to the new account and other accounts cannot open it", async ({ page, browser }) => {

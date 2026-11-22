@@ -26,7 +26,7 @@ function AppShell() {
   const checkingEntry = atEntry && !state;
 
   return (
-    <div className={landing ? "pp-v1" : undefined} data-entry-pending={checkingEntry ? "" : undefined}>
+    <div className={landing ? "pp-v1" : checkingEntry ? undefined : "app-shell"} data-entry-pending={checkingEntry ? "" : undefined}>
       <a className="skip-link" href="#main-content">ข้ามไปเนื้อหาหลัก</a>
       {landing ? <LandingHeader /> : <SiteHeader checkingEntry={checkingEntry} />}
       <AppRoutes landing={landing} />

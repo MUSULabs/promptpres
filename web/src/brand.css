@@ -30,13 +30,15 @@
 
 /* PromptPres brand and workspace surfaces */
 :root {
+  --brand-blue: #2823ef;
+  --brand-yellow: #ffc400;
   --bg: #f5f6fa;
   --panel: #fff;
   --fg: #1c2132;
   --muted: #555d71;
   --line: #dce0eb;
   --control-line: #767686;
-  --accent: #2823ef;
+  --accent: var(--brand-blue);
   --accent-hover: #201cc4;
   --accent-active: #19169f;
   --tint: #eceeff;
@@ -55,6 +57,23 @@
   --control-radius: 7px;
   --radius: 12px;
   --font-ui: Prompt, "Noto Sans Thai", system-ui, sans-serif;
+}
+
+.app-shell {
+  --bg: #f7f7f7;
+  --fg: #171717;
+  --muted: #525252;
+  --line: #e5e5e5;
+  --control-line: #737373;
+  --tint: #f4f4f4;
+  --viewfinder: #171717;
+  --error: #171717;
+  --error-bg: #ededed;
+  --ready: var(--brand-blue);
+  --ready-bg: #f4f4f4;
+  --pending: #525252;
+  --pending-bg: #fff3c9;
+  --signal: var(--brand-yellow);
 }
 
 .pp-v1 {

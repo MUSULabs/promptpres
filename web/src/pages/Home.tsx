@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import type { FlowStatus, SessionRow } from "../contract";
 import { fmtTime } from "../presentation";
-import { Icon, Message, PageHeading } from "../components/ui";
+import { Icon, Message } from "../components/ui";
 import { TrendPanel } from "../components/Trend";
-import RehearsalPreview from "../components/RehearsalPreview";
+import ppreDefault from "../../design/mascot/ppre-default.svg?no-inline";
+import "./dashboard.css";
 
 const STATUS_LABEL: Record<FlowStatus, string> = {
   created: "ยังไม่ส่งวิดีโอ", queued: "รอคิว", processing: "กำลังวิเคราะห์", done: "พร้อมดูผล", failed: "วิเคราะห์ไม่สำเร็จ",
@@ -13,7 +14,27 @@ const STATUS_LABEL: Record<FlowStatus, string> = {
 const DATE = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" });
 const CLOCK = new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit" });
 
-/** History of practice sessions, newest first, with a per-criterion level-change panel from 2 finished rounds (D-046; observed change, not skill progress). */
+function SessionLink({ row }: { row: SessionRow }) {
+  return <Link className="session-open" to={`/sessions/${row.session_id}${row.status === "created" ? "/video" : ""}`}>
+    {row.status === "created" ? "ทำต่อ" : row.status === "done" ? "ดูผล" : "ดูสถานะ"} <Icon name="arrow" />
+  </Link>;
+}
+
+function SessionDate({ row }: { row: SessionRow }) {
+  const date = new Date(row.created_at);
+  return <time dateTime={row.created_at}>{DATE.format(date)}<span>{CLOCK.format(date)} น.</span></time>;
+}
+
+function FeaturedRound({ row }: { row: SessionRow }) {
+  return <li>
+    <div className="dashboard-round-meta">
+      <SessionDate row={row} />
+      <span className={`status ${row.status}`}>{STATUS_LABEL[row.status]}</span>
+    </div>
+    <SessionLink row={row} />
+  </li>;
+}
+
 export default function Home() {
   const [rows, setRows] = useState<SessionRow[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -25,33 +46,62 @@ export default function Home() {
       .catch((e) => { if (!signal.aborted) setErr(String(e.message)); });
     return () => controller.abort();
   }, [attempt]);
+  const rehearsals = rows?.filter((row) => row.source === "session");
+  const latest = rehearsals?.[0];
+  const active = rehearsals?.filter((row) => row.status === "created" || row.status === "queued" || row.status === "processing");
 
   return (
-    <section className="history-page">
-      <PageHeading title="ประวัติการซ้อม" action={rows?.length ? <Link className="button" to="/new"><Icon name="plus" /> ซ้อมใหม่</Link> : undefined} />
+    <section className="dashboard">
+      <div className="dashboard-hero">
+        <div>
+          <h1>พร้อมซ้อมนำเสนอ</h1>
+          <p>อัดผ่านกล้องหรือเลือกคลิปที่มี แล้วกลับมาดูผลหลังซ้อม</p>
+          <Link className="button action-yellow" to="/new"><Icon name="video" /> เริ่มซ้อม <Icon name="arrow" /></Link>
+        </div>
+        <div className="dashboard-art" aria-hidden="true">
+          <svg viewBox="0 0 360 220" fill="none">
+            <rect x="18" y="16" width="298" height="177" rx="13" stroke="currentColor" strokeWidth="2" />
+            <path d="M18 48h298M43 78v-8h16m216 0h16v8M43 151v16h16m216 0h16v-16" stroke="currentColor" strokeWidth="2" />
+            <circle cx="39" cy="32" r="4" fill="var(--brand-yellow)" />
+            <path d="M51 32h35m229 157h24m-12-12v24" stroke="var(--brand-yellow)" strokeWidth="3" strokeLinecap="round" />
+            <path d="M112 164h-45m31-10H67" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <img src={ppreDefault} alt="" width="320" height="320" />
+        </div>
+      </div>
+      {latest && <div className="dashboard-rounds">
+        <section aria-labelledby="dashboard-latest">
+          <h2 id="dashboard-latest"><Icon name="history" /> รอบซ้อมล่าสุด</h2>
+          <ul><FeaturedRound row={latest} /></ul>
+        </section>
+        <section aria-labelledby="dashboard-active">
+          <h2 id="dashboard-active"><Icon name="clock" /> กำลังดำเนินการ</h2>
+          {active?.length ? <ul>{active.map((row) => <FeaturedRound key={row.session_id} row={row} />)}</ul>
+            : <p className="muted">ไม่มีรอบที่ยังดำเนินการ</p>}
+        </section>
+      </div>}
+      <section className="dashboard-history" aria-labelledby="dashboard-history">
+        <div className="section-heading"><h2 id="dashboard-history">ประวัติการซ้อม</h2>
+          {rows && rows.length > 0 && <span className="muted small">{rows.length} รอบ</span>}
+        </div>
       {err && <>
         <Message kind="error">โหลดรายการไม่ได้: {err}</Message>
         <button className="ghost" onClick={() => { setErr(null); setAttempt(attempt + 1); }}><Icon name="refresh" /> ลองใหม่</button>
       </>}
       {!rows && !err && <Message>กำลังโหลดประวัติการซ้อม…</Message>}
       {rows && rows.length === 0 && (
-        <div className="history-empty">
-          <div>
-            <h2>เริ่มซ้อมรอบแรก</h2>
-            <p className="page-description">อัดหรืออัปโหลดวิดีโอ แล้วกลับมาดูช่วงที่พูดได้ดีและช่วงที่ควรฝึกต่อ</p>
-            <Link className="button" to="/new"><Icon name="plus" /> ซ้อมใหม่</Link>
-          </div>
-          <RehearsalPreview />
+        <div className="panel dashboard-empty">
+          <span className="state-icon"><Icon name="history" /></span>
+          <div><h3>ยังไม่มีรอบซ้อม</h3><p className="muted">เมื่อเริ่มซ้อมแล้ว คุณกลับมาทำต่อหรือเปิดดูผลจากที่นี่ได้</p></div>
         </div>
       )}
       {rows && rows.length > 0 && (
         <>
-          <div className="section-heading"><h2>รอบซ้อมล่าสุด</h2><span className="muted small">{rows.length} รอบ</span></div>
           <ul className="session-list">
             {rows.map((r) => (
               <li className="session-card" key={r.session_id}>
                 <div className="session-card-heading">
-                  <time dateTime={r.created_at}>{DATE.format(new Date(r.created_at))}<span>{CLOCK.format(new Date(r.created_at))} น.</span></time>
+                  <SessionDate row={r} />
                   <div className="badges">
                     {r.source === "mock" && <span className="tag">ตัวอย่าง</span>}
                     <span className={`status ${r.status}`}>{STATUS_LABEL[r.status]}</span>
@@ -62,15 +112,14 @@ export default function Home() {
                   <div><dt>เวลาเป้าหมาย</dt><dd>{r.target_duration_s != null ? fmtTime(r.target_duration_s) : "—"}</dd></div>
                   <div><dt>หัวข้อ</dt><dd>{r.topics_count}</dd></div>
                 </dl>
-                <Link className="session-open" to={`/sessions/${r.session_id}${r.status === "created" ? "/video" : ""}`}>
-                  {r.status === "created" ? "ทำต่อ" : r.status === "done" ? "ดูผล" : "ดูสถานะ"} <Icon name="arrow" />
-                </Link>
+                <SessionLink row={r} />
               </li>
             ))}
           </ul>
-          <TrendPanel rows={rows} />
         </>
       )}
+      </section>
+      {rows && <TrendPanel rows={rows} />}
     </section>
   );
 }

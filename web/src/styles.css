@@ -8,6 +8,13 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100vh; }
+.app-shell { min-block-size: 100vh; background: var(--bg); color: var(--fg); }
+.app-shell .status:is(.queued, .processing)::before { background: var(--brand-yellow); border: 1px solid #735900; }
+.app-shell button.danger:not(:disabled):is(:hover, :active) { background: #404040; }
+.app-shell .banner.error { border-inline-start: .2rem solid var(--fg); }
+.app-shell .button.action-yellow { background: var(--brand-yellow); color: #171717; }
+.app-shell .button.action-yellow:is(:hover, :active) { background: #ffe17a; }
+.app-shell .action-yellow:focus-visible { outline-color: #fff; }
 main { width: min(calc(100% - 2 * var(--gutter)), var(--content-width)); margin: 0 auto; padding: clamp(1.6rem, 4.5vw, 4rem) 0 4rem; }
 main:focus { outline: none; }
 a { color: var(--accent); }
