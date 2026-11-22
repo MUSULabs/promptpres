@@ -84,7 +84,7 @@ main.landing-main {
   align-items: center;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   gap: clamp(1rem, 4vw, 3.75rem);
-  padding: clamp(2rem, 5vw, 4.25rem) 0 clamp(2rem, 4vw, 3.5rem);
+  padding: clamp(2.5rem, 4.55vw, 4rem) 0 clamp(2.3rem, 4.25vw, 3.5rem);
 }
 
 .landing-copy {
@@ -101,9 +101,9 @@ main.landing-main {
 }
 
 .landing-copy h1 {
-  font-size: clamp(2.6rem, 5.55vw, 5.1rem);
+  font-size: clamp(3.15rem, 6.65vw, 6rem);
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.06;
   overflow-wrap: anywhere;
 }
 
@@ -116,13 +116,13 @@ main.landing-main {
 
 .landing-start {
   gap: .85rem;
-  min-height: 3.5rem;
-  min-width: min(10rem, 100%);
+  min-height: 4rem;
+  min-width: min(13.5rem, 100%);
   margin-top: 1.55rem;
   padding: .6rem 1.4rem;
   background: var(--pp-gold);
   color: var(--pp-ink);
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 600;
   text-decoration: none;
   text-underline-offset: .22em;
@@ -132,12 +132,12 @@ main.landing-main {
   text-decoration: underline;
 }
 
-.landing-art {
-  display: block;
-  width: 100%;
-  max-width: 36rem;
-  height: auto;
-  margin-inline: auto;
+.landing-mascot {
+  justify-self: center;
+  width: min(100%, 28rem);
+  aspect-ratio: 408 / 400;
+  background-color: var(--pp-white);
+  mask: url("../../design/mascot/ppre-default.svg?no-inline") center / contain no-repeat;
 }
 
 .landing-how {
@@ -194,15 +194,16 @@ main.landing-main {
 
 @media (max-width: 840px) {
   .landing-hero { grid-template-columns: minmax(0, 1fr); }
-  .landing-art { max-width: 25rem; }
+  .landing-mascot { max-width: 20rem; }
 }
 
 @media (max-width: 700px) {
   .landing-topbar { min-height: 4rem; }
   .landing-hero { gap: 1.35rem; padding-block: 1.85rem .7rem; }
-  .landing-copy h1 { font-size: clamp(2.45rem, 11vw, 4.65rem); }
+  .landing-copy h1 { font-size: clamp(2.45rem, 11vw, 4.65rem); line-height: 1.1; }
   .landing-copy p { margin-top: .9rem; }
-  .landing-start { width: 100%; min-height: 3.125rem; margin-top: 1.05rem; }
+  .landing-start { width: 100%; min-height: 3.125rem; margin-top: 1.05rem; font-size: 1.125rem; }
+  .landing-mascot { max-width: clamp(12rem, 60vw, 16rem); }
   .landing-steps { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
   .landing-steps li + li {
     border-inline-start: 0;
