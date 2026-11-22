@@ -4,10 +4,11 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { api } from "../api";
 import type { Criterion, TranscriptItem } from "../contract";
 import { CRITERION_NAME, SKILLS, fmtTime } from "../presentation";
-import type { MediaState, Seek } from "./ResultParts";
+import type { EvidencePoint, MediaState, Seek } from "./ResultParts";
 
-export function EventTimeline({ criteria, duration, video, media, seek }: {
-  criteria: Criterion[]; duration: number | null; video: RefObject<HTMLVideoElement>; media: MediaState; seek: Seek;
+export function EventTimeline({ criteria, duration, video, media, selection, seek }: {
+  criteria: Criterion[]; duration: number | null; video: RefObject<HTMLVideoElement>; media: MediaState;
+  selection: EvidencePoint | null; seek: Seek;
 }) {
   const timeline = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -32,7 +33,10 @@ export function EventTimeline({ criteria, duration, video, media, seek }: {
   if (total === 0) return null;
   return (
     <div ref={timeline} className="timeline" data-playing={media === "ready"} aria-label="แถบเวลาหลักฐานทุกเกณฑ์">
-      <p className="timeline-title">แถบเวลาหลักฐาน <span className="muted small">({total} จุด)</span></p>
+      <div className="timeline-heading">
+        <p className="timeline-title">แถบเวลาหลักฐาน <span className="muted small">({total} จุด)</span></p>
+        {selection && <p className="timeline-selection"><i aria-hidden="true" /> เลือก {fmtTime(selection.seconds)}</p>}
+      </div>
       {SKILLS.map((skill) => {
         const spans = skill.codes.flatMap((code) => (byCode[code]?.evidence ?? []).map((e) => ({ code, e })));
         return <div key={skill.key} className={`lane lane-${skill.key}`}>
@@ -43,13 +47,20 @@ export function EventTimeline({ criteria, duration, video, media, seek }: {
               const style = { left: pct(e.start_s), width: `max(6px, ${pct(e.end_s - e.start_s)})` };
               return media === "ready"
                 ? <button key={i} type="button" className="marker" style={style} title={`${label}${e.note ? ` — ${e.note}` : ""}`}
-                  aria-label={`ไปยังเวลา ${label}`} onClick={() => seek(e.start_s)} />
+                  aria-label={`ไปยังเวลา ${label}`} onClick={() => seek(e.start_s, code)} />
                 : <span key={i} className="marker" style={style} title={label} />;
             })}
+            {selection?.code && skill.codes.includes(selection.code) &&
+              <span className="timeline-pin" style={{ left: pct(selection.seconds) }} aria-hidden="true" />}
           </div>
         </div>;
       })}
-      <div className="timeline-scale muted small" aria-hidden="true"><span>0:00</span><span>{fmtTime(duration)}</span></div>
+      <div className="timeline-scale muted small" aria-hidden="true">
+        <span>0:00</span><span>{fmtTime(duration)}</span>
+        {selection && !selection.code && <span className="timeline-scale-pin">
+          <i className="timeline-pin" style={{ left: pct(selection.seconds) }} />
+        </span>}
+      </div>
     </div>
   );
 }

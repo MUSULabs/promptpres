@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { COVERAGE_LABEL, CRITERION_NAME, SKILLS, VALUE_LABEL, fmtTime } from "../presentation";
-import type { Criterion, CriterionMeta, Result, Skill, Topic } from "../contract";
+import type { CoachItem, Criterion, CriterionCode, CriterionMeta, Result, Skill, Topic } from "../contract";
 import { useSessionResult } from "../useSessionResult";
 import { Icon, Message, NotFound, PageHeading, Steps } from "../components/ui";
-import { CoachPanel, LevelBand, TimeChip, readCard, type MediaState, type Seek } from "../components/ResultParts";
+import { LevelBand, TimeChip, readCard, type EvidencePoint, type MediaState, type Seek } from "../components/ResultParts";
+import { CoachNotes, ResultCover } from "../components/ResultNotebook";
 import { EventTimeline, TranscriptBox } from "../components/ResultTrace";
 import SkillRadar from "../components/SkillRadar";
 import { DeltaBadge } from "../components/Trend";
 import { api } from "../api";
 import { levelOf, MIXED_RUBRIC_NOTE, previousRun } from "../trend";
 import type { SessionRow } from "../contract";
+import "./result-notebook.css";
 
 export default function ResultPage() {
   const { id = "" } = useParams();
@@ -29,9 +31,9 @@ function ResultView({ id }: { id: string }) {
   return (
     <section className="result-page">
       {res.status !== "done" && <Steps current={3} />}
-      <PageHeading title={waiting ? "สถานะการวิเคราะห์" : "ผลการซ้อม"}>
+      {res.status !== "done" && <PageHeading title={waiting ? "สถานะการวิเคราะห์" : "ผลการซ้อม"}>
         รอบซ้อมวันที่ <time dateTime={res.created_at}>{new Date(res.created_at).toLocaleString("th-TH")}</time>
-      </PageHeading>
+      </PageHeading>}
       {reconnecting && <Message>ติดต่อเซิร์ฟเวอร์ไม่ได้ กำลังลองใหม่…</Message>}
       {waiting && <AnalysisStatus result={res} now={now} />}
       {res.status === "failed" && (
@@ -92,11 +94,18 @@ function SessionPlayer({ url, video, onState }: {
   </>;
 }
 
+function notePoint(note?: CoachItem): EvidencePoint | null {
+  const seconds = note?.cite_s[0];
+  return seconds == null ? null : { seconds, code: note?.code ?? undefined };
+}
+
 function ResultDetails({ result, feedback, metadata }: {
   result: Result; feedback: Record<string, string>; metadata: ReturnType<typeof useSessionResult>["meta"];
 }) {
   const [filter, setFilter] = useState<Skill | "all">("all");
   const [media, setMedia] = useState<MediaState>(result.video_url ? "loading" : "unavailable");
+  const [note, setNote] = useState<CoachItem>();
+  const [selection, setSelection] = useState<EvidencePoint | null>();
   const video = useRef<HTMLVideoElement>(null);
   const [previous, setPrevious] = useState<SessionRow | null>(null);
   useEffect(() => {        // previous finished rehearsal (same rubric) for the delta badges; mocks have none
@@ -108,15 +117,24 @@ function ResultDetails({ result, feedback, metadata }: {
     return () => controller.abort();
   }, [result.session_id, result.versions.rubric]);
   const byCode = Object.fromEntries(result.criteria.map((c) => [c.code, c]));
+  const notes = result.coach?.status === "ok" ? result.coach.items : [];
+  const lead = notes.find((item) => item.kind === "focus") ?? notes.find((item) => item.kind === "plan");
+  const active = note ?? lead ?? notes[0];
   const times = [
     ["ความยาวคลิป", result.duration_s],
     ["ช่วงนำเสนอจริง", byCode.T1?.values.speech_span_s],
     ["เวลาเป้าหมาย", result.target_duration_s],
   ] as const;
 
-  function seek(seconds: number) {
+  function chooseNote(item: CoachItem) {
+    setNote(item);
+    setSelection(notePoint(item));
+  }
+
+  function seek(seconds: number, code?: CriterionCode) {
     const player = video.current;
     if (!player || player.readyState < 1) return;
+    setSelection({ seconds, code });
     player.currentTime = Math.max(0, Number.isFinite(player.duration) ? Math.min(seconds, player.duration) : seconds);
     void player.play().catch(() => undefined);
     player.scrollIntoView({
@@ -126,29 +144,31 @@ function ResultDetails({ result, feedback, metadata }: {
   }
 
   return (
-    <>
-      <div className="result-overview">
-        <dl className="result-times">
-          {times.map(([label, value]) => <div key={label}>
-            <dt>{label}</dt><dd>{value == null ? "—" : fmtTime(value)}</dd>
-          </div>)}
-        </dl>
-      </div>
-      <div className="result-workspace">
-        <CoachPanel coach={result.coach} media={media} seek={seek} />
-        <aside className="panel result-player" aria-labelledby="result-evidence">
-          <h2 id="result-evidence" tabIndex={-1}><Icon name="video" /> วิดีโอและหลักฐาน</h2>
-          {result.video_url ? <SessionPlayer url={result.video_url} video={video} onState={setMedia} />
-            : <Message>รอบนี้ไม่มีวิดีโอสำหรับเปิดดู</Message>}
-          <EventTimeline criteria={result.criteria} duration={result.duration_s} video={video} media={media} seek={seek} />
-          <TranscriptBox sessionId={result.session_id} video={video} media={media} seek={seek} />
-          <p className="muted">{media === "ready" ? "เลือกช่วงหลักฐานเพื่อไปยังจุดนั้นในวิดีโอ"
-            : media === "loading" ? "รอวิดีโอพร้อมก่อนกระโดดไปยังหลักฐาน" : "ยังอ่านช่วงหลักฐานได้ แต่ไม่สามารถกระโดดเวลาได้"}</p>
-          <p className="muted small">รูบริก {result.versions.rubric ?? "—"} / ค่าตั้ง {result.versions.config ?? "—"}</p>
-        </aside>
-        <div className="result-content">
-          <div className="section-heading"><h2 id="result-criteria" tabIndex={-1}>ผลรายเกณฑ์</h2><span className="muted small">{result.criteria.length} เกณฑ์</span></div>
-          <p className="muted small">ระดับที่แสดงเป็นผลของแต่ละเกณฑ์</p>
+    <div className="notebook-result">
+      <ResultCover result={result} lead={lead} times={times} />
+      <div className="notebook-frame notebook-body">
+        <section aria-labelledby="result-review">
+          <div className="review-heading">
+            <h2 id="result-review" tabIndex={-1}>สมุดทบทวน</h2>
+            <a href="#result-criteria">ดูผลทั้ง 8 เกณฑ์ <Icon name="chevronDown" /></a>
+          </div>
+          <div className="notebook-spread">
+            <CoachNotes notes={notes} active={active} select={chooseNote} media={media} seek={seek} />
+            <section className="notebook-player" aria-labelledby="result-evidence">
+              <h3 id="result-evidence" tabIndex={-1}><Icon name="video" /> วิดีโอและหลักฐาน</h3>
+              {result.video_url ? <SessionPlayer url={result.video_url} video={video} onState={setMedia} />
+                : <Message>รอบนี้ไม่มีวิดีโอสำหรับเปิดดู</Message>}
+              <EventTimeline criteria={result.criteria} duration={result.duration_s} video={video} media={media}
+                selection={selection === undefined ? notePoint(active) : selection} seek={seek} />
+              <TranscriptBox sessionId={result.session_id} video={video} media={media} seek={seek} />
+            </section>
+          </div>
+        </section>
+        <section className="notebook-criteria" aria-labelledby="result-criteria">
+          <div className="review-heading">
+            <h2 id="result-criteria" tabIndex={-1}>ผลรายเกณฑ์</h2>
+            <p className="muted small">รูบริก {result.versions.rubric ?? "—"} / ค่าตั้ง {result.versions.config ?? "—"}</p>
+          </div>
           {previous && previous.rubric_version !== result.versions.rubric &&
             <p className="muted small cross-version-note">{MIXED_RUBRIC_NOTE}</p>}
           <details className="disclosure radar-disclosure">
@@ -173,9 +193,9 @@ function ResultDetails({ result, feedback, metadata }: {
               </div>
             </section>
           ))}
-        </div>
+        </section>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -218,7 +238,7 @@ function Card({ c, feedback, meta, before, topics, media, seek, crossVersion }: 
       {c.evidence.length > 0 && <div className="evidence">
         <h5>ช่วงเวลาหลักฐาน</h5>
         <ul>{c.evidence.map((e, i) => <li key={i}>
-          <TimeChip start={e.start_s} end={e.end_s} media={media} seek={seek} />
+          <TimeChip start={e.start_s} end={e.end_s} media={media} seek={(seconds) => seek(seconds, c.code)} />
           {(e.label || e.note) && <span>{e.label || e.note}</span>}
         </li>)}</ul>
       </div>}
@@ -245,7 +265,8 @@ function CoverageTable({ topics, media, seek }: { topics: Topic[]; media: MediaS
           <td role="cell"><span className="topic-number">{t.order}</span> <strong>{t.title}</strong></td>
           <td role="cell"><span className={`cov ${t.coverage}`}>{COVERAGE_LABEL[t.coverage]}</span></td>
           <td role="cell" className="quote">{t.evidence_quote ? <q>{t.evidence_quote}</q> : "—"}</td>
-          <td role="cell">{t.first_mention_s != null ? <TimeChip start={t.first_mention_s} media={media} seek={seek} /> : "—"}</td>
+          <td role="cell">{t.first_mention_s != null ? <TimeChip start={t.first_mention_s} media={media}
+            seek={(seconds) => seek(seconds, "C2")} /> : "—"}</td>
         </tr>)}
       </tbody>
     </table>

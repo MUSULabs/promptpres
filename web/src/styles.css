@@ -219,16 +219,6 @@ progress { width: 100%; height: .8rem; accent-color: var(--accent); }
 .analysis-flow li:has(.icon) { border-color: var(--ready); color: var(--ready); }
 .analysis-flow li[aria-current] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .failure-state .state-icon { background: var(--error-bg); color: var(--error); }
-.result-overview { margin-bottom: 1.45rem; }
-.result-times { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 39rem; padding-block: .65rem; border-block: 1px solid var(--line); }
-.result-times > div { padding-inline: .9rem; }
-.result-times > div:first-child { padding-inline-start: 0; }
-.result-times > div + div { border-inline-start: 1px solid var(--line); }
-.result-times dd { font-size: clamp(1rem, 1.8vw, 1.35rem); }
-.result-workspace { display: grid; grid-template: "player coach" auto "player criteria" 1fr / minmax(0, 1.2fr) minmax(0, 1fr); gap: 1.5rem clamp(1.25rem, 3vw, 2.25rem); align-items: start; }
-.result-player { grid-area: player; margin: 0; padding: 0; background: transparent; border: 0; }
-.result-player .video { aspect-ratio: 16 / 9; max-height: 58vh; object-fit: contain; }
-.result-content { grid-area: criteria; min-width: 0; }
 .radar-disclosure { margin-top: .85rem; }
 #result-evidence, #result-criteria, #topics-heading { scroll-margin-top: 1rem; }
 .filter-bar { margin-top: .65rem; }
@@ -335,22 +325,6 @@ span.marker { cursor: default; }
 .template-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
 .template-option { display: grid; justify-content: start; gap: .1rem; height: auto; padding: .6rem .7rem; text-align: left; white-space: normal; }
 
-/* D-046 layer 3: AI coach */
-.coach { grid-area: coach; gap: .8rem; margin: 0; border-top: 3px solid var(--accent); }
-.coach-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .4rem; }
-.coach-lead { display: grid; gap: .25rem; overflow-wrap: anywhere; }
-.coach-lead > strong { font-size: 1.04rem; font-weight: 600; }
-.coach-code { color: var(--accent); margin-inline-end: .25rem; }
-.result-jump-links { gap: .3rem .75rem; }
-.result-jump-links .button, .coach-link { font-size: .9rem; }
-.coach-link { display: inline-flex; align-items: center; min-height: var(--target-size); font-weight: 500; text-underline-offset: .2em; }
-.coach-more { border-inline: 0; border-bottom: 0; border-radius: 0; }
-.coach-more > summary { padding-inline: 0; }
-.coach-group { display: grid; align-content: start; gap: .4rem; }
-.coach-group h3 { font-size: .98rem; }
-.coach-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: .85rem; padding: .8rem; }
-.coach-group ul { display: grid; gap: .45rem; padding-left: 1.1rem; margin: 0; overflow-wrap: anywhere; }
-.coach-time { min-height: 2rem; padding: .15rem .45rem; margin-inline: .12rem; border-color: var(--accent); background: var(--panel); vertical-align: baseline; }
 .small { font-size: .82rem; }
 
 .account-menu { grid-column: 3; justify-self: end; position: relative; min-width: 0; font-size: .9rem; }
@@ -394,13 +368,6 @@ span.marker { cursor: default; }
 .preview-note p { color: var(--muted); font-size: .85rem; }
 .preview-code { color: var(--accent); background: var(--tint); border-radius: 4px; font-weight: 600; font-size: .76rem; padding: .12rem .35rem; }
 
-/* Keep playback alongside the criteria on tall workspaces. */
-@media (min-width: 901px) and (min-height: 820px) {
-  .result-player { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; padding: .2rem; margin: -.2rem; }
-}
-@media (max-width: 900px) {
-  .result-workspace { grid-template: "coach" "player" "criteria" / minmax(0, 1fr); }
-}
 @media (max-width: 700px) {
   .grid2, .upload-workspace, .history-empty, .practice-setup { grid-template-columns: minmax(0, 1fr); }
   .grid2 { gap: .35rem; }
@@ -410,8 +377,6 @@ span.marker { cursor: default; }
   .session-details dt { font-size: .75rem; }
   .session-details dd { font-size: .9rem; }
   .session-open { padding-inline-start: .25rem; font-size: .83rem; }
-  .result-times > div { padding-inline: .55rem; }
-  .result-times dt { font-size: .78rem; }
   .setup-intro { padding: 0; }
   .setup-panel, .topics-panel { grid-column: 1; }
   .login-layout { grid-template: "intro" "account" "example" / minmax(0, 1fr); max-width: 31rem; }

@@ -240,8 +240,9 @@ async function rewind(page: Page) {
 test("coach times, timeline markers and transcript phrases seek the video", async ({ page, request }) => {
   const id = await finishedRound(request);
   await page.goto(`/sessions/${id}`);
-  const coach = page.getByRole("region", { name: "สิ่งที่ควรฝึกต่อ" });
+  const coach = page.getByRole("region", { name: "โน้ตจากโค้ช" });
   const coachTimes = coach.getByRole("button", { name: "ไปยังเวลา 0:02 ที่โค้ชอ้าง" });
+  const timeline = page.getByLabel("แถบเวลาหลักฐานทุกเกณฑ์");
   await expect(coachTimes).toHaveCount(1);
   await expect(coach).toContainText("มือนิ่งค้างที่");
 
@@ -249,13 +250,20 @@ test("coach times, timeline markers and transcript phrases seek the video", asyn
   await coachTimes.click();
   await expect.poll(now).toBeGreaterThanOrEqual(2);
 
-  await coach.getByText("ดูคำแนะนำที่เหลือ", { exact: true }).click();
   await expect(coach.getByText("จุดที่ทำได้ดี", { exact: true })).toBeVisible();
   await expect(coach.getByText("แผนฝึกซ้อมรอบถัดไป", { exact: true })).toBeVisible();
-  await expect(coachTimes).toHaveCount(2);   // [0:02] and [00:02]
+  const pauseNote = coach.getByRole("button", { name: /การหยุดพูดยาว/ });
+  now = await rewind(page);
+  await pauseNote.press("Enter");
+  await expect(pauseNote).toHaveAttribute("aria-pressed", "true");
+  await expect(coach.locator(".note-text")).toBeFocused();
+  await expect(coach).toContainText("หยุดเงียบที่");
+  await expect(timeline.locator(".lane-speech .timeline-pin")).toBeVisible();
+  expect(await now()).toBe(0);
+  await coachTimes.press("Enter");   // [00:02] and [0:02] render the same label
+  await expect.poll(now).toBeGreaterThanOrEqual(2);
 
   now = await rewind(page);
-  const timeline = page.getByLabel("แถบเวลาหลักฐานทุกเกณฑ์");
   await expect(timeline).toHaveAttribute("data-playing", "true");
   // fixture: every span is 2-3 s, so speech-lane markers overlap; the last one drawn (S3) is on top
   await timeline.getByRole("button", { name: /ไปยังเวลา 0:02\.0 \(S3/ }).last().click();
