@@ -23,7 +23,7 @@ modal run deploy_modal.py::download_models
 
 ```powershell
 $PT_DIRECT = (Read-Host 'Modal web URL').TrimEnd('/')
-& ./tools/set_modal_secret.ps1 -Origin https://promptpres.vercel.app -DirectOrigin $PT_DIRECT -Replace
+& ./tools/set_modal_secret.ps1 -Origin "https://www.promptpres.app,https://promptpres.app,https://promptpres.vercel.app" -DirectOrigin $PT_DIRECT -Replace
 modal deploy deploy_modal.py
 Push-Location web
 npm ci
@@ -38,6 +38,8 @@ python deploy_smoke.py https://promptpres.vercel.app --direct $PT_DIRECT
 D-065: โปรเจกต์ Vercel เชื่อม GitHub `MUSULabs/promptpres` (Root Directory = `web`) ทุก push ขึ้น `main` deploy ขึ้น Production เอง · `web/vercel.json` ติดตั้งด้วย `npm ci` (Vite รุ่นใน `package-lock.json`) และ build ด้วย `npx --no-install vite build` (ไม่ดาวน์โหลด Vite รุ่นอื่น; `tsc` ตรวจใน CI เพราะอ่าน `contracts/` นอก `web/`) · `web/.vercelignore` เป็นรายการไฟล์ที่ไม่ส่งเท่านั้น ห้ามใช้รูปแบบ `/*` แล้วยกเว้นทีละไฟล์ เพราะ Git deployment อ่านไฟล์นี้จากรากของ repo จึงลบ `web/` ทั้งโฟลเดอร์ ดูผล build ด้วย `vercel ls promptpres` และ `vercel inspect <url> --logs`
 
 ใช้ `vercel deploy --prebuilt` เพื่อส่งเฉพาะไฟล์ที่ build แล้ว (ไม่ส่ง `.env` หรือ `data/`) หากเพิ่มโดเมนอื่นในภายหลัง ให้ใส่เป็นรายการคั่นด้วยจุลภาคใน `-Origin` โดยรายการแรกเป็นที่อยู่หลัก ทุกรายการผ่านการตรวจ Origin และ CORS
+
+โดเมนจริง (23 พ.ย. 2569): `promptpres.app` บน Vercel ส่งต่อ (308) ไป `https://www.promptpres.app` เบราว์เซอร์จึงส่ง Origin เป็น `www` · ต้องมีครบทั้ง `https://www.promptpres.app`, `https://promptpres.app` และ `https://promptpres.vercel.app` ใน `-Origin` ไม่อย่างนั้นการเข้าสู่ระบบและทุกคำขอเขียนจะได้ 403 "คำขอต้องมาจากหน้าเว็บ PromptPre's" · เปลี่ยน secret แล้วต้อง `modal deploy deploy_modal.py` เพื่อให้เครื่องที่รันอยู่ได้ค่าใหม่
 
 งานประจำ `maintain` (ทุก 15 นาที) ปลุกฐานข้อมูล (`SELECT 1` กัน Supabase Free หยุดหลังไม่ใช้ 7 วัน) ซ่อมคิวที่ค้าง และลบวิดีโอตามระยะเก็บใน `config/storage-v0.yaml`: Guest 7 วัน บัญชีสมาชิก 30 วัน ไฟล์ดิบที่วิเคราะห์ไม่สำเร็จ 1 วัน ผลวิเคราะห์ (`result_json`) เก็บถาวร ดูสถานะด้วย `modal app logs promptpres` และ `modal volume ls promptpres-media runs` · D-063: `maintain` ใช้ CPU 0.25 หน่วยความจำ 256 MiB ไม่ปักภูมิภาค และปิดเครื่อง 2 วินาทีหลังทำเสร็จ (ค่าเฉลี่ยตอนไม่มีผู้ใช้เดิม ≈ 0.0016 USD/ชั่วโมง เกือบทั้งหมดเป็นเวลาว่าง 60 วินาทีของงานนี้) ดูค่าใช้จ่ายรายชั่วโมงด้วย `modal billing report --for today -r h --show-resources`
 
