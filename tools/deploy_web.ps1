@@ -1,6 +1,7 @@
 # Deploy the web app to Vercel production from this machine (23 Nov 2026).
 #   ./tools/deploy_web.ps1
-# Why: MUSULabs/promptpres is a private organization repository, and the Vercel Hobby plan refuses Git
+# Fallback only: since 23 Nov 2026 the repository is public and Vercel deploys from GitHub on every push to main.
+# Why it exists: while MUSULabs/promptpres was a private organization repository, and the Vercel Hobby plan refuses Git
 # deployments from it ("Cannot deploy from a private GitHub organization repository on the Hobby plan").
 # `vercel build` cannot run here either (Windows blocks the symlinks it creates), so Vercel builds remotely
 # exactly as a Git deployment would (Root Directory = web, web/vercel.json).
