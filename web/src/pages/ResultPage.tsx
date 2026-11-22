@@ -5,7 +5,7 @@ import type { CoachItem, Criterion, CriterionCode, CriterionMeta, Result, Skill,
 import { useSessionResult } from "../useSessionResult";
 import { Icon, Message, NotFound, PageHeading, Steps } from "../components/ui";
 import { LevelBand, TimeChip, readCard, type EvidencePoint, type MediaState, type Seek } from "../components/ResultParts";
-import { CoachNotes, ResultCover } from "../components/ResultNotebook";
+import { CoachNotes, NextPractice, ResultCover } from "../components/ResultNotebook";
 import { EventTimeline, TranscriptBox } from "../components/ResultTrace";
 import SkillRadar from "../components/SkillRadar";
 import { DeltaBadge } from "../components/Trend";
@@ -81,7 +81,14 @@ function SessionPlayer({ url, video, onState }: {
     const timer = setTimeout(() => { setWaiting(false); setAttempt((n) => n + 1); }, PLAYER_RETRY_MS[attempt]);
     return () => clearTimeout(timer);
   }, [waiting, attempt]);
-  if (failed) return <Message>เปิดวิดีโอของรอบนี้ไม่ได้ คุณยังอ่านผลรายเกณฑ์และข้อเสนอแนะได้</Message>;
+  if (failed) return <div className="media-fallback">
+    <Message>เปิดวิดีโอของรอบนี้ไม่ได้ คุณยังอ่านเวลาในหลักฐานและข้อเสนอแนะได้</Message>
+    <button className="ghost fit" onClick={() => {
+      setAttempt(0);
+      setFailed(false);
+      onState?.("loading");
+    }}><Icon name="refresh" /> ลองเปิดวิดีโออีกครั้ง</button>
+  </div>;
   const src = attempt ? `${url}${url.includes("?") ? "&" : "?"}retry=${attempt}` : url;
   return <>
     {waiting && <Message>กำลังลองเปิดวิดีโออีกครั้ง…</Message>}
@@ -118,8 +125,10 @@ function ResultDetails({ result, feedback, metadata }: {
   }, [result.session_id, result.versions.rubric]);
   const byCode = Object.fromEntries(result.criteria.map((c) => [c.code, c]));
   const notes = result.coach?.status === "ok" ? result.coach.items : [];
-  const lead = notes.find((item) => item.kind === "focus") ?? notes.find((item) => item.kind === "plan");
-  const active = note ?? lead ?? notes[0];
+  const strengths = notes.filter((item) => item.kind === "strength");
+  const focus = notes.filter((item) => item.kind === "focus");
+  const plans = notes.filter((item) => item.kind === "plan");
+  const active = note ?? focus[0] ?? strengths[0];
   const times = [
     ["ความยาวคลิป", result.duration_s],
     ["ช่วงนำเสนอจริง", byCode.T1?.values.speech_span_s],
@@ -145,25 +154,34 @@ function ResultDetails({ result, feedback, metadata }: {
 
   return (
     <div className="notebook-result">
-      <ResultCover result={result} lead={lead} times={times} />
+      <ResultCover result={result} times={times} />
       <div className="notebook-frame notebook-body">
         <section aria-labelledby="result-review">
           <div className="review-heading">
-            <h2 id="result-review" tabIndex={-1}>สมุดทบทวน</h2>
+            <h2 id="result-review" tabIndex={-1}>ทบทวนการซ้อม</h2>
             <a href="#result-criteria">ดูผลทั้ง 8 เกณฑ์ <Icon name="chevronDown" /></a>
           </div>
           <div className="notebook-spread">
-            <CoachNotes notes={notes} active={active} select={chooseNote} media={media} seek={seek} />
-            <section className="notebook-player" aria-labelledby="result-evidence">
-              <h3 id="result-evidence" tabIndex={-1}><Icon name="video" /> วิดีโอและหลักฐาน</h3>
+            <CoachNotes kind="strength" notes={strengths} active={active} select={chooseNote} media={media} seek={seek} />
+            <CoachNotes kind="focus" notes={focus} active={active} select={chooseNote} media={media} seek={seek} />
+          </div>
+        </section>
+        <section className="notebook-player panel" aria-labelledby="result-evidence">
+          <h2 id="result-evidence" tabIndex={-1}><Icon name="video" /> วิดีโอและหลักฐาน</h2>
+          <div className="notebook-evidence-grid">
+            <div>
               {result.video_url ? <SessionPlayer url={result.video_url} video={video} onState={setMedia} />
-                : <Message>รอบนี้ไม่มีวิดีโอสำหรับเปิดดู</Message>}
+                : <Message>รอบนี้ไม่มีวิดีโอสำหรับเปิดดู คุณยังอ่านเวลาในหลักฐานและข้อเสนอแนะได้</Message>}
+            </div>
+            <div className="notebook-trace">
               <EventTimeline criteria={result.criteria} duration={result.duration_s} video={video} media={media}
                 selection={selection === undefined ? notePoint(active) : selection} seek={seek} />
               <TranscriptBox sessionId={result.session_id} video={video} media={media} seek={seek} />
-            </section>
+            </div>
           </div>
         </section>
+        <NextPractice plans={plans} media={media} seek={seek}
+          hasAvailableResults={result.criteria.some((criterion) => criterion.status === "ok")} />
         <section className="notebook-criteria" aria-labelledby="result-criteria">
           <div className="review-heading">
             <h2 id="result-criteria" tabIndex={-1}>ผลรายเกณฑ์</h2>

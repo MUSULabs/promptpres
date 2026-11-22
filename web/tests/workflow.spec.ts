@@ -164,6 +164,8 @@ test("partial C2 does not display coverage labels from stored topic rows", async
   expect((await request.post(`/browser-test/${id}/processing`)).ok()).toBeTruthy();
   expect((await request.post(`/browser-test/${id}/partial`)).ok()).toBeTruthy();
   await page.goto(`/sessions/${id}`);
+  await expect(page.getByText("มีผลบางเกณฑ์")).toBeVisible();
+  await expect(page.getByText("วิเคราะห์ได้ 7 จาก 8 เกณฑ์")).toBeVisible();
   await expect(page.locator('.card[data-criterion="C2"]')).toContainText("วิเคราะห์ไม่ได้");
   await expect(page.getByRole("table", { name: "หัวข้อตามแผน" })).toHaveCount(0);
   await expect(page.getByText("ไม่พูดถึง", { exact: true })).toHaveCount(0);
@@ -255,16 +257,17 @@ test("result keeps criteria and readable evidence when the coach and video are u
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/sessions/${id}`);
-  const coach = page.getByRole("region", { name: "สิ่งที่ควรฝึกต่อ" });
-  await expect(coach.getByText("AI Coach", { exact: true })).toHaveCount(0);
-  await expect(coach).toContainText("เปิดข้อเสนอแนะรายเกณฑ์");
-  await coach.getByRole("link", { name: "ดูผลทั้ง 8 เกณฑ์" }).press("Enter");
+  const coach = page.getByRole("region", { name: "สิ่งที่ควรปรับ" });
+  await expect(coach).toContainText("รอบนี้ไม่มีสรุปจุดที่ควรปรับจากโค้ช");
+  await coach.getByRole("link", { name: "เปิดข้อเสนอแนะรายเกณฑ์" }).press("Enter");
   await expect(page).toHaveURL(/#result-criteria$/);
   await expect(page.getByRole("heading", { name: "ผลรายเกณฑ์" })).toBeFocused();
   await expect(page.getByText("รอบนี้ไม่มีวิดีโอสำหรับเปิดดู")).toBeVisible();
   await expect(page.locator(".card")).toHaveCount(8);
   await expect(page.locator(".evidence .time-unavailable").first()).toContainText("0:02.0 – 0:03.0");
   await expect(page.getByRole("button", { name: /ไปยังเวลา/ })).toHaveCount(0);
+  await page.getByRole("link", { name: "เริ่มซ้อมอีกครั้ง" }).press("Enter");
+  await expect(page).toHaveURL("/new");
 });
 
 async function rewind(page: Page) {
@@ -276,27 +279,28 @@ async function rewind(page: Page) {
 test("coach times, timeline markers and transcript phrases seek the video", async ({ page, request }) => {
   const id = await finishedRound(request);
   await page.goto(`/sessions/${id}`);
-  const coach = page.getByRole("region", { name: "โน้ตจากโค้ช" });
-  const coachTimes = coach.getByRole("button", { name: "ไปยังเวลา 0:02 ที่โค้ชอ้าง" });
+  const coach = page.getByRole("region", { name: "สิ่งที่ควรปรับ" });
+  const handNote = coach.getByRole("listitem").filter({ hasText: "มือนิ่งค้างที่" });
+  const pauseItem = coach.getByRole("listitem").filter({ hasText: "หยุดเงียบที่" });
   const timeline = page.getByLabel("แถบเวลาหลักฐานทุกเกณฑ์");
-  await expect(coachTimes).toHaveCount(1);
+  await expect(coach.getByRole("button", { name: "ไปยังเวลา 0:02 ที่โค้ชอ้าง" })).toHaveCount(2);
   await expect(coach).toContainText("มือนิ่งค้างที่");
 
   let now = await rewind(page);
-  await coachTimes.click();
+  await handNote.getByRole("button", { name: "ไปยังเวลา 0:02 ที่โค้ชอ้าง" }).click();
   await expect.poll(now).toBeGreaterThanOrEqual(2);
 
-  await expect(coach.getByText("จุดที่ทำได้ดี", { exact: true })).toBeVisible();
-  await expect(coach.getByText("แผนฝึกซ้อมรอบถัดไป", { exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "สิ่งที่ทำได้ดี" })).toContainText("ความเร็วการพูดอยู่ในช่วงแนะนำตลอด");
+  await expect(page.getByRole("region", { name: "เป้าหมายรอบถัดไป" })).toContainText("ซ้อมช่วงเปลี่ยนหัวข้ออีก 2 รอบ");
   const pauseNote = coach.getByRole("button", { name: /การหยุดพูดยาว/ });
   now = await rewind(page);
   await pauseNote.press("Enter");
   await expect(pauseNote).toHaveAttribute("aria-pressed", "true");
-  await expect(coach.locator(".note-text")).toBeFocused();
+  await expect(pauseItem.locator(".note-text")).toBeFocused();
   await expect(coach).toContainText("หยุดเงียบที่");
   await expect(timeline.locator(".lane-speech .timeline-pin")).toBeVisible();
   expect(await now()).toBe(0);
-  await coachTimes.press("Enter");   // [00:02] and [0:02] render the same label
+  await pauseItem.getByRole("button", { name: "ไปยังเวลา 0:02 ที่โค้ชอ้าง" }).press("Enter");
   await expect.poll(now).toBeGreaterThanOrEqual(2);
 
   now = await rewind(page);
