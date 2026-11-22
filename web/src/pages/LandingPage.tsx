@@ -1,14 +1,11 @@
+import { useRef } from "react";
 import { Link } from "react-router-dom";
 import ppreDefault from "../../design/mascot/ppre-default.svg?no-inline";
 import whiteLogo from "../assets/brand/horizontal-white.svg";
 import { Icon } from "../components/ui";
+import LandingStory from "./LandingStory";
+import { useLandingMotion } from "./useLandingMotion";
 import "./landing.css";
-
-const steps = [
-  { icon: "video", title: "อัดหรืออัปโหลด", detail: "อัดผ่านกล้องบนเว็บ หรือส่งคลิปที่ซ้อมไว้แล้ว" },
-  { icon: "play", title: "ย้อนดูผล", detail: "อ่านคำแนะนำหลังระบบวิเคราะห์ แล้วกดดูช่วงที่มีหลักฐาน" },
-  { icon: "refresh", title: "ซ้อมอีกครั้ง", detail: "เลือกเรื่องที่อยากปรับ แล้วลองซ้อมใหม่" },
-] as const;
 
 export function LandingHeader() {
   return (
@@ -27,31 +24,29 @@ export function LandingHeader() {
 }
 
 export default function LandingPage() {
+  const landing = useRef<HTMLDivElement>(null);
+  useLandingMotion(landing);
+
   return (
-    <div className="landing-container">
-      <section className="landing-hero" aria-labelledby="landing-title">
+    <div ref={landing}>
+      <section className="landing-container landing-hero" aria-labelledby="landing-title">
         <div className="landing-copy">
           <svg className="landing-emphasis" viewBox="0 0 63 41" aria-hidden="true" focusable="false">
             <path d="m5 30 14 6M19 13l12 14M41 5l4 17" fill="none"
               stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
           </svg>
-          <h1 id="landing-title">ซ้อมก่อน<br />พรีเซนต์จริง</h1>
+          <h1 id="landing-title">
+            <span className="landing-title-first">ซ้อมก่อน</span>{" "}
+            <span className="landing-title-second">พรีเซนต์จริง</span>
+          </h1>
           <p>อัดวิดีโอซ้อมนำเสนอผ่านเว็บ<br />แล้วดูผลและคำแนะนำสำหรับรอบต่อไป</p>
-          <Link className="landing-start" to="/new">เริ่มซ้อม <Icon name="arrow" /></Link>
+          <Link className="landing-start" to="/new">
+            <span className="landing-start-content">เริ่มซ้อม <Icon name="arrow" /></span>
+          </Link>
         </div>
         <RehearsalIllustration />
       </section>
-      <section className="landing-how" id="how-to-practice" tabIndex={-1} aria-labelledby="landing-how-title">
-        <h2 id="landing-how-title">วิธีใช้งาน</h2>
-        <ol className="landing-steps">
-          {steps.map(({ icon, title, detail }) => (
-            <li key={icon}>
-              <span className="landing-step-icon"><Icon name={icon} /></span>
-              <div><h3>{title}</h3><p>{detail}</p></div>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <LandingStory />
     </div>
   );
 }
@@ -68,7 +63,7 @@ function RehearsalIllustration() {
           <feMerge><feMergeNode in="backing" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
       </defs>
-      <g transform="rotate(-7 227 177)">
+      <g className="landing-depth landing-depth-video"><g className="landing-arrive-video"><g transform="rotate(-7 227 177)">
         <rect x="22" y="65" width="429" height="240" rx="21" fill="var(--pp-white)" />
         <path d="M28 108V86a15 15 0 0 1 15-15h387a15 15 0 0 1 15 15v22Z" fill="var(--pp-blue)" />
         <g fill="var(--pp-white)">
@@ -87,8 +82,8 @@ function RehearsalIllustration() {
         <path d="M48 282h376" stroke="var(--pp-line)" strokeWidth="8" strokeLinecap="round" />
         <path d="M48 282h104" stroke="var(--landing-gold)" strokeWidth="8" strokeLinecap="round" />
         <circle cx="152" cy="282" r="6.5" fill="var(--landing-gold)" stroke="var(--pp-blue)" strokeWidth="3" />
-      </g>
-      <g transform="rotate(7 436 89)">
+      </g></g></g>
+      <g className="landing-depth landing-depth-checklist"><g className="landing-arrive-checklist"><g transform="rotate(7 436 89)">
         <path d="M364 24h148a16 16 0 0 1 16 16v90a16 16 0 0 1-16 16h-37l-23 19v-19h-88a16 16 0 0 1-16-16V40a16 16 0 0 1 16-16Z"
           fill="var(--pp-white)" stroke="var(--pp-blue)" strokeWidth="3" strokeLinejoin="round" />
         <g fill="var(--landing-gold)">
@@ -99,14 +94,16 @@ function RehearsalIllustration() {
           stroke="var(--pp-blue)" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M413 52h93m-93 48h93" stroke="var(--pp-muted)" strokeWidth="5" strokeLinecap="round" />
         <path d="M413 66h65m-65 48h65" stroke="var(--pp-line)" strokeWidth="5" strokeLinecap="round" />
-      </g>
+      </g></g></g>
       <ellipse cx="356" cy="383" rx="118" ry="13" fill="var(--pp-line)" />
-      <g transform="translate(224 130) scale(.66)">
+      <g className="landing-depth landing-depth-mascot"><g className="landing-arrive-mascot"><g className="landing-greet"><g transform="translate(224 130) scale(.66)">
         <rect x="149" y="125" width="99" height="115" rx="20" fill="var(--pp-white)" />
         <image href={ppreDefault} width="408" height="400" filter="url(#landing-mascot-edge)" />
+      </g></g></g></g>
+      <g className="landing-depth landing-depth-accent">
+        <path className="landing-arrive-accent" d="m479 219 7-17m6 29 19-10m-13 24 18 1" fill="none"
+          stroke="var(--landing-gold)" strokeWidth="7" strokeLinecap="round" />
       </g>
-      <path d="m479 219 7-17m6 29 19-10m-13 24 18 1" fill="none"
-        stroke="var(--landing-gold)" strokeWidth="7" strokeLinecap="round" />
     </svg>
   );
 }

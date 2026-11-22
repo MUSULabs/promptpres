@@ -45,6 +45,35 @@ test("the landing is public but rehearsal routes and API still require an accoun
   }
 });
 
+test("landing motion keeps the start action available and follows reduced motion", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const headline = page.locator(".landing-title-second");
+  await expect(headline).toHaveCSS("animation-name", "landing-title-in");
+  const start = page.locator(".landing-hero").getByRole("link", { name: "เริ่มซ้อม" });
+  await start.click();
+  await expect(page).toHaveURL(url => url.pathname === "/login" && url.searchParams.get("next") === "/new");
+
+  await page.goto("/");
+  const stage = page.locator(".landing-story-stage");
+  await expect(stage).toHaveCSS("position", "sticky");
+  for (const chapter of ["record", "review", "improve", "repeat"]) {
+    await page.locator(`[data-landing-chapter="${chapter}"]`).evaluate(el => el.scrollIntoView({ block: "center" }));
+    await expect(stage).toHaveAttribute("data-chapter", chapter);
+  }
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(headline).toHaveCSS("animation-name", "none");
+  await expect(stage).toBeHidden();
+  const art = await page.locator(".landing-story-inline").all();
+  expect(art).toHaveLength(4);
+  for (const item of art) {
+    await expect(item).toBeVisible();
+    await expect(item).toHaveCSS("animation-name", "none");
+  }
+});
+
 test("Guest button opens the app and a rehearsal can be analysed", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
@@ -52,7 +81,7 @@ test("Guest button opens the app and a rehearsal can be analysed", async ({ page
   await instructions.press("Enter");
   await expect(page).toHaveURL(/#how-to-practice$/);
   await expect(page.getByRole("region", { name: "วิธีใช้งาน" })).toBeFocused();
-  const start = page.getByRole("link", { name: "เริ่มซ้อม" });
+  const start = page.locator(".landing-hero").getByRole("link", { name: "เริ่มซ้อม" });
   expect((await start.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   await start.press("Enter");
   await expect(page).toHaveURL((url) => url.pathname === "/login" && url.searchParams.get("next") === "/new");

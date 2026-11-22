@@ -23,11 +23,12 @@ function AppShell() {
   const { state } = useAuth();
   const atEntry = pathname === "/";
   const landing = atEntry && state?.required === true && !state.user;
+  const checkingEntry = atEntry && !state;
 
   return (
-    <div className={landing ? "pp-v1" : undefined}>
+    <div className={landing ? "pp-v1" : undefined} data-entry-pending={checkingEntry ? "" : undefined}>
       <a className="skip-link" href="#main-content">ข้ามไปเนื้อหาหลัก</a>
-      {landing ? <LandingHeader /> : <SiteHeader checkingEntry={atEntry && !state} />}
+      {landing ? <LandingHeader /> : <SiteHeader checkingEntry={checkingEntry} />}
       <AppRoutes landing={landing} />
     </div>
   );
