@@ -21,11 +21,14 @@ export default function ResultPage() {
 }
 
 function ResultView({ id }: { id: string }) {
-  const { res, fb, meta, err, reconnecting, now } = useSessionResult(id);
+  const { res, fb, meta, metaStatus, retryMeta, err, retry, reconnecting, now } = useSessionResult(id);
 
   if (err?.status === 404) return <NotFound message="ไม่พบรอบซ้อมนี้" />;
   if (err?.status === 409) return <Message>{err.message} — <Link to={`/sessions/${id}/video`}>ไปขั้นวิดีโอ</Link></Message>;
-  if (err) return <Message kind="error">โหลดผลไม่ได้: {err.message}</Message>;
+  if (err) return <div className="result-load-error">
+    <Message kind="error">โหลดผลไม่ได้: {err.message}</Message>
+    <button className="ghost fit" onClick={retry}><Icon name="refresh" /> ลองใหม่</button>
+  </div>;
   if (!res) return <Message>{reconnecting ? "ติดต่อเซิร์ฟเวอร์ไม่ได้ กำลังลองใหม่…" : "กำลังโหลดผลการซ้อม…"}</Message>;
 
   const waiting = res.status === "queued" || res.status === "processing";
@@ -46,7 +49,8 @@ function ResultView({ id }: { id: string }) {
           {res.video_url && <SessionPlayer url={res.video_url} />}
         </div>
       )}
-      {res.status === "done" && <ResultDetails result={res} feedback={fb} metadata={meta} />}
+      {res.status === "done" && <ResultDetails result={res} feedback={fb} metadata={meta}
+        metaStatus={metaStatus} retryMeta={retryMeta} />}
     </section>
   );
 }
@@ -112,8 +116,11 @@ function notePoint(note?: CoachItem): EvidencePoint | null {
   return seconds == null ? null : { seconds, code: note?.code ?? undefined };
 }
 
-function ResultDetails({ result, feedback, metadata }: {
+type MetaStatus = ReturnType<typeof useSessionResult>["metaStatus"];
+
+function ResultDetails({ result, feedback, metadata, metaStatus, retryMeta }: {
   result: Result; feedback: Record<string, string>; metadata: ReturnType<typeof useSessionResult>["meta"];
+  metaStatus: MetaStatus; retryMeta: () => void;
 }) {
   const [filter, setFilter] = useState<Skill | "all">("all");
   const [media, setMedia] = useState<MediaState>(result.video_url ? "loading" : "unavailable");
@@ -193,6 +200,10 @@ function ResultDetails({ result, feedback, metadata }: {
             <h2 id="result-criteria" tabIndex={-1}>ผลรายเกณฑ์</h2>
             <p className="muted small">รูบริก {result.versions.rubric ?? "—"} / ค่าตั้ง {result.versions.config ?? "—"}</p>
           </div>
+          {metaStatus === "failed" && <div className="result-load-error">
+            <Message kind="error">โหลดคำอธิบายระดับและข้อเสนอแนะรายเกณฑ์ไม่สำเร็จ ระดับและค่าที่วัดได้ด้านล่างยังถูกต้อง</Message>
+            <button className="ghost fit" onClick={retryMeta}><Icon name="refresh" /> ลองใหม่</button>
+          </div>}
           {previous && previous.rubric_version !== result.versions.rubric &&
             <p className="muted small cross-version-note">{MIXED_RUBRIC_NOTE}</p>}
           <details className="disclosure radar-disclosure">
@@ -211,7 +222,7 @@ function ResultDetails({ result, feedback, metadata }: {
                 {s.codes.map((code) => {
                   const c = byCode[code];
                   return c && <Card key={code} c={c} feedback={c.feedback_id ? feedback[c.feedback_id] : undefined}
-                    meta={metadata[code]} before={previous ? levelOf(previous, code) : undefined} crossVersion={!!previous && previous.rubric_version !== result.versions.rubric} topics={code === "C2" && c.status === "ok" ? result.topics : undefined}
+                    meta={metadata[code]} metaStatus={metaStatus} before={previous ? levelOf(previous, code) : undefined} crossVersion={!!previous && previous.rubric_version !== result.versions.rubric} topics={code === "C2" && c.status === "ok" ? result.topics : undefined}
                     media={media} seek={seek} />;
                 })}
               </div>
@@ -232,8 +243,9 @@ function ValueList({ entries }: { entries: [string, number | null][] }) {
   </dl>;
 }
 
-function Card({ c, feedback, meta, before, topics, media, seek, crossVersion }: {
-  c: Criterion; feedback?: string; meta?: CriterionMeta; before?: number | null; crossVersion?: boolean; topics?: Topic[];
+function Card({ c, feedback, meta, metaStatus, before, topics, media, seek, crossVersion }: {
+  c: Criterion; feedback?: string; meta?: CriterionMeta; metaStatus: MetaStatus; before?: number | null; crossVersion?: boolean;
+  topics?: Topic[];
   media: MediaState; seek: Seek;
 }) {
   const ok = c.status === "ok";
@@ -254,11 +266,13 @@ function Card({ c, feedback, meta, before, topics, media, seek, crossVersion }: 
         {reading.detail && <span> · {reading.detail}</span>}</p>}
       {!ok && <p className="reason">เหตุผล: {c.reason}</p>}
       {!scored && all.length > 0 && <div>
-        <p className="muted">ไม่ทราบว่าค่าใดใช้คิดระดับในผลรุ่นนี้</p><ValueList entries={all} />
+        {metaStatus === "ready" && <p className="muted">ไม่ทราบว่าค่าใดใช้คิดระดับในผลรุ่นนี้</p>}
+        <ValueList entries={all} />
       </div>}
       {main.length > 0 && <div className="primary-values"><ValueList entries={main} />
         {reading?.explain && <p className="muted small">{reading.explain}</p>}</div>}
-      {ok && <p className="template"><strong>ข้อเสนอแนะ</strong> {feedback ?? "ไม่พบข้อความข้อเสนอแนะสำหรับผลรุ่นนี้"}</p>}
+      {ok && <p className="template"><strong>ข้อเสนอแนะ</strong> {feedback ?? (metaStatus === "loading" ? "กำลังโหลดข้อเสนอแนะ…"
+        : metaStatus === "failed" ? "โหลดข้อเสนอแนะไม่สำเร็จ" : "ไม่พบข้อความข้อเสนอแนะสำหรับผลรุ่นนี้")}</p>}
       {c.evidence.length > 0 && <div className="evidence">
         <h5>ช่วงเวลาหลักฐาน</h5>
         <ul>{c.evidence.map((e, i) => <li key={i}>

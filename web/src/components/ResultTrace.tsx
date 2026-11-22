@@ -5,6 +5,7 @@ import { api } from "../api";
 import type { Criterion, TranscriptItem } from "../contract";
 import { CRITERION_NAME, SKILLS, fmtTime } from "../presentation";
 import type { EvidencePoint, MediaState, Seek } from "./ResultParts";
+import { Icon } from "./ui";
 
 export function EventTimeline({ criteria, duration, video, media, selection, seek }: {
   criteria: Criterion[]; duration: number | null; video: RefObject<HTMLVideoElement>; media: MediaState;
@@ -69,16 +70,19 @@ export function TranscriptBox({ sessionId, video, media, seek }: {
   sessionId: string; video: RefObject<HTMLVideoElement>; media: MediaState; seek: Seek;
 }) {
   const [items, setItems] = useState<TranscriptItem[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [active, setActive] = useState(-1);
   const list = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
+    setFailed(false);
     api.transcript(sessionId, controller.signal).then(setItems).catch(() => {
-      if (!controller.signal.aborted) setItems([]);
+      if (!controller.signal.aborted) setFailed(true);   // a failed request is not "no transcript"
     });
     return () => controller.abort();
-  }, [sessionId]);
+  }, [sessionId, attempt]);
 
   useEffect(() => {
     const player = video.current;
@@ -102,6 +106,10 @@ export function TranscriptBox({ sessionId, video, media, seek }: {
     }
   }, [active]);
 
+  if (failed) return <div className="transcript-error" role="alert">
+    <p className="muted small">โหลดบทพูดที่ถอดเสียงไม่สำเร็จ</p>
+    <button type="button" className="ghost fit" onClick={() => setAttempt((n) => n + 1)}><Icon name="refresh" /> ลองใหม่</button>
+  </div>;
   if (items === null) return <p className="muted small">กำลังโหลดบทพูด…</p>;
   const fillers = items.filter((i) => i.is_filler).length;
   const pauses = items.filter((i) => i.pause_after_s != null).length;

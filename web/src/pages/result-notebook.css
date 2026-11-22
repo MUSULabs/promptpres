@@ -64,7 +64,7 @@
 .notebook-trace { display: grid; min-width: 0; gap: .7rem; }
 .notebook-player .video { aspect-ratio: 16 / 9; object-fit: contain; max-height: 58vh; }
 .notebook-player .timeline { padding-inline: 0; border: 0; border-radius: 0; }
-.media-fallback { display: grid; gap: .6rem; }
+.media-fallback, .result-load-error, .transcript-error { display: grid; gap: .6rem; }
 .timeline-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem .75rem; margin-bottom: .25rem; }
 .timeline-selection { display: inline-flex; align-items: center; gap: .45rem; font-size: .8rem; color: var(--accent-active); font-variant-numeric: tabular-nums; }
 .timeline-selection i, .timeline-pin {
