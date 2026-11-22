@@ -7,6 +7,10 @@ export default defineConfig({
   globalSetup: "./tests/startBrowserApi.ts",
   expect: { timeout: 8_000 },
   reporter: "list",
+  // Both test APIs are single processes on SQLite and share one credit guard (2 waiting rounds per account
+  // in dev mode). Workers follow spec files, and more than 3 parallel browsers (with fake-camera video
+  // encoding) made unrelated tests time out on DB waits, so the suite runs on the 3 workers it was built for.
+  workers: 3,
   use: {
     browserName: "chromium",
     baseURL: "http://127.0.0.1:18370",

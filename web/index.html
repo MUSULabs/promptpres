@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PromptPre's</title>
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <script>
+      // Ask who is signed in while the app's JavaScript downloads (the answer decides landing or app);
+      // api.me() takes this answer on its first call. A slow API (cold start) then no longer delays the page.
+      window.__ppAuth = fetch("/api/auth/me", { credentials: "same-origin" }).catch(function () { return null; });
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -110,9 +110,20 @@ async function sendInChunks<T>(id: string, kind: "video" | "pdf", file: Blob, fi
   return decodeJson<T>(response.status, await response.text(), valid);
 }
 
+/** The /api/auth/me request index.html starts before the app loads; taken once. */
+function earlyAuth(): Promise<Response | null> | undefined {
+  const page = window as unknown as { __ppAuth?: Promise<Response | null> };
+  const early = page.__ppAuth;
+  page.__ppAuth = undefined;
+  return early;
+}
+
 export interface AuthState { user: { id: string; email: string; display_name: string; is_guest: boolean } | null; required: boolean }
 export const api = {
-  me: () => requestJson<AuthState>("/api/auth/me"),
+  async me(): Promise<AuthState> {
+    const early = await earlyAuth();
+    return early ? decodeJson<AuthState>(early.status, await early.text()) : requestJson<AuthState>("/api/auth/me");
+  },
   register: (email: string, display_name: string, password: string) => sendJson<AuthState>("POST", "/api/auth/register", { email, display_name, password }),
   login: (email: string, password: string) => sendJson<AuthState>("POST", "/api/auth/login", { email, password }),
   guest: () => sendJson<AuthState>("POST", "/api/auth/guest", {}),

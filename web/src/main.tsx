@@ -1,16 +1,18 @@
-import React, { useEffect, useRef } from "react";
+import React, { Suspense, lazy, useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import { NavLink, Route, RouterProvider, Routes, createBrowserRouter, matchPath, useLocation } from "react-router-dom";
 import "./brand.css";
 import "./styles.css";
 import { AuthProvider, AuthGate, AccountMenu, useAuth } from "./auth";
-import LoginPage from "./pages/LoginPage";
 import LandingPage, { LandingHeader } from "./pages/LandingPage";
-import Home from "./pages/Home";
-import NewSession from "./pages/NewSession";
-import SessionVideo from "./pages/SessionVideo";
-import ResultPage from "./pages/ResultPage";
 import { Brand, Icon, NotFound } from "./components/ui";
+
+// The landing ships alone; app pages load on first use (a visitor on a phone downloads less before the first paint).
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const Home = lazy(() => import("./pages/Home"));
+const NewSession = lazy(() => import("./pages/NewSession"));
+const SessionVideo = lazy(() => import("./pages/SessionVideo"));
+const ResultPage = lazy(() => import("./pages/ResultPage"));
 
 // A data router (one splat route around the existing <Routes>) so pages can use useBlocker,
 // e.g. to ask before leaving an unsent recording (useLeaveGuard.ts).
@@ -62,14 +64,14 @@ function AppRoutes({ landing }: { landing: boolean }) {
   }, [pathname]);
 
   return <main id="main-content" className={landing ? "landing-main" : resultRoute ? "result-main" : undefined} tabIndex={-1} ref={main}>
-    <Routes>
+    <Suspense fallback={<p role="status" className="muted">กำลังโหลดหน้า…</p>}><Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={landing ? <LandingPage /> : <AuthGate><Home /></AuthGate>} />
       <Route path="/new" element={<AuthGate><NewSession /></AuthGate>} />
       <Route path="/sessions/:id/video" element={<AuthGate><SessionVideo /></AuthGate>} />
       <Route path="/sessions/:id" element={<AuthGate><ResultPage /></AuthGate>} />
       <Route path="*" element={<NotFound />} />
-    </Routes>
+    </Routes></Suspense>
   </main>;
 }
 

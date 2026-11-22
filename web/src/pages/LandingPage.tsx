@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { Link } from "react-router-dom";
-import ppreDefault from "../../design/mascot/ppre-default.svg?no-inline";
+// Inlined (1.5 kB): the hero mascot is the landing's largest paint, so it must not wait for its own request.
+import ppreDefault from "../../design/mascot/ppre-default.svg?inline";
 import whiteLogo from "../assets/brand/horizontal-white.svg";
 import { Icon } from "../components/ui";
 import LandingStory from "./LandingStory";
