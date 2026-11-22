@@ -39,3 +39,5 @@ research/private/
 research/manifests/*.csv
 !research/manifests/*_TEMPLATE.csv
 research/labels/
+# temporary allowlist written by tools/deploy_web.ps1
+/.vercelignore
