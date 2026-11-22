@@ -13,7 +13,7 @@ body { margin: 0; min-height: 100vh; }
 .app-shell button.danger:not(:disabled):is(:hover, :active) { background: #404040; }
 .app-shell .banner.error { border-inline-start: .2rem solid var(--fg); }
 .app-shell .button.action-yellow { background: var(--brand-yellow); color: #171717; }
-.app-shell .button.action-yellow:is(:hover, :active) { background: #ffe17a; }
+.app-shell .button.action-yellow:is(:hover, :active) { background: var(--brand-yellow-hover); }
 .app-shell .action-yellow:focus-visible { outline-color: #fff; }
 .app-shell .login-panel { border-block-start: 3px solid var(--brand-blue); }
 .app-shell .login-intro h1 { font-weight: 700; }

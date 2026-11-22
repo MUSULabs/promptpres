@@ -32,6 +32,7 @@
 :root {
   --brand-blue: #2823ef;
   --brand-yellow: #ffc400;
+  --brand-yellow-hover: #ffe17a;
   --bg: #f5f6fa;
   --panel: #fff;
   --fg: #1c2132;
@@ -80,7 +81,6 @@
 
 .pp-v1 {
   --pp-blue: var(--accent);
-  --pp-gold: #d9a400;
   --pp-white: #fff;
   --pp-ink: #171717;
   --pp-muted: #525252;
