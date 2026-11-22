@@ -2,11 +2,11 @@
 doc: research/SCOPE_FREEZE_V1
 version: v1.0 (Phase 1.2 + 1.2a corrections within D-067, 22 Nov 2026)
 date: 2026-11-22
-status: OWNER_APPROVED / ADVISOR_REVIEW_PENDING
+status: OWNER_APPROVED / ADVISOR_APPROVED
 decisions: D-067 (builds on D-033, D-028, D-046)
 implementation: TARGET DESIGN — not implemented; current system = Spec v2.4
 owner_approval: approved 2026-11-22
-advisor_approval: pending (N1/N2 redesign, IOC addendum, proposed title)
+advisor_approval: approved 2026-11-22 (N1/N2 redesign and IOC addendum approved; proposed title NOT adopted, current title kept)
 authority: vault Knowledge/01_Project/SCOPE_FREEZE_V1.md is the authority for scope; this file repeats only what code and data work need
 ---
 

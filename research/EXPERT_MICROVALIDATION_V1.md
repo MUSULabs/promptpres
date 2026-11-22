@@ -2,11 +2,11 @@
 doc: research/EXPERT_MICROVALIDATION_V1
 version: v1.1 (Phase 1.2 corrections, 22 Nov 2026)
 date: 2026-11-22
-status: OWNER_APPROVED / ADVISOR_REVIEW_PENDING — not sent; experts not contacted (Phase 1 prohibition)
+status: OWNER_APPROVED / ADVISOR_APPROVED — approved to send after the annotation pilot; not sent yet, experts not contacted
 decisions: D-067 (follows D-034 five experts E1–E5, D-040 short IOC)
 implementation: TARGET DESIGN — clip segments are chosen only after the annotation pilot
 owner_approval: approved 2026-11-22
-advisor_approval: pending (the advisor decides whether and when the addendum is sent)
+advisor_approval: approved 2026-11-22 (send to E1–E5 after the annotation pilot, about mid to late December 2026)
 files: forms/expert_items_v1.csv · forms/expert_answer_key_TEMPLATE.csv (columns only) · forms/expert_form_spec_v1.md · real answer key = private research artifact, not in this repository
 ---
 

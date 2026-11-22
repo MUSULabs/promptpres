@@ -1,5 +1,5 @@
-# doc: research/forms/expert_items_v1.csv | version: v1.2 | date: 2026-11-22 | status: OWNER_APPROVED / ADVISOR_REVIEW_PENDING | decisions: D-067
-# implementation: TARGET DESIGN - item SLOTS only; source segments are chosen after the annotation pilot from GOLD spans with a team consensus label | owner_approval: approved 2026-11-22 | advisor_approval: pending
+# doc: research/forms/expert_items_v1.csv | version: v1.2 | date: 2026-11-22 | status: OWNER_APPROVED / ADVISOR_APPROVED | decisions: D-067
+# implementation: TARGET DESIGN - item SLOTS only; source segments are chosen after the annotation pilot from GOLD spans with a team consensus label | owner_approval: approved 2026-11-22 | advisor_approval: approved 2026-11-22 (send after the annotation pilot)
 # Selection rule: primary-pool (non-team) speakers only; at most 2 segments per speaker; 8-20 s; the planned difficulty mix is described in EXPERT_MICROVALIDATION_V1 F2; which item has which difficulty is recorded ONLY in the private answer key.
 # This file is shown to the form builder. It holds NO answers, NO difficulty slot, NO clip/speaker/scenario id and NO team label. The answer key is a private research artifact outside this repository (see EXPERT_MICROVALIDATION_V1). Rows are in form order (shuffled once, seed 20261122); media files are named by form position (Q01..Q16).
 # Options = the 4 classes of the criterion + one abstention 'ไม่แน่ใจ'. UNOBSERVABLE is the class for insufficient visual information (no separate option).

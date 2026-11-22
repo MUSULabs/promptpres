@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Invented example for tests (no real clip, speaker or label), in the shape ELAN 6 saves from n1_n2_template_v1.etf. -->
+<ANNOTATION_DOCUMENT AUTHOR="" DATE="2026-11-23T09:30:00+07:00" FORMAT="3.0" VERSION="3.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.mpi.nl/tools/elan/EAFv3.0.xsd">
+    <HEADER MEDIA_FILE="" TIME_UNITS="milliseconds">
+        <MEDIA_DESCRIPTOR MEDIA_URL="file:///C:/pilot/ZZ00-01.mp4" MIME_TYPE="video/mp4" RELATIVE_MEDIA_URL="./ZZ00-01.mp4"/>
+        <PROPERTY NAME="lastUsedAnnotationId">13</PROPERTY>
+    </HEADER>
+    <TIME_ORDER>
+        <TIME_SLOT TIME_SLOT_ID="ts1" TIME_VALUE="0"/>
+        <TIME_SLOT TIME_SLOT_ID="ts2" TIME_VALUE="7400"/>
+        <TIME_SLOT TIME_SLOT_ID="ts3" TIME_VALUE="12000"/>
+        <TIME_SLOT TIME_SLOT_ID="ts4" TIME_VALUE="20000"/>
+        <TIME_SLOT TIME_SLOT_ID="ts5" TIME_VALUE="0"/>
+        <TIME_SLOT TIME_SLOT_ID="ts6" TIME_VALUE="15300"/>
+        <TIME_SLOT TIME_SLOT_ID="ts7" TIME_VALUE="20000"/>
+        <TIME_SLOT TIME_SLOT_ID="ts8" TIME_VALUE="1000"/>
+        <TIME_SLOT TIME_SLOT_ID="ts9" TIME_VALUE="6000"/>
+        <TIME_SLOT TIME_SLOT_ID="ts10" TIME_VALUE="1000"/>
+        <TIME_SLOT TIME_SLOT_ID="ts11" TIME_VALUE="6000"/>
+        <TIME_SLOT TIME_SLOT_ID="ts12" TIME_VALUE="13000"/>
+        <TIME_SLOT TIME_SLOT_ID="ts13" TIME_VALUE="19000"/>
+    </TIME_ORDER>
+    <TIER LINGUISTIC_TYPE_REF="N1_function" TIER_ID="N1_function">
+        <ANNOTATION>
+            <ALIGNABLE_ANNOTATION ANNOTATION_ID="a1" TIME_SLOT_REF1="ts1" TIME_SLOT_REF2="ts2">
+                <ANNOTATION_VALUE>GESTURE</ANNOTATION_VALUE>
+            </ALIGNABLE_ANNOTATION>
+        </ANNOTATION>
+        <ANNOTATION>
+            <ALIGNABLE_ANNOTATION ANNOTATION_ID="a2" TIME_SLOT_REF1="ts2" TIME_SLOT_REF2="ts3">
+                <ANNOTATION_VALUE>REST_OR_HOLD</ANNOTATION_VALUE>
+            </ALIGNABLE_ANNOTATION>
+        </ANNOTATION>
+        <ANNOTATION>
+            <ALIGNABLE_ANNOTATION ANNOTATION_ID="a3" TIME_SLOT_REF1="ts3" TIME_SLOT_REF2="ts4">
+                <ANNOTATION_VALUE>ADAPTOR_MANIPULATION</ANNOTATION_VALUE>
+            </ALIGNABLE_ANNOTATION>
+        </ANNOTATION>
+    </TIER>
+    <TIER LINGUISTIC_TYPE_REF="child_ambiguous" PARENT_REF="N1_function" TIER_ID="N1_function_ambiguous">
+        <ANNOTATION>
+            <REF_ANNOTATION ANNOTATION_ID="a10" ANNOTATION_REF="a2">
+                <ANNOTATION_VALUE>ambiguous</ANNOTATION_VALUE>
+            </REF_ANNOTATION>
+        </ANNOTATION>
+    </TIER>
+    <TIER LINGUISTIC_TYPE_REF="child_confidence" PARENT_REF="N1_function" TIER_ID="N1_function_confidence">
+        <ANNOTATION>
+            <REF_ANNOTATION ANNOTATION_ID="a11" ANNOTATION_REF="a1">
+                <ANNOTATION_VALUE>3</ANNOTATION_VALUE>
+            </REF_ANNOTATION>
+        </ANNOTATION>
+    </TIER>
+    <TIER LINGUISTIC_TYPE_REF="child_note" PARENT_REF="N1_function" TIER_ID="N1_function_note">
+        <ANNOTATION>
+            <REF_ANNOTATION ANNOTATION_ID="a12" ANNOTATION_REF="a3">
+                <ANNOTATION_VALUE>turns the pen</ANNOTATION_VALUE>
+            </REF_ANNOTATION>
+        </ANNOTATION>
+    </TIER>
+    <TIER LINGUISTIC_TYPE_REF="N1_intensity" TIER_ID="N1_intensity">
+        <ANNOTATION>
+            <ALIGNABLE_ANNOTATION ANNOTATION_ID="a13" TIME_SLOT_REF1="ts12" TIME_SLOT_REF2="ts13">
+                <ANNOTATION_VALUE>LOW</ANNOTATION_VALUE>
+            </ALIGNABLE_ANNOTATION>
+        </ANNOTATION>
+    </TIER>
+    <TIER LINGUISTIC_TYPE_REF="N2_direction" TIER_ID="N2_direction">
+        <ANNOTATION>
+            <ALIGNABLE_ANNOTATION ANNOTATION_ID="a4" TIME_SLOT_REF1="ts5" TIME_SLOT_REF2="ts6">
+                <ANNOTATION_VALUE>NOTES</ANNOTATION_VALUE>
+            </ALIGNABLE_ANNOTATION>
+        </ANNOTATION>
+        <ANNOTATION>
+            <ALIGNABLE_ANNOTATION ANNOTATION_ID="a5" TIME_SLOT_REF1="ts6" TIME_SLOT_REF2="ts7">
+                <ANNOTATION_VALUE>CAMERA_REGION</ANNOTATION_VALUE>
+            </ALIGNABLE_ANNOTATION>
+        </ANNOTATION>
+    </TIER>
+    <TIER LINGUISTIC_TYPE_REF="N1_flag_holding_notes" TIER_ID="N1_flag_holding_notes">
+        <ANNOTATION>
+            <ALIGNABLE_ANNOTATION ANNOTATION_ID="a6" TIME_SLOT_REF1="ts8" TIME_SLOT_REF2="ts9">
+                <ANNOTATION_VALUE>holding_notes</ANNOTATION_VALUE>
+            </ALIGNABLE_ANNOTATION>
+        </ANNOTATION>
+    </TIER>
+    <TIER LINGUISTIC_TYPE_REF="N1_flag_repetitive" TIER_ID="N1_flag_repetitive">
+        <ANNOTATION>
+            <ALIGNABLE_ANNOTATION ANNOTATION_ID="a7" TIME_SLOT_REF1="ts10" TIME_SLOT_REF2="ts11">
+                <ANNOTATION_VALUE>repetitive</ANNOTATION_VALUE>
+            </ALIGNABLE_ANNOTATION>
+        </ANNOTATION>
+    </TIER>
+</ANNOTATION_DOCUMENT>

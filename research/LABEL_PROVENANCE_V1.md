@@ -2,11 +2,11 @@
 doc: research/LABEL_PROVENANCE_V1
 version: v1.1 (Phase 1.2 + 1.2a corrections within D-067, 22 Nov 2026)
 date: 2026-11-22
-status: OWNER_APPROVED / ADVISOR_REVIEW_PENDING
+status: OWNER_APPROVED / ADVISOR_APPROVED
 decisions: D-067
 implementation: TARGET DESIGN — no labels or AI proposal tool exist yet
 owner_approval: approved 2026-11-22
-advisor_approval: pending
+advisor_approval: approved 2026-11-22 (project title unchanged)
 schema: schemas/n1_n2_labels_v1.schema.json
 ---
 
@@ -103,8 +103,8 @@ with no proposal), `audit` = manual with no review action, no AI provenance and 
 with ≥ 2 `source_annotation_ids`, no `adjudicator_id` on an `agreed` consensus, `source_start_s`/`source_end_s`
 both present or both absent.
 
-JSON Schema cannot compare fields or look across records. A **semantic validator must exist and run before the
-first pilot labels are accepted**, and must reject:
+JSON Schema cannot compare fields or look across records. The **semantic validator** `validate_labels.py` (Phase 2,
+tests in `tests/test_validate_labels.py`) must pass before any pilot label is accepted. It rejects:
 - `end_s <= start_s`, or `end_s` beyond the masked media duration;
 - `accepted` where the final label or boundaries differ from the proposal;
 - consensus records whose `source_annotation_ids` do not exist, are not `independent`, are from fewer than two different annotators, or do not overlap the consensus span;
@@ -113,3 +113,16 @@ first pilot labels are accepted**, and must reject:
 - an `audit`/`reviewed` pair that is compared for anchoring/agreement unless both have the same `blind_id` and `layer`, overlapping time and **different** `reviewer_id`;
 - an `agreed` consensus whose `final_label` differs from the `final_label` of any source record, or whose span is not inside the overlap of its sources;
 - source times that do not equal `source_offset_s + start_s` and `source_offset_s + end_s` (tolerance 0.001 s) using the private manifest, or `source_end_s` beyond the manifest's `source_end_s`.
+
+How it is run (repository root; real labels, manifest and hash file stay in `Data/Research_Private/`):
+
+```
+python -m research.elan_to_records A1_PV01-03.eaf ... -o labels.jsonl --manifest <private manifest>
+python -m research.validate_labels labels.jsonl --manifest <private manifest> --hashes <private hashes.json> --record-hashes
+```
+
+`--record-hashes` stores the hash of each new independent record only when every check passes; after that an edited
+independent record is reported as `edited_after_submit`. Coverage is checked per annotator, clip and primary layer
+over the whole masked file (the first and last span may miss the file edge by less than the 0.1 s ELAN resolution);
+consensus records are partial and are not coverage-checked. `--proposals` (JSONL of the proposal boundaries) adds
+the boundary half of the `accepted` rule for SILVER records, whose own record stores only the final boundaries.

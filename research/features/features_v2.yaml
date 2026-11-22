@@ -1,0 +1,15 @@
+# Parameters of research/features (extractor v2, D-067 Phase 2). Research only; production
+# pipeline settings stay in config/pipeline-v0.yaml and are not read here.
+# This file's content is part of the feature-set hash written into every output: changing any
+# value after the first outer LOSO run = a new protocol version (EXPERIMENT_PROTOCOL_V1 §3).
+version: features-v2.0
+grid_fps: 10                 # rows per second; protocol §2 allows at most 10 fps
+grid_tolerance_s: 0.005      # a frame fills grid point k if its time >= k / grid_fps - this
+pose_width: 960              # pose + hand run on a copy this wide (same as production landmarks)
+head_crop_min_half_px: 80    # face runs on a square around the nose (same as production)
+hand_match_max_sw: 1.0       # a detected hand belongs to a pose wrist within this many shoulder widths
+pose_vis_min: 0.5            # a pose point counts as seen at visibility >= this [DES]
+max_dt_s: 0.25               # velocity / acceleration / jerk only across gaps <= this (2.5 grid steps)
+min_eye_width_px: 12         # eye corner-to-corner width needed to keep iris/eyelid features [DES, check in pilot]
+dup_diff_max: 0.05           # repeat if mean |grey diff| on the thumbnail < this (0-255); 22 Nov: P02 MP4 repeats <= 0.03, distinct frames >= 0.096
+thumb_size: [64, 36]         # thumbnail (w, h) for frame_diff / dup_frame

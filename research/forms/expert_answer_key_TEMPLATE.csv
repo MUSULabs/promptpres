@@ -1,4 +1,4 @@
-# doc: research/forms/expert_answer_key_TEMPLATE.csv | version: v1.0 | date: 2026-11-22 | status: OWNER_APPROVED / ADVISOR_REVIEW_PENDING | decisions: D-067
+# doc: research/forms/expert_answer_key_TEMPLATE.csv | version: v1.0 | date: 2026-11-22 | status: OWNER_APPROVED / ADVISOR_APPROVED | decisions: D-067
 # TEMPLATE ONLY - column names plus ONE made-up example row (form_position 0 does not exist on the form). Holds no real answer.
 # The real key is a private research artifact kept outside this repository; see EXPERT_MICROVALIDATION_V1.md.
 # Read with pandas.read_csv(path, comment='#').

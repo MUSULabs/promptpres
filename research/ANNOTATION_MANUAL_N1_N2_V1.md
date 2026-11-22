@@ -2,11 +2,11 @@
 doc: research/ANNOTATION_MANUAL_N1_N2_V1
 version: v1.0 + Phase 1.2 / 1.2a corrections 22 Nov 2026 (pilot edition — may change after the pilot agreement report; the version used with each label is stored in `manual_version`)
 date: 2026-11-22
-status: OWNER_APPROVED / ADVISOR_REVIEW_PENDING
+status: OWNER_APPROVED / ADVISOR_APPROVED
 decisions: D-067
 implementation: TARGET DESIGN — no labels exist yet; legacy schema `labels/label_schema.json` (SC02-label-schema-2026-10-05) N1/N2 tiers are replaced by this manual for N1/N2 only
 owner_approval: approved 2026-11-22
-advisor_approval: pending
+advisor_approval: approved 2026-11-22 (project title unchanged)
 schema: schemas/n1_n2_labels_v1.schema.json
 ---
 

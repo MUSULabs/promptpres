@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ANNOTATION_DOCUMENT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" AUTHOR="" DATE="2026-11-22T00:00:00+07:00" FORMAT="3.0" VERSION="3.0" xsi:noNamespaceSchemaLocation="http://www.mpi.nl/tools/elan/EAFv3.0.xsd">
+  <HEADER MEDIA_FILE="" TIME_UNITS="milliseconds" />
+  <TIME_ORDER />
+  <TIER LINGUISTIC_TYPE_REF="N1_function" TIER_ID="N1_function" />
+  <TIER LINGUISTIC_TYPE_REF="child_ambiguous" PARENT_REF="N1_function" TIER_ID="N1_function_ambiguous" />
+  <TIER LINGUISTIC_TYPE_REF="child_confidence" PARENT_REF="N1_function" TIER_ID="N1_function_confidence" />
+  <TIER LINGUISTIC_TYPE_REF="child_note" PARENT_REF="N1_function" TIER_ID="N1_function_note" />
+  <TIER LINGUISTIC_TYPE_REF="N1_intensity" TIER_ID="N1_intensity" />
+  <TIER LINGUISTIC_TYPE_REF="child_ambiguous" PARENT_REF="N1_intensity" TIER_ID="N1_intensity_ambiguous" />
+  <TIER LINGUISTIC_TYPE_REF="child_confidence" PARENT_REF="N1_intensity" TIER_ID="N1_intensity_confidence" />
+  <TIER LINGUISTIC_TYPE_REF="child_note" PARENT_REF="N1_intensity" TIER_ID="N1_intensity_note" />
+  <TIER LINGUISTIC_TYPE_REF="N1_exploratory" TIER_ID="N1_exploratory" />
+  <TIER LINGUISTIC_TYPE_REF="child_ambiguous" PARENT_REF="N1_exploratory" TIER_ID="N1_exploratory_ambiguous" />
+  <TIER LINGUISTIC_TYPE_REF="child_confidence" PARENT_REF="N1_exploratory" TIER_ID="N1_exploratory_confidence" />
+  <TIER LINGUISTIC_TYPE_REF="child_note" PARENT_REF="N1_exploratory" TIER_ID="N1_exploratory_note" />
+  <TIER LINGUISTIC_TYPE_REF="N2_direction" TIER_ID="N2_direction" />
+  <TIER LINGUISTIC_TYPE_REF="child_ambiguous" PARENT_REF="N2_direction" TIER_ID="N2_direction_ambiguous" />
+  <TIER LINGUISTIC_TYPE_REF="child_confidence" PARENT_REF="N2_direction" TIER_ID="N2_direction_confidence" />
+  <TIER LINGUISTIC_TYPE_REF="child_note" PARENT_REF="N2_direction" TIER_ID="N2_direction_note" />
+  <TIER LINGUISTIC_TYPE_REF="N1_flag_holding_notes" TIER_ID="N1_flag_holding_notes" />
+  <TIER LINGUISTIC_TYPE_REF="N1_flag_one_hand_hidden" TIER_ID="N1_flag_one_hand_hidden" />
+  <TIER LINGUISTIC_TYPE_REF="N1_flag_repetitive" TIER_ID="N1_flag_repetitive" />
+  <LINGUISTIC_TYPE CONTROLLED_VOCABULARY_REF="N1_function_cv" GRAPHIC_REFERENCES="false" LINGUISTIC_TYPE_ID="N1_function" TIME_ALIGNABLE="true" />
+  <LINGUISTIC_TYPE CONTROLLED_VOCABULARY_REF="N1_intensity_cv" GRAPHIC_REFERENCES="false" LINGUISTIC_TYPE_ID="N1_intensity" TIME_ALIGNABLE="true" />
+  <LINGUISTIC_TYPE CONTROLLED_VOCABULARY_REF="N1_exploratory_cv" GRAPHIC_REFERENCES="false" LINGUISTIC_TYPE_ID="N1_exploratory" TIME_ALIGNABLE="true" />
+  <LINGUISTIC_TYPE CONTROLLED_VOCABULARY_REF="N2_direction_cv" GRAPHIC_REFERENCES="false" LINGUISTIC_TYPE_ID="N2_direction" TIME_ALIGNABLE="true" />
+  <LINGUISTIC_TYPE CONTROLLED_VOCABULARY_REF="N1_flag_holding_notes_cv" GRAPHIC_REFERENCES="false" LINGUISTIC_TYPE_ID="N1_flag_holding_notes" TIME_ALIGNABLE="true" />
+  <LINGUISTIC_TYPE CONTROLLED_VOCABULARY_REF="N1_flag_one_hand_hidden_cv" GRAPHIC_REFERENCES="false" LINGUISTIC_TYPE_ID="N1_flag_one_hand_hidden" TIME_ALIGNABLE="true" />
+  <LINGUISTIC_TYPE CONTROLLED_VOCABULARY_REF="N1_flag_repetitive_cv" GRAPHIC_REFERENCES="false" LINGUISTIC_TYPE_ID="N1_flag_repetitive" TIME_ALIGNABLE="true" />
+  <LINGUISTIC_TYPE CONSTRAINTS="Symbolic_Association" GRAPHIC_REFERENCES="false" LINGUISTIC_TYPE_ID="child_ambiguous" TIME_ALIGNABLE="false" CONTROLLED_VOCABULARY_REF="child_ambiguous_cv" />
+  <LINGUISTIC_TYPE CONSTRAINTS="Symbolic_Association" GRAPHIC_REFERENCES="false" LINGUISTIC_TYPE_ID="child_confidence" TIME_ALIGNABLE="false" CONTROLLED_VOCABULARY_REF="child_confidence_cv" />
+  <LINGUISTIC_TYPE CONSTRAINTS="Symbolic_Association" GRAPHIC_REFERENCES="false" LINGUISTIC_TYPE_ID="child_note" TIME_ALIGNABLE="false" />
+  <LANGUAGE LANG_DEF="http://cdb.iso.org/lg/CDB-00130975-001" LANG_ID="und" LANG_LABEL="undetermined (und)" />
+  <CONSTRAINT DESCRIPTION="1-1 association with a parent annotation" STEREOTYPE="Symbolic_Association" />
+  <CONTROLLED_VOCABULARY CV_ID="N1_function_cv">
+    <DESCRIPTION LANG_REF="und" />
+    <CV_ENTRY_ML CVE_ID="N1_function_cv_1">
+      <CVE_VALUE LANG_REF="und">GESTURE</CVE_VALUE>
+    </CV_ENTRY_ML>
+    <CV_ENTRY_ML CVE_ID="N1_function_cv_2">
+      <CVE_VALUE LANG_REF="und">REST_OR_HOLD</CVE_VALUE>
+    </CV_ENTRY_ML>
+    <CV_ENTRY_ML CVE_ID="N1_function_cv_3">
+      <CVE_VALUE LANG_REF="und">ADAPTOR_MANIPULATION</CVE_VALUE>
+    </CV_ENTRY_ML>
+    <CV_ENTRY_ML CVE_ID="N1_function_cv_4">
+      <CVE_VALUE LANG_REF="und">UNOBSERVABLE</CVE_VALUE>
+    </CV_ENTRY_ML>
+  </CONTROLLED_VOCABULARY>
+  <CONTROLLED_VOCABULARY CV_ID="N1_intensity_cv">
+    <DESCRIPTION LANG_REF="und" />
+    <CV_ENTRY_ML CVE_ID="N1_intensity_cv_1">
+      <CVE_VALUE LANG_REF="und">LOW</CVE_VALUE>
+    </CV_ENTRY_ML>
+    <CV_ENTRY_ML CVE_ID="N1_intensity_cv_2">
+      <CVE_VALUE LANG_REF="und">MODERATE</CVE_VALUE>
+    </CV_ENTRY_ML>
+    <CV_ENTRY_ML CVE_ID="N1_intensity_cv_3">
+      <CVE_VALUE LANG_REF="und">HIGH</CVE_VALUE>
+    </CV_ENTRY_ML>
+  </CONTROLLED_VOCABULARY>
+  <CONTROLLED_VOCABULARY CV_ID="N1_exploratory_cv">
+    <DESCRIPTION LANG_REF="und" />
+    <CV_ENTRY_ML CVE_ID="N1_exploratory_cv_1">
+      <CVE_VALUE LANG_REF="und">MESSAGE_SUPPORTING</CVE_VALUE>
+    </CV_ENTRY_ML>
+    <CV_ENTRY_ML CVE_ID="N1_exploratory_cv_2">
+      <CVE_VALUE LANG_REF="und">POTENTIALLY_DISTRACTING</CVE_VALUE>
+    </CV_ENTRY_ML>
+    <CV_ENTRY_ML CVE_ID="N1_exploratory_cv_3">
+      <CVE_VALUE LANG_REF="und">UNCERTAIN</CVE_VALUE>
+    </CV_ENTRY_ML>
+  </CONTROLLED_VOCABULARY>
+  <CONTROLLED_VOCABULARY CV_ID="N2_direction_cv">
+    <DESCRIPTION LANG_REF="und" />
+    <CV_ENTRY_ML CVE_ID="N2_direction_cv_1">
+      <CVE_VALUE LANG_REF="und">CAMERA_REGION</CVE_VALUE>
+    </CV_ENTRY_ML>
+    <CV_ENTRY_ML CVE_ID="N2_direction_cv_2">
+      <CVE_VALUE LANG_REF="und">NOTES</CVE_VALUE>
+    </CV_ENTRY_ML>
+    <CV_ENTRY_ML CVE_ID="N2_direction_cv_3">
+      <CVE_VALUE LANG_REF="und">OTHER</CVE_VALUE>
+    </CV_ENTRY_ML>
+    <CV_ENTRY_ML CVE_ID="N2_direction_cv_4">
+      <CVE_VALUE LANG_REF="und">UNOBSERVABLE</CVE_VALUE>
+    </CV_ENTRY_ML>
+  </CONTROLLED_VOCABULARY>
+  <CONTROLLED_VOCABULARY CV_ID="N1_flag_holding_notes_cv">
+    <DESCRIPTION LANG_REF="und" />
+    <CV_ENTRY_ML CVE_ID="N1_flag_holding_notes_cv_1">
+      <CVE_VALUE LANG_REF="und">holding_notes</CVE_VALUE>
+    </CV_ENTRY_ML>
+  </CONTROLLED_VOCABULARY>
+  <CONTROLLED_VOCABULARY CV_ID="N1_flag_one_hand_hidden_cv">
+    <DESCRIPTION LANG_REF="und" />
+    <CV_ENTRY_ML CVE_ID="N1_flag_one_hand_hidden_cv_1">
+      <CVE_VALUE LANG_REF="und">one_hand_hidden</CVE_VALUE>
+    </CV_ENTRY_ML>
+  </CONTROLLED_VOCABULARY>
+  <CONTROLLED_VOCABULARY CV_ID="N1_flag_repetitive_cv">
+    <DESCRIPTION LANG_REF="und" />
+    <CV_ENTRY_ML CVE_ID="N1_flag_repetitive_cv_1">
+      <CVE_VALUE LANG_REF="und">repetitive</CVE_VALUE>
+    </CV_ENTRY_ML>
+  </CONTROLLED_VOCABULARY>
+  <CONTROLLED_VOCABULARY CV_ID="child_ambiguous_cv">
+    <DESCRIPTION LANG_REF="und" />
+    <CV_ENTRY_ML CVE_ID="child_ambiguous_cv_1">
+      <CVE_VALUE LANG_REF="und">ambiguous</CVE_VALUE>
+    </CV_ENTRY_ML>
+  </CONTROLLED_VOCABULARY>
+  <CONTROLLED_VOCABULARY CV_ID="child_confidence_cv">
+    <DESCRIPTION LANG_REF="und" />
+    <CV_ENTRY_ML CVE_ID="child_confidence_cv_1">
+      <CVE_VALUE LANG_REF="und">1</CVE_VALUE>
+    </CV_ENTRY_ML>
+    <CV_ENTRY_ML CVE_ID="child_confidence_cv_2">
+      <CVE_VALUE LANG_REF="und">2</CVE_VALUE>
+    </CV_ENTRY_ML>
+    <CV_ENTRY_ML CVE_ID="child_confidence_cv_3">
+      <CVE_VALUE LANG_REF="und">3</CVE_VALUE>
+    </CV_ENTRY_ML>
+  </CONTROLLED_VOCABULARY>
+</ANNOTATION_DOCUMENT>

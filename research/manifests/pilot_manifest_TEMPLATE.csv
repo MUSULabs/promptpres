@@ -1,4 +1,4 @@
-# doc: research/manifests/pilot_manifest_TEMPLATE.csv | version: v1.0 | date: 2026-11-22 | status: OWNER_APPROVED / ADVISOR_REVIEW_PENDING | decisions: D-067
+# doc: research/manifests/pilot_manifest_TEMPLATE.csv | version: v1.0 | date: 2026-11-22 | status: OWNER_APPROVED / ADVISOR_APPROVED | decisions: D-067
 # TEMPLATE ONLY - column names plus ONE completely invented row. No real clip, participant, scenario, path, observation or difficulty.
 # The real pilot manifest is PRIVATE research data kept outside git (custodian copy); see research/README.md. Annotators never see it.
 # Time: annotators label seconds from 0 of the masked media file they receive. The custodian converts with source_start_s = source_offset_s + start_s.

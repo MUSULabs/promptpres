@@ -14,13 +14,14 @@ SCHEMA_PATH = Path(__file__).resolve().parents[1] / "schemas" / "n1_n2_labels_v1
 SCHEMA = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
 VALIDATOR = jsonschema.Draft202012Validator(SCHEMA, format_checker=jsonschema.FormatChecker())
 
-BASE = dict(
-    annotation_id="T1", blind_id="ZZ00-01", tier="GOLD_MANUAL", record_role="independent",
-    layer="N1_function", start_s=10.0, end_s=12.5, final_label="GESTURE", label_source="manual",
-    reviewer_id="A1", manual_version="ANNOTATION_MANUAL_N1_N2_V1.0",
-    created_at="2026-11-22T10:00:00+07:00", ambiguous=False,
-)
-AI = dict(proposal_model="rule-proposer", proposal_model_version="0.1", proposal_prompt_or_rule_version="rules-v1")
+BASE = {
+    "annotation_id": "T1", "blind_id": "ZZ00-01", "tier": "GOLD_MANUAL", "record_role": "independent",
+    "layer": "N1_function", "start_s": 10.0, "end_s": 12.5, "final_label": "GESTURE",
+    "label_source": "manual", "reviewer_id": "A1", "manual_version": "ANNOTATION_MANUAL_N1_N2_V1.0",
+    "created_at": "2026-11-22T10:00:00+07:00", "ambiguous": False,
+}
+AI = {"proposal_model": "rule-proposer", "proposal_model_version": "0.1",
+      "proposal_prompt_or_rule_version": "rules-v1"}
 SILVER = dict(BASE, tier="SILVER_ASSISTED", record_role="reviewed", label_source="ai_assisted", **AI)
 AUDIT = dict(BASE, tier="SILVER_ASSISTED", record_role="audit", reviewer_id="A2")
 
@@ -130,7 +131,7 @@ INVALID = {
 }
 
 # Cross-field and cross-record rules cannot be expressed in JSON Schema; LABEL_PROVENANCE_V1 section 6 delegates them to the
-# semantic validator that must exist before the first pilot labels are accepted.
+# semantic validator research/validate_labels.py; tests/test_validate_labels.py checks that it rejects these cases.
 DELEGATED = {
     "R3 end_s < start_s": rec(start_s=12.0, end_s=10.0),
     "R3 end_s == start_s": rec(start_s=12.0, end_s=12.0),

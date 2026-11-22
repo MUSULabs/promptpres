@@ -2,11 +2,11 @@
 doc: research/EXPERIMENT_PROTOCOL_V1
 version: v1.1 (Phase 1.2 + 1.2a corrections within D-067, 22 Nov 2026)
 date: 2026-11-22
-status: OWNER_APPROVED / ADVISOR_REVIEW_PENDING
+status: OWNER_APPROVED / ADVISOR_APPROVED
 decisions: D-067
 implementation: TARGET DESIGN — no extractor v2, features, labels or models exist yet
 owner_approval: approved 2026-11-22
-advisor_approval: pending
+advisor_approval: approved 2026-11-22 (project title unchanged)
 ---
 
 # Experiment protocol v1.1 — N1/N2 (speaker-disjoint)
@@ -88,7 +88,7 @@ A correctly designed and reported negative answer counts as a research result.
 2. The private manifest stores, per `blind_id`, the source clip id, the exact `source_offset_s` (where the masked file starts in the source) and `source_end_s`.
 3. After annotation, the custodian joins the private manifest and derives canonical source times: `source_start_s = source_offset_s + start_s`, `source_end_s = source_offset_s + end_s`.
 4. Invariant: `0 <= start_s < end_s`, and `end_s` is not beyond the masked media duration.
-5. JSON Schema cannot compare two fields, so a **semantic validator must enforce timestamp ordering (and the other rules in `LABEL_PROVENANCE_V1.md` §6) before the first pilot labels are accepted.** No cut media or real offsets are created in Phase 1.
+5. JSON Schema cannot compare two fields, so a **semantic validator must enforce timestamp ordering (and the other rules in `LABEL_PROVENANCE_V1.md` §6) before the first pilot labels are accepted.** Phase 2: the validator is `validate_labels.py`; masked media and real offsets are created by the custodian in the private folder, never in git.
 
 ### 4.5 Class coverage report
 
