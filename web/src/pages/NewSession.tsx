@@ -22,24 +22,33 @@ export default function NewSession() {
 
   return (
     <section className="practice-setup">
-      <Steps current={1} />
-      <PageHeading title="ตั้งค่ารอบซ้อม">
-        ตั้งเวลาเป้าหมาย จากนั้นเตรียมหัวข้อก่อนอัดหรืออัปโหลดคลิป
-      </PageHeading>
+      <div className="setup-intro">
+        <Steps current={1} />
+        <PageHeading title="ตั้งค่ารอบซ้อม">
+          กำหนดเวลาที่ต้องการใช้ แล้วเตรียมหัวข้อตามลำดับที่จะพูด
+        </PageHeading>
+      </div>
       <form className="panel setup-panel" noValidate onSubmit={(event) => {
         event.preventDefault();
         if (!session) void start();
       }}>
         <label className="target-field">
-          <strong><Icon name="clock" /> เวลาเป้าหมายในการนำเสนอ (นาที)</strong>
-          <input type="number" min={1} max={MAX_TARGET_MIN} step={0.5} value={minutes || ""}
-            aria-invalid={!validTarget} aria-describedby="target-help" disabled={busy !== null}
-            onChange={(event) => setMinutes(Number(event.target.value))} />
+          <strong>เวลาเป้าหมายในการนำเสนอ<span className="sr-only"> (นาที)</span></strong>
+          <span className="target-number">
+            <input type="number" min={1} max={MAX_TARGET_MIN} step={0.5} value={minutes || ""}
+              aria-invalid={!validTarget} aria-describedby="target-help" disabled={busy !== null}
+              onChange={(event) => setMinutes(Number(event.target.value))} />
+            <span aria-hidden="true">นาที</span>
+          </span>
         </label>
         <p id="target-help" className={validTarget ? "muted small" : "error small"}>
           {validTarget ? `ตั้งได้ 1–${MAX_TARGET_MIN} นาที` : `กรุณาตั้งเวลาเป้าหมาย 1–${MAX_TARGET_MIN} นาที`}
         </p>
 
+        {!session && error && <Message kind="error">{error}</Message>}
+        {!session && <button type="submit" className="fit setup-next" disabled={busy !== null || !validTarget}>
+          {busy === "start" ? "กำลังสร้างรอบ…" : "ไปตั้งหัวข้อ"} <Icon name="arrow" />
+        </button>}
         <details className="disclosure template-picker">
           <summary>
             <span>เลือกแม่แบบ <span className="muted small">(ไม่บังคับ)</span></span>
@@ -58,14 +67,10 @@ export default function NewSession() {
           </div>
         </details>
         {template && <p className="muted small">แม่แบบที่เลือก <strong>{template.label}</strong></p>}
-        {!session && error && <Message kind="error">{error}</Message>}
-        {!session && <button type="submit" className="fit setup-next" disabled={busy !== null || !validTarget}>
-          {busy === "start" ? "กำลังสร้างรอบ…" : "ไปตั้งหัวข้อ"} <Icon name="arrow" />
-        </button>}
       </form>
 
       {session && (
-        <section className="panel" aria-labelledby="topics-heading">
+        <section className="panel topics-panel" aria-labelledby="topics-heading">
           <h2 ref={topicsHeading} id="topics-heading" tabIndex={-1}><Icon name="document" /> หัวข้อที่จะนำเสนอ</h2>
           <p className="muted">หัวข้อที่ยืนยันจะใช้วิเคราะห์เกณฑ์เนื้อหา C1–C2</p>
           {session.pdf_enabled && <label className="file-field file-picker">

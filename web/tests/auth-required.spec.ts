@@ -39,6 +39,11 @@ test("without an account every page goes to /login and the API answers 401", asy
 test("Guest button opens the app and a rehearsal can be analysed", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL((url) => url.pathname === "/login");
+  const example = page.getByRole("group", { name: "จุดเวลาในตัวอย่าง" });
+  const firstCue = example.getByRole("button", { name: "0:14 เกริ่นที่มาของโครงงาน" });
+  await firstCue.press("Enter");
+  await expect(firstCue).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("“ทีมเราเริ่มจากปัญหาที่พบตอนซ้อมนำเสนอ…”")).toBeVisible();
   await page.getByRole("button", { name: GUEST }).click();
   await expect(page).toHaveURL((url) => url.pathname === "/");
   await expect(page.locator(".account-menu")).toContainText("ผู้ทดลองใช้งาน");
@@ -53,7 +58,15 @@ test("registering from Guest moves the rehearsal to the new account and other ac
   await expect(page.locator(".account-menu")).toContainText("ผู้ทดลองใช้งาน");
   const id = await finishedRound(page.request);
   const email = `owner-${id}@example.com`;
-  await page.getByRole("link", { name: "สมัครสมาชิกเพื่อเก็บประวัติ" }).click();
+  const guestAccount = page.getByLabel("บัญชี ผู้ทดลองใช้งาน");
+  await guestAccount.press("Enter");
+  const registerLink = page.getByRole("link", { name: "สมัครสมาชิกเพื่อเก็บประวัติ" });
+  await expect(registerLink).toBeVisible();
+  await registerLink.press("Escape");
+  await expect(registerLink).toBeHidden();
+  await expect(guestAccount).toBeFocused();
+  await guestAccount.press("Enter");
+  await registerLink.click();
   // D-066: only registering moves Guest rounds, so the login tab says so before a Guest signs in elsewhere.
   await page.getByRole("button", { name: "เข้าสู่ระบบ", exact: true }).first().click();
   await expect(page.getByRole("note")).toContainText("จะไม่ย้ายตามไป");
@@ -74,6 +87,7 @@ test("registering from Guest moves the rehearsal to the new account and other ac
   await expect(again.locator(".account-menu")).toContainText("เจ้าของรอบซ้อม");
   await again.goto(`/sessions/${id}`);
   await expect(again.locator(".card")).toHaveCount(8);
+  await again.getByLabel("บัญชี เจ้าของรอบซ้อม").click();
   await again.getByRole("button", { name: "ออกจากระบบ", exact: true }).click();
   await expect(again).toHaveURL((url) => url.pathname === "/login");
   expect((await again.request.get(`/api/sessions/${id}`)).status()).toBe(401);

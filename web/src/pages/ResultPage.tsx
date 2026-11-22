@@ -27,8 +27,8 @@ function ResultView({ id }: { id: string }) {
 
   const waiting = res.status === "queued" || res.status === "processing";
   return (
-    <section>
-      <Steps current={3} />
+    <section className="result-page">
+      {res.status !== "done" && <Steps current={3} />}
       <PageHeading title={waiting ? "สถานะการวิเคราะห์" : "ผลการซ้อม"}>
         รอบซ้อมวันที่ <time dateTime={res.created_at}>{new Date(res.created_at).toLocaleString("th-TH")}</time>
       </PageHeading>
@@ -53,18 +53,14 @@ function AnalysisStatus({ result, now }: { result: Result; now: number }) {
   const processing = result.status === "processing";
   return (
     <div className="panel analysis-status" role="status">
-      {processing ? <div className="processing-orb" aria-hidden="true">
-        <span className="orb-ring orb-ring-one" /><span className="orb-ring orb-ring-two" />
-        <span className="orb-glass"><Icon name="sparkles" /></span>
-      </div> : <span className="state-icon"><Icon name="clock" /></span>}
-      <span className={`status ${result.status}`}>{processing ? "กำลังวิเคราะห์" : "รอคิว"}</span>
+      <ol className="analysis-flow" aria-label="ลำดับสถานะการวิเคราะห์">
+        <li><Icon name="check" /> รับวิดีโอแล้ว</li>
+        <li aria-current={!processing ? "step" : undefined}>{processing && <Icon name="check" />} รอคิว</li>
+        <li aria-current={processing ? "step" : undefined}>วิเคราะห์</li>
+      </ol>
       <h2>{processing ? "กำลังวิเคราะห์วิดีโอการซ้อม" : "อยู่ในคิว รอเครื่องวิเคราะห์"}</h2>
       <p className="muted">หน้านี้จะแสดงผลให้เองเมื่อวิเคราะห์เสร็จ</p>
-      {processing && <ul className="dimension-pills" aria-label="ด้านที่ระบบวิเคราะห์">
-        {SKILLS.map(({ key, label }) => <li key={key}>{label}</li>)}
-      </ul>}
-      <p className="refresh-pill"><Icon name="refresh" /> อัปเดตสถานะทุก 4 วินาที</p>
-      {Number.isFinite(time) && <p className="muted" aria-live="off">เวลาตั้งแต่สร้างรอบ {fmtTime(Math.floor(time))}</p>}
+      {Number.isFinite(time) && <p className="muted small" aria-live="off">เวลาตั้งแต่สร้างรอบ {fmtTime(Math.floor(time))}</p>}
     </div>
   );
 }
@@ -83,7 +79,7 @@ function SessionPlayer({ url, video, onState }: {
     const timer = setTimeout(() => { setWaiting(false); setAttempt((n) => n + 1); }, PLAYER_RETRY_MS[attempt]);
     return () => clearTimeout(timer);
   }, [waiting, attempt]);
-  if (failed) return <Message>ไม่สามารถเปิดวิดีโอของรอบนี้ได้ หากรอบนี้พ้นระยะเก็บไฟล์วิดีโอแล้ว คะแนนและข้อเสนอแนะยังอยู่ครบ</Message>;
+  if (failed) return <Message>เปิดวิดีโอของรอบนี้ไม่ได้ คุณยังอ่านผลรายเกณฑ์และข้อเสนอแนะได้</Message>;
   const src = attempt ? `${url}${url.includes("?") ? "&" : "?"}retry=${attempt}` : url;
   return <>
     {waiting && <Message>กำลังลองเปิดวิดีโออีกครั้ง…</Message>}
@@ -132,27 +128,27 @@ function ResultDetails({ result, feedback, metadata }: {
   return (
     <>
       <div className="result-overview">
-        <CoachPanel coach={result.coach} media={media} seek={seek} />
-        <dl className="panel result-times">
+        <dl className="result-times">
           {times.map(([label, value]) => <div key={label}>
             <dt>{label}</dt><dd>{value == null ? "—" : fmtTime(value)}</dd>
           </div>)}
         </dl>
       </div>
       <div className="result-workspace">
+        <CoachPanel coach={result.coach} media={media} seek={seek} />
         <aside className="panel result-player" aria-labelledby="result-evidence">
           <h2 id="result-evidence" tabIndex={-1}><Icon name="video" /> วิดีโอและหลักฐาน</h2>
           {result.video_url ? <SessionPlayer url={result.video_url} video={video} onState={setMedia} />
             : <Message>รอบนี้ไม่มีวิดีโอสำหรับเปิดดู</Message>}
-          <EventTimeline criteria={result.criteria} duration={result.duration_s} media={media} seek={seek} />
+          <EventTimeline criteria={result.criteria} duration={result.duration_s} video={video} media={media} seek={seek} />
           <TranscriptBox sessionId={result.session_id} video={video} media={media} seek={seek} />
           <p className="muted">{media === "ready" ? "เลือกช่วงหลักฐานเพื่อไปยังจุดนั้นในวิดีโอ"
             : media === "loading" ? "รอวิดีโอพร้อมก่อนกระโดดไปยังหลักฐาน" : "ยังอ่านช่วงหลักฐานได้ แต่ไม่สามารถกระโดดเวลาได้"}</p>
-          <p className="muted">รูบริก {result.versions.rubric ?? "—"} · ค่าตั้ง {result.versions.config ?? "—"}</p>
+          <p className="muted small">รูบริก {result.versions.rubric ?? "—"} / ค่าตั้ง {result.versions.config ?? "—"}</p>
         </aside>
         <div className="result-content">
-          <div className="section-heading"><h2 id="result-criteria" tabIndex={-1}>ผลรายเกณฑ์</h2><span className="tag">{result.criteria.length} เกณฑ์</span></div>
-          <p className="muted">ผลแยกรายเกณฑ์ ไม่มีคะแนนรวม และไม่ใช่การให้เกรด</p>
+          <div className="section-heading"><h2 id="result-criteria" tabIndex={-1}>ผลรายเกณฑ์</h2><span className="muted small">{result.criteria.length} เกณฑ์</span></div>
+          <p className="muted small">ระดับที่แสดงเป็นผลของแต่ละเกณฑ์</p>
           {previous && previous.rubric_version !== result.versions.rubric &&
             <p className="muted small cross-version-note">{MIXED_RUBRIC_NOTE}</p>}
           <details className="disclosure radar-disclosure">
@@ -167,7 +163,7 @@ function ResultDetails({ result, feedback, metadata }: {
           {SKILLS.filter((s) => filter === "all" || filter === s.key).map((s) => (
             <section key={s.key} className="skill" aria-labelledby={`skill-${s.key}`}>
               <h3 id={`skill-${s.key}`}>{s.label}</h3>
-              <div className={`cards${s.key === "content" || s.codes.length === 1 ? " cards-stack" : ""}`}>
+              <div className="cards">
                 {s.codes.map((code) => {
                   const c = byCode[code];
                   return c && <Card key={code} c={c} feedback={c.feedback_id ? feedback[c.feedback_id] : undefined}
@@ -203,7 +199,7 @@ function Card({ c, feedback, meta, before, topics, media, seek, crossVersion }: 
   const main = scored ? all.filter(([key]) => scored.includes(key)) : [];
   const supporting = scored ? all.filter(([key]) => !scored.includes(key)) : [];
   return (
-    <article className={`card ${ok ? `lvl${c.level}` : "na"}${c.code === "C2" ? " card-wide" : ""}`}>
+    <article className={`card ${ok ? `lvl${c.level}` : "na"}`} data-criterion={c.code}>
       <header>
         <span className="code">{c.code}</span><h4>{CRITERION_NAME[c.code]}</h4>
         <span className="level">{ok ? `ระดับ ${c.level}/4` : "วิเคราะห์ไม่ได้"}</span>

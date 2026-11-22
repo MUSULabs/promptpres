@@ -92,11 +92,9 @@ function VideoSetup({ id }: { id: string }) {
   const percent = progress === null ? null : Math.floor(progress * 100);
 
   return (
-    <section>
+    <section className="video-page">
       <Steps current={2} />
-      <PageHeading title="เตรียมและส่งวิดีโอ">
-        เลือกวิธีเตรียมคลิป แล้วตรวจวิดีโอก่อนส่งวิเคราะห์
-      </PageHeading>
+      <PageHeading title="เตรียมและส่งวิดีโอ" />
       <div className="context-strip">
         <p><Icon name="clock" /> เวลาเป้าหมาย <strong>{fmtTime(info.target_duration_s)}</strong></p>
         {topics.length > 0 ? <details className="context-topics">
@@ -134,7 +132,7 @@ function VideoSetup({ id }: { id: string }) {
           <div className="upload-visual">
             {clipUrl && <video key={clipUrl} className="video upload-preview" controls playsInline preload="metadata" src={clipUrl}
               aria-label="ตัวอย่างคลิปที่เลือก" onError={() => setPreviewError(true)} />}
-            {!clipUrl && <div className="preview-wrap"><div className="preview-placeholder"><Icon name="video" /> ตัวอย่างวิดีโอจะแสดงที่นี่</div></div>}
+            {!clipUrl && <div className="preview-wrap"><div className="preview-placeholder"><Icon name="video" /> ตัวอย่างวิดีโอก่อนส่ง</div></div>}
             {previewError && <Message>เบราว์เซอร์เปิดตัวอย่างไฟล์นี้ไม่ได้ คุณยังส่งไฟล์ให้ระบบตรวจสอบได้</Message>}
           </div>
         </div>

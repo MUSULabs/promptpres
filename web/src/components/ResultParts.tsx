@@ -39,7 +39,7 @@ export function CoachPanel({ coach, media, seek }: { coach: Coach | null; media:
   const evidenceLink = <a className={lead ? "button" : "button secondary"} href="#result-evidence">
     <Icon name="video" /> {media === "unavailable" ? "ดูหลักฐาน" : "ดูวิดีโอและหลักฐาน"}
   </a>;
-  const criteriaLink = <a className={lead ? "button secondary" : "button"} href="#result-criteria">
+  const criteriaLink = <a className={lead ? "coach-link" : "button"} href="#result-criteria">
     ดูผลทั้ง 8 เกณฑ์
   </a>;
 
@@ -47,10 +47,10 @@ export function CoachPanel({ coach, media, seek }: { coach: Coach | null; media:
     <section className="panel coach" aria-labelledby="coach-title">
       <div className="coach-heading">
         <h2 id="coach-title">สิ่งที่ควรฝึกต่อ</h2>
-        {items.length > 0 && <span className="tag"><Icon name="sparkles" /> AI Coach</span>}
+        {items.length > 0 && <span className="muted small">AI Coach</span>}
       </div>
       {lead ? <div className="coach-lead">
-        {lead.code && <strong>{lead.code} · {CRITERION_NAME[lead.code]}</strong>}
+        {lead.code && <strong><span className="coach-code">{lead.code}</span> {CRITERION_NAME[lead.code]}</strong>}
         <p><CoachText text={lead.text} media={media} seek={seek} /></p>
       </div> : <p>เปิดข้อเสนอแนะรายเกณฑ์เพื่อเลือกสิ่งที่จะลองปรับในการซ้อมครั้งถัดไป</p>}
 

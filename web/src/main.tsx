@@ -15,19 +15,25 @@ function App() {
   return (
     <BrowserRouter><AuthProvider>
       <a className="skip-link" href="#main-content">ข้ามไปเนื้อหาหลัก</a>
-      <header className="site-header">
-        <div className="topbar">
-          <Brand />
-          <nav aria-label="เมนูหลัก">
-            <NavLink to="/" end><Icon name="history" /> ประวัติ</NavLink>
-            <NavLink to="/new"><Icon name="plus" /> ซ้อมใหม่</NavLink>
-          </nav>
-          <AccountMenu />
-        </div>
-      </header>
+      <SiteHeader />
       <AppRoutes />
     </AuthProvider></BrowserRouter>
   );
+}
+
+function SiteHeader() {
+  const { pathname } = useLocation();
+  const loginPage = pathname === "/login";
+  return <header className="site-header">
+    <div className="topbar">
+      <Brand />
+      {!loginPage && <nav aria-label="เมนูหลัก">
+        <NavLink to="/" end>ประวัติ</NavLink>
+        <NavLink to="/new"><Icon name="plus" /> ซ้อมใหม่</NavLink>
+      </nav>}
+      <AccountMenu key={pathname} />
+    </div>
+  </header>;
 }
 
 function AppRoutes() {

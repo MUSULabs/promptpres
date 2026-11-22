@@ -42,7 +42,7 @@ export default function Recorder(props: {
     <fieldset className="editor-fields" disabled={props.disabled}>
       <legend className="sr-only">สตูดิโออัดวิดีโอ</legend>
       <div className="grid2">
-        <div className="panel">
+        <div className="panel camera-panel">
           <h2><Icon name="camera" /> กล้องและไมโครโฟน</h2>
           {!mime && <Message kind="error">เบราว์เซอร์นี้อัดวิดีโอไม่ได้ (ไม่มี MediaRecorder ที่รองรับ) — ใช้โหมดอัปโหลดไฟล์แทน</Message>}
           {!stream && <button className="fit" disabled={!mime || opening} onClick={openCamera}><Icon name="camera" /> {opening ? "กำลังเปิดกล้อง…" : "เปิดกล้อง"}</button>}
@@ -65,7 +65,7 @@ export default function Recorder(props: {
             </label>
           )}
         </div>
-        <div className="panel">
+        <div className="panel recording-checks">
           <h2><Icon name="check" /> ตรวจการจัดเฟรมก่อนอัด</h2>
           {CHECKLIST.map((c, i) => {
             const status = c.auto && stream && !recording ? checks[c.auto] : null;

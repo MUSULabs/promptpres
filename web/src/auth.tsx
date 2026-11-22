@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { api, type AuthState } from "./api";
+import { Icon } from "./components/ui";
 
 const Context = createContext<{ state: AuthState | null; refresh: () => Promise<void> }>({ state: null, refresh: async () => {} });
 export const useAuth = () => useContext(Context);
@@ -25,11 +26,36 @@ export function AccountMenu() {
   const { state, refresh } = useAuth();
   const { pathname } = useLocation();
   const [error, setError] = useState("");
+  const menu = useRef<HTMLDetailsElement>(null);
+  const summary = useRef<HTMLElement>(null);
+  useEffect(() => {
+    function dismiss(event: PointerEvent) {
+      const details = menu.current;
+      if (details?.open && event.target instanceof Node && !details.contains(event.target)) details.open = false;
+    }
+    document.addEventListener("pointerdown", dismiss);
+    return () => document.removeEventListener("pointerdown", dismiss);
+  }, []);
   async function logout() { try { await api.logout(); await refresh(); window.location.assign("/login"); }
     catch { setError("ออกจากระบบไม่สำเร็จ กรุณาลองใหม่"); } }
   if (!state?.user && pathname === "/login") return null;
-  return <div className="account-menu">{state?.user ? <>
-    <span>{state.user.display_name}</span>{state.user.is_guest && <Link to="/login?mode=register">สมัครสมาชิกเพื่อเก็บประวัติ</Link>}
-    <button className="button secondary" onClick={() => void logout()}>ออกจากระบบ</button>
-  </> : <Link to="/login">เข้าสู่ระบบ</Link>}{error && <span role="alert">{error}</span>}</div>;
+  if (!state) return null;
+  if (!state.user) return <div className="account-menu"><Link to="/login">เข้าสู่ระบบ</Link></div>;
+  return <details className="account-menu" ref={menu} onBlur={(event) => {
+    if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
+  }} onKeyDown={(event) => {
+    if (event.key === "Escape" && event.currentTarget.open) {
+      event.currentTarget.open = false;
+      summary.current?.focus();
+    }
+  }}>
+    <summary ref={summary} aria-label={`บัญชี ${state.user.display_name}`}>
+      <Icon name="user" /><span>{state.user.display_name}</span><Icon name="chevronDown" />
+    </summary>
+    <div className="account-options">
+      {state.user.is_guest && <Link to="/login?mode=register">สมัครสมาชิกเพื่อเก็บประวัติ</Link>}
+      <button className="quiet" onClick={() => void logout()}>ออกจากระบบ</button>
+      {error && <p className="error small" role="alert">{error}</p>}
+    </div>
+  </details>;
 }

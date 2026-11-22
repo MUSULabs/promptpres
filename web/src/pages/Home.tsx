@@ -5,10 +5,13 @@ import type { FlowStatus, SessionRow } from "../contract";
 import { fmtTime } from "../presentation";
 import { Icon, Message, PageHeading } from "../components/ui";
 import { TrendPanel } from "../components/Trend";
+import RehearsalPreview from "../components/RehearsalPreview";
 
 const STATUS_LABEL: Record<FlowStatus, string> = {
-  created: "ยังไม่ส่งวิดีโอ", queued: "รอคิว", processing: "กำลังวิเคราะห์", done: "เสร็จ", failed: "ล้มเหลว",
+  created: "ยังไม่ส่งวิดีโอ", queued: "รอคิว", processing: "กำลังวิเคราะห์", done: "พร้อมดูผล", failed: "วิเคราะห์ไม่สำเร็จ",
 };
+const DATE = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" });
+const CLOCK = new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit" });
 
 /** History of practice sessions, newest first, with a per-criterion level-change panel from 2 finished rounds (D-046; observed change, not skill progress). */
 export default function Home() {
@@ -24,32 +27,31 @@ export default function Home() {
   }, [attempt]);
 
   return (
-    <section>
-      <PageHeading title="ประวัติการซ้อม"
-        action={rows?.length === 0 ? undefined : <Link className="button" to="/new"><Icon name="plus" /> ซ้อมใหม่</Link>}>
-        ทำรอบที่ค้างต่อ หรือกลับมาดูผลและหลักฐานของรอบที่ผ่านมา
-      </PageHeading>
+    <section className="history-page">
+      <PageHeading title="ประวัติการซ้อม" action={rows?.length ? <Link className="button" to="/new"><Icon name="plus" /> ซ้อมใหม่</Link> : undefined} />
       {err && <>
         <Message kind="error">โหลดรายการไม่ได้: {err}</Message>
         <button className="ghost" onClick={() => { setErr(null); setAttempt(attempt + 1); }}><Icon name="refresh" /> ลองใหม่</button>
       </>}
       {!rows && !err && <Message>กำลังโหลดประวัติการซ้อม…</Message>}
       {rows && rows.length === 0 && (
-        <div className="panel empty-state">
-          <span className="state-icon"><Icon name="history" /></span>
-          <h2>เริ่มต้นการซ้อมนำเสนอครั้งแรกของคุณ</h2>
-          <p className="muted">หลังส่งวิดีโอ คุณสามารถกลับมาดูสถานะและผลของแต่ละรอบได้ที่นี่</p>
-          <Link className="button" to="/new"><Icon name="plus" /> เริ่มรอบซ้อม</Link>
+        <div className="history-empty">
+          <div>
+            <h2>เริ่มซ้อมรอบแรก</h2>
+            <p className="page-description">อัดหรืออัปโหลดวิดีโอ แล้วกลับมาดูช่วงที่พูดได้ดีและช่วงที่ควรฝึกต่อ</p>
+            <Link className="button" to="/new"><Icon name="plus" /> ซ้อมใหม่</Link>
+          </div>
+          <RehearsalPreview />
         </div>
       )}
       {rows && rows.length > 0 && (
         <>
-          <div className="section-heading"><h2>รอบซ้อมล่าสุด</h2><span className="tag">{rows.length} รายการ</span></div>
+          <div className="section-heading"><h2>รอบซ้อมล่าสุด</h2><span className="muted small">{rows.length} รอบ</span></div>
           <ul className="session-list">
             {rows.map((r) => (
               <li className="session-card" key={r.session_id}>
                 <div className="session-card-heading">
-                  <time dateTime={r.created_at}>{new Date(r.created_at).toLocaleString("th-TH")}</time>
+                  <time dateTime={r.created_at}>{DATE.format(new Date(r.created_at))}<span>{CLOCK.format(new Date(r.created_at))} น.</span></time>
                   <div className="badges">
                     {r.source === "mock" && <span className="tag">ตัวอย่าง</span>}
                     <span className={`status ${r.status}`}>{STATUS_LABEL[r.status]}</span>
@@ -60,7 +62,7 @@ export default function Home() {
                   <div><dt>เวลาเป้าหมาย</dt><dd>{r.target_duration_s != null ? fmtTime(r.target_duration_s) : "—"}</dd></div>
                   <div><dt>หัวข้อ</dt><dd>{r.topics_count}</dd></div>
                 </dl>
-                <Link className="button secondary" to={`/sessions/${r.session_id}${r.status === "created" ? "/video" : ""}`}>
+                <Link className="session-open" to={`/sessions/${r.session_id}${r.status === "created" ? "/video" : ""}`}>
                   {r.status === "created" ? "ทำต่อ" : r.status === "done" ? "ดูผล" : "ดูสถานะ"} <Icon name="arrow" />
                 </Link>
               </li>

@@ -6,16 +6,32 @@ import type { Criterion, TranscriptItem } from "../contract";
 import { CRITERION_NAME, SKILLS, fmtTime } from "../presentation";
 import type { MediaState, Seek } from "./ResultParts";
 
-export function EventTimeline({ criteria, duration, media, seek }: {
-  criteria: Criterion[]; duration: number | null; media: MediaState; seek: Seek;
+export function EventTimeline({ criteria, duration, video, media, seek }: {
+  criteria: Criterion[]; duration: number | null; video: RefObject<HTMLVideoElement>; media: MediaState; seek: Seek;
 }) {
+  const timeline = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const player = video.current;
+    const track = timeline.current;
+    if (!player || !track || !duration || media !== "ready") return;
+    const sync = () => track.style.setProperty("--playhead", `${Math.min(100, Math.max(0, player.currentTime / duration * 100))}%`);
+    sync();
+    player.addEventListener("timeupdate", sync);
+    player.addEventListener("seeked", sync);
+    return () => {
+      player.removeEventListener("timeupdate", sync);
+      player.removeEventListener("seeked", sync);
+      track.style.removeProperty("--playhead");
+    };
+  }, [duration, media, video]);
+
   if (!duration) return null;
   const byCode = Object.fromEntries(criteria.map((c) => [c.code, c]));
   const pct = (s: number) => `${Math.min(100, Math.max(0, (s / duration) * 100))}%`;
   const total = criteria.reduce((n, c) => n + c.evidence.length, 0);
   if (total === 0) return null;
   return (
-    <div className="timeline" aria-label="แถบเวลาหลักฐานทุกเกณฑ์">
+    <div ref={timeline} className="timeline" data-playing={media === "ready"} aria-label="แถบเวลาหลักฐานทุกเกณฑ์">
       <p className="timeline-title">แถบเวลาหลักฐาน <span className="muted small">({total} จุด)</span></p>
       {SKILLS.map((skill) => {
         const spans = skill.codes.flatMap((code) => (byCode[code]?.evidence ?? []).map((e) => ({ code, e })));

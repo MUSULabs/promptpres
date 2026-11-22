@@ -164,7 +164,7 @@ test("partial C2 does not display coverage labels from stored topic rows", async
   expect((await request.post(`/browser-test/${id}/processing`)).ok()).toBeTruthy();
   expect((await request.post(`/browser-test/${id}/partial`)).ok()).toBeTruthy();
   await page.goto(`/sessions/${id}`);
-  await expect(page.locator(".card-wide")).toContainText("วิเคราะห์ไม่ได้");
+  await expect(page.locator('.card[data-criterion="C2"]')).toContainText("วิเคราะห์ไม่ได้");
   await expect(page.getByRole("table", { name: "หัวข้อตามแผน" })).toHaveCount(0);
   await expect(page.getByText("ไม่พูดถึง", { exact: true })).toHaveCount(0);
 });
@@ -256,8 +256,10 @@ test("coach times, timeline markers and transcript phrases seek the video", asyn
 
   now = await rewind(page);
   const timeline = page.getByLabel("แถบเวลาหลักฐานทุกเกณฑ์");
+  await expect(timeline).toHaveAttribute("data-playing", "true");
   // fixture: every span is 2-3 s, so speech-lane markers overlap; the last one drawn (S3) is on top
   await timeline.getByRole("button", { name: /ไปยังเวลา 0:02\.0 \(S3/ }).last().click();
+  await expect.poll(() => timeline.evaluate((element) => parseFloat(element.style.getPropertyValue("--playhead")))).toBeGreaterThanOrEqual(40);
   await expect.poll(now).toBeGreaterThanOrEqual(2);
 
   await page.getByText("บทพูดที่ถอดเสียง").click();
@@ -346,6 +348,7 @@ test("Guest registration preserves the rehearsal and member login works in anoth
   await expect(page.locator(".account-menu")).toContainText("ผู้ทดลองใช้งาน");
   const id = await finishedRound(page.request);
   const email = `member-${id}@example.com`;
+  await page.getByLabel("บัญชี ผู้ทดลองใช้งาน").click();
   await page.getByRole("link", { name: "สมัครสมาชิกเพื่อเก็บประวัติ" }).click();
   await page.getByLabel("ชื่อที่แสดง", { exact: true }).fill("สมาชิกทดสอบ");
   await page.getByLabel("อีเมล", { exact: true }).fill(email);
@@ -363,6 +366,7 @@ test("Guest registration preserves the rehearsal and member login works in anoth
   await expect(other.locator(".account-menu")).toContainText("สมาชิกทดสอบ");
   await other.goto(`http://127.0.0.1:18370/sessions/${id}`);
   await expect(other.locator(".card")).toHaveCount(8);
+  await other.getByLabel("บัญชี สมาชิกทดสอบ").click();
   await other.getByRole("button", { name: "ออกจากระบบ", exact: true }).click();
   await expect(other).toHaveURL(/\/login$/);
   expect((await other.request.get(`http://127.0.0.1:18370/api/sessions/${id}`)).status()).toBe(404);

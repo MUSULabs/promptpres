@@ -27,18 +27,19 @@
   font-display: swap;
 }
 
-/* PromptPres WebApp Brand Kit v1.0 */
+/* PromptPres brand and workspace surfaces */
 :root {
-  --bg: #f7f7fb;
+  --bg: #f5f6fa;
   --panel: #fff;
-  --fg: #000;
-  --muted: #525252;
-  --line: #e5e5e5;
+  --fg: #1c2132;
+  --muted: #555d71;
+  --line: #dce0eb;
   --control-line: #767686;
   --accent: #2823ef;
   --accent-hover: #201cc4;
   --accent-active: #19169f;
-  --tint: #eeedff;
+  --tint: #eceeff;
+  --viewfinder: #20243e;
   --focus: #2823ef;
   --error: #98172d;
   --error-bg: #fff0f2;
@@ -47,9 +48,10 @@
   --pending: #684900;
   --pending-bg: #fff4cc;
   --signal: #f81934;
-  --content-width: 1200px;
+  --content-width: 1160px;
+  --gutter: clamp(1.125rem, 4vw, 3.5rem);
   --target-size: 44px;
-  --control-radius: 12px;
-  --radius: 20px;
+  --control-radius: 7px;
+  --radius: 12px;
   --font-ui: Prompt, "Noto Sans Thai", system-ui, sans-serif;
 }
