@@ -1,4 +1,5 @@
 .pp-v1 {
+  --landing-gold: #ffc400;
   min-height: 100svh;
   background: var(--pp-blue);
   color: var(--pp-white);
@@ -97,7 +98,7 @@ main.landing-main {
   top: 0;
   left: 0;
   width: clamp(2.35rem, 5vw, 3.625rem);
-  color: var(--pp-gold);
+  color: var(--landing-gold);
 }
 
 .landing-copy h1 {
@@ -120,7 +121,7 @@ main.landing-main {
   min-width: min(13.5rem, 100%);
   margin-top: 1.55rem;
   padding: .6rem 1.4rem;
-  background: var(--pp-gold);
+  background: var(--landing-gold);
   color: var(--pp-ink);
   font-size: 1.25rem;
   font-weight: 600;
@@ -132,18 +133,17 @@ main.landing-main {
   text-decoration: underline;
 }
 
-.landing-mascot {
+.landing-art {
+  display: block;
   justify-self: center;
-  width: min(100%, 28rem);
-  aspect-ratio: 408 / 400;
-  background-color: var(--pp-white);
-  mask: url("../../design/mascot/ppre-default.svg?no-inline") center / contain no-repeat;
+  width: min(100%, 36rem);
+  height: auto;
 }
 
 .landing-how {
   background: var(--pp-white);
   color: var(--pp-ink);
-  --focus: var(--pp-gold);
+  --focus: var(--landing-gold);
   border-radius: var(--pp-panel-radius);
   padding: clamp(1.125rem, 3vw, 2.25rem);
   scroll-margin-block: 1rem;
@@ -194,7 +194,7 @@ main.landing-main {
 
 @media (max-width: 840px) {
   .landing-hero { grid-template-columns: minmax(0, 1fr); }
-  .landing-mascot { max-width: 20rem; }
+  .landing-art { max-width: 26rem; }
 }
 
 @media (max-width: 700px) {
@@ -203,7 +203,7 @@ main.landing-main {
   .landing-copy h1 { font-size: clamp(2.45rem, 11vw, 4.65rem); line-height: 1.1; }
   .landing-copy p { margin-top: .9rem; }
   .landing-start { width: 100%; min-height: 3.125rem; margin-top: 1.05rem; font-size: 1.125rem; }
-  .landing-mascot { max-width: clamp(12rem, 60vw, 16rem); }
+  .landing-art { max-width: 23rem; }
   .landing-steps { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
   .landing-steps li + li {
     border-inline-start: 0;
