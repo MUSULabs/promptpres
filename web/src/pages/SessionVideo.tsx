@@ -4,7 +4,7 @@ import { ApiError, api } from "../api";
 import type { SessionInfo } from "../contract";
 import Recorder from "../components/Recorder";
 import { ConfirmDialog, Icon, Message, NotFound, PageHeading, Steps } from "../components/ui";
-import { fmtTime } from "../presentation";
+import { fmtDuration } from "../presentation";
 import { useObjectUrl } from "../useObjectUrl";
 import { useVideoUpload, type Clip } from "../useVideoUpload";
 import { useLeaveGuard } from "../useLeaveGuard";
@@ -111,7 +111,7 @@ function VideoSetup({ id }: { id: string }) {
       <Steps current={2} />
       <PageHeading title={tab === "record" ? "ห้องซ้อมนำเสนอ" : "เตรียมวิดีโอจากไฟล์"} />
       <div className="context-strip">
-        <p><Icon name="clock" /> เวลาเป้าหมาย <strong>{fmtTime(info.target_duration_s)}</strong></p>
+        <p><Icon name="clock" /> เวลาเป้าหมาย <strong>{fmtDuration(info.target_duration_s)}</strong></p>
         {topics.length > 0 ? <details className="context-topics">
           <summary><Icon name="document" /> หัวข้อที่ยืนยัน {topics.length} หัวข้อ</summary>
           <ol>{topics.map((topic, index) => <li key={topic.id ?? index}>{topic.title}</li>)}</ol>

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { CoachItem, Result } from "../contract";
-import { CRITERION_NAME, fmtTime } from "../presentation";
+import { CRITERION_NAME, fmtDuration } from "../presentation";
 import { CoachText, type MediaState, type Seek } from "./ResultParts";
 import { PracticeMascot } from "./PracticeMascot";
 import { Icon } from "./ui";
@@ -26,7 +26,7 @@ export function ResultCover({ result, times }: {
         </div>
         <dl className="result-times cover-times">
           {times.map(([label, value]) => <div key={label}>
-            <dt>{label}</dt><dd>{value == null ? "—" : fmtTime(value)}</dd>
+            <dt>{label}</dt><dd>{value == null ? "—" : fmtDuration(value)}</dd>
           </div>)}
         </dl>
       </div>

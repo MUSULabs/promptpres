@@ -143,7 +143,7 @@ test("malformed upload response can be retried and result evidence seeks", async
   await expect(page.getByRole("progressbar")).toHaveCount(0);
   expect((await request.post(`/browser-test/${id}/done`)).ok()).toBeTruthy();
   await expect(page.locator(".card")).toHaveCount(8, { timeout: 8_000 });
-  await expect(page.locator(".result-times dd")).toHaveText(["0:05.0", "0:03.0", "15:00.0"]);
+  await expect(page.locator(".result-times dd")).toHaveText(["0:05", "0:03", "15:00"]);
   const video = page.getByLabel("วิดีโอการซ้อม", { exact: true });
   const time = page.getByRole("button", { name: "ไปยังเวลา 0:02.0 – 0:03.0", exact: true }).first();
   await time.focus();

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { COVERAGE_LABEL, CRITERION_NAME, SKILLS, VALUE_LABEL, fmtTime } from "../presentation";
+import { COVERAGE_LABEL, CRITERION_NAME, SKILLS, VALUE_LABEL, fmtDuration } from "../presentation";
 import type { CoachItem, Criterion, CriterionCode, CriterionMeta, Result, Skill, Topic } from "../contract";
 import { useSessionResult } from "../useSessionResult";
 import { Icon, Message, NotFound, PageHeading, Steps } from "../components/ui";
@@ -72,7 +72,7 @@ function AnalysisStatus({ result, now }: { result: Result; now: number }) {
         </div>
         {processing && <PracticeMascot pose="thinking" />}
       </div>
-      {Number.isFinite(time) && <p className="muted small" aria-live="off">เวลาตั้งแต่สร้างรอบ {fmtTime(Math.floor(time))}</p>}
+      {Number.isFinite(time) && <p className="muted small" aria-live="off">เวลาตั้งแต่สร้างรอบ {fmtDuration(time)}</p>}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import type { FlowStatus, SessionRow } from "../contract";
-import { fmtTime } from "../presentation";
+import { fmtDuration } from "../presentation";
 import { Icon, Message } from "../components/ui";
 import { TrendPanel } from "../components/Trend";
 import { PracticeMascot } from "../components/PracticeMascot";
@@ -13,6 +13,7 @@ const STATUS_LABEL: Record<FlowStatus, string> = {
 };
 const DATE = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" });
 const CLOCK = new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit" });
+const REFRESH_MS = 10_000;   // while a round is waiting or being analysed, the list asks again this often
 
 function SessionLink({ row }: { row: SessionRow }) {
   return <Link className="session-open" to={`/sessions/${row.session_id}${row.status === "created" ? "/video" : ""}`}>
@@ -39,16 +40,26 @@ export default function Home() {
   const [rows, setRows] = useState<SessionRow[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
-    api.sessions(signal).then((data) => { if (!signal.aborted) setRows(data); })
-      .catch((e) => { if (!signal.aborted) setErr(String(e.message)); });
+    api.sessions(signal).then((data) => { if (!signal.aborted) { setRows(data); setErr(null); } })
+      .catch((e) => { if (!signal.aborted) setErr(String(e.message)); });   // a failed refresh keeps the list shown
     return () => controller.abort();
-  }, [attempt]);
+  }, [attempt, refresh]);
   const rehearsals = rows?.filter((row) => row.source === "session");
   const latest = rehearsals?.[0];
   const active = rehearsals?.filter((row) => row.status === "created" || row.status === "queued" || row.status === "processing");
+  // Rounds in the queue or being analysed change on the server: keep their status current while the tab is shown.
+  const analysing = !!rehearsals?.some((row) => row.status === "queued" || row.status === "processing");
+  useEffect(() => {
+    if (!analysing) return;
+    const tick = () => { if (!document.hidden) setRefresh((n) => n + 1); };
+    const timer = setInterval(tick, REFRESH_MS);
+    document.addEventListener("visibilitychange", tick);
+    return () => { clearInterval(timer); document.removeEventListener("visibilitychange", tick); };
+  }, [analysing]);
 
   return (
     <section className="dashboard">
@@ -107,8 +118,8 @@ export default function Home() {
                     </div>
                   </div>
                   <dl className="session-details">
-                    <div><dt>ความยาวคลิป</dt><dd>{r.duration_s != null ? fmtTime(r.duration_s) : "—"}</dd></div>
-                    <div><dt>เวลาเป้าหมาย</dt><dd>{r.target_duration_s != null ? fmtTime(r.target_duration_s) : "—"}</dd></div>
+                    <div><dt>ความยาวคลิป</dt><dd>{r.duration_s != null ? fmtDuration(r.duration_s) : "—"}</dd></div>
+                    <div><dt>เวลาเป้าหมาย</dt><dd>{r.target_duration_s != null ? fmtDuration(r.target_duration_s) : "—"}</dd></div>
                     <div><dt>หัวข้อ</dt><dd>{r.topics_count}</dd></div>
                   </dl>
                   <SessionLink row={r} />

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { api } from "../api";
 import type { Criterion, TranscriptItem } from "../contract";
-import { CRITERION_NAME, SKILLS, fmtTime } from "../presentation";
+import { CRITERION_NAME, SKILLS, fmtDuration, fmtTime } from "../presentation";
 import type { EvidencePoint, MediaState, Seek } from "./ResultParts";
 import { Icon } from "./ui";
 
@@ -57,7 +57,7 @@ export function EventTimeline({ criteria, duration, video, media, selection, see
         </div>;
       })}
       <div className="timeline-scale muted small" aria-hidden="true">
-        <span>0:00</span><span>{fmtTime(duration)}</span>
+        <span>0:00</span><span>{fmtDuration(duration)}</span>
         {selection && !selection.code && <span className="timeline-scale-pin">
           <i className="timeline-pin" style={{ left: pct(selection.seconds) }} />
         </span>}
