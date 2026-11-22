@@ -85,13 +85,18 @@ test("failed criterion metadata does not claim the feedback is missing", async (
 });
 
 test("the dashboard updates a round's status while it is being analysed", async ({ page, request }) => {
-  const id = await uploadedRound(request);       // queued; finished below so it gives its queue place back
+  // A finished round listed as "queued" once, so the test holds no place in the analysis queue.
+  const id = await finishedRound(request);
+  await page.route("**/api/sessions", async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    const response = await route.fetch();
+    const rows = (await response.json()) as { session_id: string; status: string }[];
+    await route.fulfill({ response, json: rows.map((row) => row.session_id === id ? { ...row, status: "queued" } : row) });
+  }, { times: 1 });
   await page.clock.install();
   await page.goto("/");
   const card = page.locator(".session-card").filter({ has: page.locator(`a[href="/sessions/${id}"]`) });
   await expect(card.locator(".status")).toHaveText("รอคิว");
-  expect((await request.post(`/browser-test/${id}/processing`)).ok()).toBeTruthy();
-  expect((await request.post(`/browser-test/${id}/done`)).ok()).toBeTruthy();
   await page.clock.runFor(10_000);
   await expect(card.locator(".status")).toHaveText("พร้อมดูผล");
   await expect(card.locator("dd").first()).toHaveText("0:05");        // whole seconds, not "0:05.0"

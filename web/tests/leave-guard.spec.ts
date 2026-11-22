@@ -45,6 +45,9 @@ test("leaving with a recorded but unsent clip asks first, and cancelling keeps t
   await expect(dialog).toContainText("ยังไม่ได้ส่งวิเคราะห์");
   await expect(dialog.getByRole("button", { name: "ยกเลิก", exact: true })).toBeFocused();
   await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  // The dialog's "close" event (which hands the held navigation back) fires in the next task.
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
   await expect(page).toHaveURL(`/sessions/${id}/video`);
   await expect(page.getByLabel("คลิปที่อัดไว้")).toBeVisible();
 
@@ -102,6 +105,12 @@ test("closing the tab with an unsent clip triggers the browser's leave prompt", 
 
 test("a clip that was sent leaves for the result page without asking", async ({ page, request }) => {
   const id = await newRound(request);
+  // The upload itself is answered here, so this test takes no place in the analysis queue
+  // (dev mode has one identity and the credit guard allows 2 waiting rounds per account).
+  await page.route(`**/api/sessions/${id}/uploads`, (route) => route.fulfill({ json: {
+    upload_id: "0".repeat(32), url: `/api/test-upload/${id}`, token: "t", chunk_bytes: 8 << 20, chunks: 1 } }));
+  await page.route(`**/api/test-upload/${id}/chunks/0`, (route) => route.fulfill({ json: {} }));
+  await page.route(`**/api/test-upload/${id}/complete`, (route) => route.fulfill({ json: { session_id: id, status: "queued" } }));
   await page.goto(`/sessions/${id}/video`);
   await page.getByRole("button", { name: "อัปโหลดไฟล์วิดีโอ" }).click();
   const clip = await request.get("/browser-test/clip");
@@ -109,7 +118,4 @@ test("a clip that was sent leaves for the result page without asking", async ({ 
   await page.getByRole("button", { name: "ส่งวิเคราะห์", exact: true }).click();
   await expect(page).toHaveURL(`/sessions/${id}`);
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  // Finish the round: dev mode has one identity and the credit guard allows 2 waiting rounds.
-  expect((await request.post(`/browser-test/${id}/processing`)).ok()).toBeTruthy();
-  expect((await request.post(`/browser-test/${id}/done`)).ok()).toBeTruthy();
 });
