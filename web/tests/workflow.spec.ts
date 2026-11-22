@@ -263,6 +263,10 @@ test("result keeps criteria and readable evidence when the coach and video are u
   await expect(page.getByRole("heading", { name: "ผลรายเกณฑ์" })).toBeFocused();
   await expect(page.getByText("รอบนี้ไม่มีวิดีโอสำหรับเปิดดู")).toBeVisible();
   await expect(page.locator(".card")).toHaveCount(8);
+  // On a phone the evidence sits in each card's fold; open the first card that has some.
+  const withEvidence = page.locator(".card").filter({ has: page.locator(".evidence") }).first();
+  await withEvidence.locator(".card-more > summary").click();
+  await expect(withEvidence.locator(".evidence .time-unavailable").first()).toBeVisible();
   await expect(page.locator(".evidence .time-unavailable").first()).toContainText("0:02.0 – 0:03.0");
   await expect(page.getByRole("button", { name: /ไปยังเวลา/ })).toHaveCount(0);
   await page.getByRole("link", { name: "เริ่มซ้อมอีกครั้ง" }).press("Enter");

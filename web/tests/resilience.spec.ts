@@ -13,7 +13,13 @@ async function uploadedRound(request: APIRequestContext) {
   const created = await request.post("/api/sessions", { data: { target_duration_s: 900 } });
   expect(created.ok()).toBeTruthy();
   const id = (await created.json()).session_id as string;
-  expect((await request.post(`/api/sessions/${id}/video`, { multipart: { video: await sample(request) } })).ok()).toBeTruthy();
+  const video = await sample(request);
+  // Dev mode has one identity and the credit guard allows 2 waiting rounds per account, so a test running
+  // in parallel can hold both places for a moment (429): wait for it to finish, as a user would.
+  let status = 0;
+  await expect.poll(async () => (status = (await request.post(`/api/sessions/${id}/video`, { multipart: { video } })).status()),
+    { intervals: [250, 500, 1000], timeout: 15_000 }).not.toBe(429);
+  expect(status).toBe(200);
   return id;
 }
 
