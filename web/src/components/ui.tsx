@@ -32,9 +32,9 @@ export function Icon({ name }: { name: keyof typeof ICONS }) {
   );
 }
 
-export function Brand() {
+export function Brand({ label = "PromptPre's — ประวัติการซ้อม" }: { label?: string }) {
   return (
-    <Link className="brand" to="/" aria-label="PromptPre's — ประวัติการซ้อม">
+    <Link className="brand" to="/" aria-label={label}>
       <img src={horizontalBrand} width="1504" height="246" alt="PromptPre's" />
     </Link>
   );

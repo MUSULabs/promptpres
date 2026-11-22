@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { Icon, Message } from "../components/ui";
@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [name, setName] = useState("");
   const [busy, setBusy] = useState(false); const [error, setError] = useState("");
   const { refresh, state } = useAuth(); const navigate = useNavigate();
+  const next = params.get("next") || "/";
+  const safeNext = next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : "/";
   async function submit(event?: FormEvent, guest = false) {
     event?.preventDefault(); setBusy(true); setError("");
     try {
@@ -18,11 +20,12 @@ export default function LoginPage() {
       else if (register) await api.register(email, name, password);
       else await api.login(email, password);
       await refresh();
-      const next = params.get("next") || "/";
-      navigate(next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : "/", { replace: true });
+      navigate(safeNext, { replace: true });
     } catch (e) { setError(e instanceof Error ? e.message : "เข้าสู่ระบบไม่สำเร็จ"); }
     finally { setBusy(false); }
   }
+  // A signed-in member has nothing to do here (a Guest stays: registering moves their rounds).
+  if (state?.user && !state.user.is_guest && !busy) return <Navigate to={safeNext} replace />;
   return <section className="login-layout">
     <header className="login-intro">
       <h1>ซ้อมนำเสนอ<br />ย้อนดูจังหวะของคุณ</h1>

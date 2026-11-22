@@ -72,7 +72,7 @@ function AnalysisStatus({ result, now }: { result: Result; now: number }) {
         </div>
         {processing && <PracticeMascot pose="thinking" />}
       </div>
-      {Number.isFinite(time) && <p className="muted small" aria-live="off">เวลาตั้งแต่สร้างรอบ {fmtDuration(time)}</p>}
+      {Number.isFinite(time) && <p className="muted small" aria-live="off">นับจากเริ่มตั้งค่ารอบนี้ {fmtDuration(time)}</p>}
     </div>
   );
 }

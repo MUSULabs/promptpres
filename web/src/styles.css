@@ -155,8 +155,10 @@ input[type=number] { max-width: 12rem; }
 .file-picker:has(input:disabled) { cursor: not-allowed; }
 .file-picker .button { align-self: flex-start; pointer-events: none; }
 .file-picker:has(input:disabled) .button { color: var(--muted); background: var(--line); }
-.practice-setup { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1fr); align-items: start; gap: 1.25rem clamp(1.5rem, 6vw, 5.5rem); }
-.setup-intro { padding-block: 1rem; }
+.practice-setup { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr;
+  align-items: start; gap: 1.25rem clamp(1.5rem, 6vw, 5.5rem); }
+/* The intro spans the rows on the right, so the topic panel sits right under the time panel (no gap). */
+.setup-intro { padding-block: 1rem; grid-row: 1 / span 3; }
 .setup-intro .page-heading { margin: 0; }
 .setup-panel, .topics-panel { grid-column: 2; margin: 0; }
 .setup-panel { padding: clamp(1.125rem, 3.2vw, 2.25rem); }
@@ -360,7 +362,7 @@ span.marker { cursor: default; }
   align-items: center; column-gap: clamp(2rem, 10vw, 8rem); row-gap: 1.5rem; max-width: 68rem; margin-inline: auto;
 }
 .login-intro { grid-area: intro; align-self: end; }
-.login-intro h1 { font-size: clamp(2rem, 3.9vw, 3.35rem); line-height: 1.18; }
+.login-intro h1 { font-size: clamp(2rem, 3.9vw, 3.35rem); line-height: 1.18; text-wrap: balance; }
 .login-preview { grid-area: example; min-width: 0; align-self: start; }
 .login-panel { grid-area: account; display: grid; gap: 1.15rem; min-width: 0; padding: clamp(1.2rem, 3vw, 2.35rem); border-radius: var(--radius); border: 1px solid var(--line); background: var(--panel); }
 .login-panel .tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; gap: 0; border-bottom: 1px solid var(--line); }
@@ -394,7 +396,8 @@ span.marker { cursor: default; }
   .session-details dt { font-size: .75rem; }
   .session-details dd { font-size: .9rem; }
   .session-open { padding-inline-start: .25rem; font-size: .83rem; }
-  .setup-intro { padding: 0; }
+  .practice-setup { grid-template-rows: none; }
+  .setup-intro { padding: 0; grid-row: auto; }
   .setup-panel, .topics-panel { grid-column: 1; }
   .login-layout { grid-template: "intro" "account" "example" / minmax(0, 1fr); max-width: 31rem; }
   .coverage-table, .coverage-table tbody { display: block; }

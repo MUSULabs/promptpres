@@ -35,9 +35,10 @@ function AppShell() {
 function SiteHeader({ checkingEntry }: { checkingEntry: boolean }) {
   const { pathname } = useLocation();
   const loginPage = pathname === "/login";
+  const { state } = useAuth();
   return <header className="site-header">
     <div className="topbar">
-      <Brand />
+      <Brand label={state?.user ? undefined : "PromptPre's — หน้าแรก"} />
       {!loginPage && !checkingEntry && <nav aria-label="เมนูหลัก">
         <NavLink to="/" end>ประวัติ</NavLink>
         <NavLink to="/new"><Icon name="plus" /> ซ้อมใหม่</NavLink>
