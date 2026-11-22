@@ -95,7 +95,12 @@
   .notebook-criteria .card + .card { border-top: 0; border-inline-start: 1px solid var(--line); }
   .notebook-criteria .card:nth-child(3) { grid-column: 1 / -1; border-inline-start: 0; border-top: 1px solid var(--line); }
 }
+/* Breakpoint shared with NARROW in ResultPage.tsx (cards fold their details below it) */
 @media (max-width: 759px) {
+  .notebook-criteria .card-more-label { display: grid; gap: .1rem; min-width: 0; text-align: start; }
+  .notebook-criteria .card-more-label small { font-weight: 400; font-size: .82rem; }
+  .notebook-criteria .card-more-body { display: grid; gap: .75rem; padding: .75rem .8rem; min-width: 0; }
+  .notebook-criteria .card-more-body .primary-values { padding-top: 0; border-top: 0; }
   .cover-frame, .notebook-spread, .notebook-evidence-grid, .next-practice { grid-template-columns: minmax(0, 1fr); }
   .next-practice-mascot { display: none; }
 }

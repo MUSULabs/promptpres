@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Link, useParams } from "react-router-dom";
 import { COVERAGE_LABEL, CRITERION_NAME, SKILLS, VALUE_LABEL, fmtDuration } from "../presentation";
 import type { CoachItem, Criterion, CriterionCode, CriterionMeta, Result, Skill, Topic } from "../contract";
@@ -118,6 +118,16 @@ function notePoint(note?: CoachItem): EvidencePoint | null {
 
 type MetaStatus = ReturnType<typeof useSessionResult>["metaStatus"];
 
+// Phones fold each card's measured values and evidence behind one disclosure (handoff 03: "Mobile: summarize
+// first; details via accessible disclosure"). Same breakpoint as `@media (max-width: 759px)` in result-notebook.css.
+const NARROW = "(max-width: 759px)";
+function subscribeNarrow(change: () => void) {
+  const query = matchMedia(NARROW);
+  query.addEventListener("change", change);
+  return () => query.removeEventListener("change", change);
+}
+const useNarrow = () => useSyncExternalStore(subscribeNarrow, () => matchMedia(NARROW).matches, () => false);
+
 function ResultDetails({ result, feedback, metadata, metaStatus, retryMeta }: {
   result: Result; feedback: Record<string, string>; metadata: ReturnType<typeof useSessionResult>["meta"];
   metaStatus: MetaStatus; retryMeta: () => void;
@@ -127,6 +137,10 @@ function ResultDetails({ result, feedback, metadata, metaStatus, retryMeta }: {
   const [note, setNote] = useState<CoachItem>();
   const [selection, setSelection] = useState<EvidencePoint | null>();
   const video = useRef<HTMLVideoElement>(null);
+  const narrow = useNarrow();
+  // Open folds live here (not in Card) so every seek to a criterion opens its details, even after the user closed them.
+  const [openCards, setOpenCards] = useState<ReadonlySet<CriterionCode>>(() => new Set());
+  const [announce, setAnnounce] = useState("");
   const [previous, setPrevious] = useState<SessionRow | null>(null);
   useEffect(() => {        // previous finished rehearsal (same rubric) for the delta badges; mocks have none
     if (result.session_id.startsWith("s_mock_")) return;
@@ -153,10 +167,23 @@ function ResultDetails({ result, feedback, metadata, metaStatus, retryMeta }: {
     setSelection(notePoint(item));
   }
 
+  function toggleCard(code: CriterionCode, open: boolean) {
+    setOpenCards((cards) => {
+      if (cards.has(code) === open) return cards;
+      const next = new Set(cards);
+      if (open) next.add(code); else next.delete(code);
+      return next;
+    });
+  }
+
   function seek(seconds: number, code?: CriterionCode) {
     const player = video.current;
     if (!player || player.readyState < 1) return;
     setSelection({ seconds, code });
+    if (narrow && code) {
+      toggleCard(code, true);
+      setAnnounce(`เปิดรายละเอียดเกณฑ์ ${code} ${CRITERION_NAME[code]} แล้ว`);
+    }
     player.currentTime = Math.max(0, Number.isFinite(player.duration) ? Math.min(seconds, player.duration) : seconds);
     void player.play().catch(() => undefined);
     player.scrollIntoView({
@@ -200,6 +227,7 @@ function ResultDetails({ result, feedback, metadata, metaStatus, retryMeta }: {
             <h2 id="result-criteria" tabIndex={-1}>ผลรายเกณฑ์</h2>
             <p className="muted small">รูบริก {result.versions.rubric ?? "—"} / ค่าตั้ง {result.versions.config ?? "—"}</p>
           </div>
+          {narrow && <p className="sr-only" aria-live="polite">{announce}</p>}
           {metaStatus === "failed" && <div className="result-load-error">
             <Message kind="error">โหลดคำอธิบายระดับและข้อเสนอแนะรายเกณฑ์ไม่สำเร็จ ระดับและค่าที่วัดได้ด้านล่างยังถูกต้อง</Message>
             <button className="ghost fit" onClick={retryMeta}><Icon name="refresh" /> ลองใหม่</button>
@@ -223,7 +251,8 @@ function ResultDetails({ result, feedback, metadata, metaStatus, retryMeta }: {
                   const c = byCode[code];
                   return c && <Card key={code} c={c} feedback={c.feedback_id ? feedback[c.feedback_id] : undefined}
                     meta={metadata[code]} metaStatus={metaStatus} before={previous ? levelOf(previous, code) : undefined} crossVersion={!!previous && previous.rubric_version !== result.versions.rubric} topics={code === "C2" && c.status === "ok" ? result.topics : undefined}
-                    media={media} seek={seek} />;
+                    media={media} seek={seek} narrow={narrow} open={openCards.has(code)}
+                    onToggle={(open) => toggleCard(code, open)} />;
                 })}
               </div>
             </section>
@@ -243,10 +272,11 @@ function ValueList({ entries }: { entries: [string, number | null][] }) {
   </dl>;
 }
 
-function Card({ c, feedback, meta, metaStatus, before, topics, media, seek, crossVersion }: {
+function Card({ c, feedback, meta, metaStatus, before, topics, media, seek, crossVersion, narrow, open, onToggle }: {
   c: Criterion; feedback?: string; meta?: CriterionMeta; metaStatus: MetaStatus; before?: number | null; crossVersion?: boolean;
   topics?: Topic[];
   media: MediaState; seek: Seek;
+  narrow: boolean; open: boolean; onToggle: (open: boolean) => void;
 }) {
   const ok = c.status === "ok";
   const scored = meta?.scored_values;
@@ -254,36 +284,69 @@ function Card({ c, feedback, meta, metaStatus, before, topics, media, seek, cros
   const all = Object.entries(c.values);
   const main = scored ? all.filter(([key]) => scored.includes(key)) : [];
   const supporting = scored ? all.filter(([key]) => !scored.includes(key)) : [];
+  const head = <>
+    <header>
+      <span className="code">{c.code}</span><h4>{CRITERION_NAME[c.code]}</h4>
+      <span className="level">{ok ? `ระดับ ${c.level}/4` : "วิเคราะห์ไม่ได้"}</span>
+    </header>
+    <LevelBand level={ok ? c.level : null} />
+    {before !== undefined && <DeltaBadge before={before} now={c.level} crossVersion={crossVersion} />}
+    {reading && <p className="reading"><strong>{reading.word}</strong>
+      {reading.detail && <span> · {reading.detail}</span>}</p>}
+    {!ok && <p className="reason">เหตุผล: {c.reason}</p>}
+  </>;
+  const values = <>
+    {!scored && all.length > 0 && <div>
+      {metaStatus === "ready" && <p className="muted">ไม่ทราบว่าค่าใดใช้คิดระดับในผลรุ่นนี้</p>}
+      <ValueList entries={all} />
+    </div>}
+    {main.length > 0 && <div className="primary-values"><ValueList entries={main} />
+      {reading?.explain && <p className="muted small">{reading.explain}</p>}</div>}
+  </>;
+  const template = ok && <p className="template"><strong>ข้อเสนอแนะ</strong> {feedback ?? (metaStatus === "loading" ? "กำลังโหลดข้อเสนอแนะ…"
+    : metaStatus === "failed" ? "โหลดข้อเสนอแนะไม่สำเร็จ" : "ไม่พบข้อความข้อเสนอแนะสำหรับผลรุ่นนี้")}</p>;
+  const evidence = c.evidence.length > 0 && <div className="evidence">
+    <h5>ช่วงเวลาหลักฐาน</h5>
+    <ul>{c.evidence.map((e, i) => <li key={i}>
+      <TimeChip start={e.start_s} end={e.end_s} media={media} seek={(seconds) => seek(seconds, c.code)} />
+      {(e.label || e.note) && <span>{e.label || e.note}</span>}
+    </li>)}</ul>
+  </div>;
+  const coverage = topics && topics.length > 0 && <CoverageTable topics={topics} media={media} seek={seek} />;
+  const supportingEl = supporting.length > 0 && <div className="supporting">
+    <h5>ข้อมูลประกอบ — ไม่ใช้คิดระดับ</h5><ValueList entries={supporting} />
+  </div>;
+  const cls = `card ${ok ? `lvl${c.level}` : "na"}`;
+
+  if (!narrow) return (
+    <article className={cls} data-criterion={c.code}>
+      {head}{values}{template}{evidence}{coverage}{supportingEl}
+    </article>
+  );
+
+  // Phone: level, band, reading, reason and feedback stay in view; measured values and evidence fold.
+  const valueCount = scored ? main.length : all.length;
+  const evidenceCount = c.evidence.length;
+  const topicCount = topics?.length ?? 0;
+  const hasMore = valueCount + evidenceCount + topicCount + supporting.length > 0;
+  const title = evidenceCount || topicCount ? (valueCount ? "ดูค่าที่วัดและหลักฐาน" : "ดูหลักฐาน")
+    : valueCount ? "ดูค่าที่วัด" : "ดูข้อมูลประกอบ";
+  const counts = [valueCount && `ค่าที่วัด ${valueCount} ค่า`, evidenceCount && `หลักฐาน ${evidenceCount} ช่วง`,
+    topicCount && `หัวข้อตามแผน ${topicCount} หัวข้อ`, supporting.length && `ข้อมูลประกอบ ${supporting.length} ค่า`]
+    .filter(Boolean).join(" · ");
   return (
-    <article className={`card ${ok ? `lvl${c.level}` : "na"}`} data-criterion={c.code}>
-      <header>
-        <span className="code">{c.code}</span><h4>{CRITERION_NAME[c.code]}</h4>
-        <span className="level">{ok ? `ระดับ ${c.level}/4` : "วิเคราะห์ไม่ได้"}</span>
-      </header>
-      <LevelBand level={ok ? c.level : null} />
-      {before !== undefined && <DeltaBadge before={before} now={c.level} crossVersion={crossVersion} />}
-      {reading && <p className="reading"><strong>{reading.word}</strong>
-        {reading.detail && <span> · {reading.detail}</span>}</p>}
-      {!ok && <p className="reason">เหตุผล: {c.reason}</p>}
-      {!scored && all.length > 0 && <div>
-        {metaStatus === "ready" && <p className="muted">ไม่ทราบว่าค่าใดใช้คิดระดับในผลรุ่นนี้</p>}
-        <ValueList entries={all} />
-      </div>}
-      {main.length > 0 && <div className="primary-values"><ValueList entries={main} />
-        {reading?.explain && <p className="muted small">{reading.explain}</p>}</div>}
-      {ok && <p className="template"><strong>ข้อเสนอแนะ</strong> {feedback ?? (metaStatus === "loading" ? "กำลังโหลดข้อเสนอแนะ…"
-        : metaStatus === "failed" ? "โหลดข้อเสนอแนะไม่สำเร็จ" : "ไม่พบข้อความข้อเสนอแนะสำหรับผลรุ่นนี้")}</p>}
-      {c.evidence.length > 0 && <div className="evidence">
-        <h5>ช่วงเวลาหลักฐาน</h5>
-        <ul>{c.evidence.map((e, i) => <li key={i}>
-          <TimeChip start={e.start_s} end={e.end_s} media={media} seek={(seconds) => seek(seconds, c.code)} />
-          {(e.label || e.note) && <span>{e.label || e.note}</span>}
-        </li>)}</ul>
-      </div>}
-      {topics && topics.length > 0 && <CoverageTable topics={topics} media={media} seek={seek} />}
-      {supporting.length > 0 && <div className="supporting">
-        <h5>ข้อมูลประกอบ — ไม่ใช้คิดระดับ</h5><ValueList entries={supporting} />
-      </div>}
+    <article className={cls} data-criterion={c.code}>
+      {head}{template}
+      {hasMore && <details className="disclosure card-more" open={open} onToggle={(e) => onToggle(e.currentTarget.open)}>
+        <summary>
+          <span className="card-more-label">
+            <span className="card-more-title">{title}<span className="sr-only"> ของเกณฑ์ {CRITERION_NAME[c.code]}</span></span>
+            <small className="muted">{counts}</small>
+          </span>
+          <Icon name="chevronDown" />
+        </summary>
+        <div className="card-more-body">{values}{evidence}{coverage}{supportingEl}</div>
+      </details>}
     </article>
   );
 }
