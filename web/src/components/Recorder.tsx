@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CHECKLIST, COUNTDOWN_CHOICES, useRecorder } from "../useRecorder";
-import { Icon, Message } from "./ui";
+import { ConfirmDialog, Icon, Message } from "./ui";
 
 /** Dashed head-to-waist outline over the preview: head near the top, waist at the bottom edge = right distance. */
 function FramingGuide({ aspect }: { aspect: number }) {
@@ -38,6 +38,7 @@ export default function Recorder(props: {
   const recordControl = useRef<HTMLButtonElement>(null);
   const stopControl = useRef<HTMLButtonElement>(null);
   const reviewControl = useRef<HTMLVideoElement>(null);
+  const replaceDialog = useRef<HTMLDialogElement>(null);
   const { onActivityChange } = props;
   const active = recording || count !== null;
   const reviewing = !!blobUrl && !stream;
@@ -84,7 +85,8 @@ export default function Recorder(props: {
                 {COUNTDOWN_CHOICES.map((s) => <option key={s} value={s}>{s ? `${s} วินาที` : "ไม่นับ"}</option>)}
               </select>
             </label>}
-            {live && <button ref={recordControl} disabled={!ready || !mime} onClick={begin}><Icon name="video" /> เริ่มอัด</button>}
+            {live && <button ref={recordControl} disabled={!ready || !mime}
+              onClick={() => blob ? replaceDialog.current?.showModal() : begin()}><Icon name="video" /> เริ่มอัด</button>}
             {count !== null && <button ref={stopControl} className="ghost" onClick={() => {
               stopCountdown();
               requestAnimationFrame(() => recordControl.current?.focus({ preventScroll: true }));
@@ -125,6 +127,9 @@ export default function Recorder(props: {
           {!ready && <p className="muted">ติ๊กครบทุกข้อจึงเริ่มอัดได้ — ข้อที่มีจุดสีระบบตรวจและติ๊กให้เองเมื่อผ่าน</p>}
         </div>
       </div>
+      <ConfirmDialog dialogRef={replaceDialog} title="อัดใหม่แทนคลิปเดิมหรือไม่?"
+        description="คลิปที่อัดไว้ก่อนหน้ายังไม่ได้ส่งวิเคราะห์ เมื่อเริ่มอัดใหม่ คลิปเดิมจะถูกแทนที่"
+        confirmLabel="อัดใหม่แทนคลิปเดิม" onConfirm={begin} />
     </fieldset>
   );
 }

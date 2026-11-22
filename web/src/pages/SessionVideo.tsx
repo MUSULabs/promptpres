@@ -7,6 +7,7 @@ import { ConfirmDialog, Icon, Message, NotFound, PageHeading, Steps } from "../c
 import { fmtTime } from "../presentation";
 import { useObjectUrl } from "../useObjectUrl";
 import { useVideoUpload, type Clip } from "../useVideoUpload";
+import { useLeaveGuard } from "../useLeaveGuard";
 import "./practice.css";
 
 type VideoMode = "record" | "upload";
@@ -29,7 +30,14 @@ function VideoSetup({ id }: { id: string }) {
   const [notFound, setNotFound] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const clipUrl = useObjectUrl(tab === "upload" ? clip?.blob : null);
-  const { send, sending, progress, error, setError, isSending } = useVideoUpload(id, () => nav(`/sessions/${id}`), setInfo);
+  const { send, sending, progress, error, setError, isSending } = useVideoUpload(id, () => {
+    guard.release();
+    nav(`/sessions/${id}`);
+  }, setInfo);
+  // Never drop a recording or an unsent clip silently (handoff 03): ask before leaving this step.
+  const guard = useLeaveGuard(info?.status === "created" && (recorderActive || !!clip || sending));
+  const leaveDialog = useRef<HTMLDialogElement>(null);
+  const leaving = useRef(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const pendingMode = useRef<VideoMode | null>(null);
   const activeModeButton = useRef<HTMLButtonElement>(null);
@@ -44,6 +52,13 @@ function VideoSetup({ id }: { id: string }) {
     });
     return () => controller.abort();
   }, [id]);
+
+  const { blocker } = guard;
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+    leaving.current = false;
+    if (!leaveDialog.current?.open) leaveDialog.current?.showModal();
+  }, [blocker.state]);
 
   function switchMode(next: VideoMode) {
     setClip(null);
@@ -163,6 +178,13 @@ function VideoSetup({ id }: { id: string }) {
         </ul>
       </details>}
 
+      <ConfirmDialog dialogRef={leaveDialog} title="ออกจากขั้นวิดีโอหรือไม่?"
+        description={sending ? "การอัปโหลดวิดีโอจะถูกยกเลิก และต้องส่งใหม่ภายหลัง"
+          : recorderActive ? "การอัดที่กำลังทำอยู่จะหยุด และคลิปนี้จะไม่ถูกเก็บไว้"
+          : "คลิปที่เตรียมไว้ยังไม่ได้ส่งวิเคราะห์ ถ้าออกตอนนี้คลิปจะหายไป"}
+        confirmLabel="ออกและทิ้งคลิป"
+        onConfirm={() => { leaving.current = true; if (blocker.state === "blocked") blocker.proceed(); }}
+        onClose={() => { if (!leaving.current && blocker.state === "blocked") blocker.reset(); }} />
       <ConfirmDialog dialogRef={dialog} title="เปลี่ยนโหมดวิดีโอหรือไม่?"
         description="คลิปที่ยังไม่ได้ส่งหรือการอัดที่กำลังทำอยู่จะถูกล้างเมื่อเปลี่ยนโหมด"
         confirmLabel="เปลี่ยนโหมดและล้างคลิป" onConfirm={confirmMode}

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, NavLink, Route, Routes, matchPath, useLocation } from "react-router-dom";
+import { NavLink, Route, RouterProvider, Routes, createBrowserRouter, matchPath, useLocation } from "react-router-dom";
 import "./brand.css";
 import "./styles.css";
 import { AuthProvider, AuthGate, AccountMenu, useAuth } from "./auth";
@@ -12,11 +12,9 @@ import SessionVideo from "./pages/SessionVideo";
 import ResultPage from "./pages/ResultPage";
 import { Brand, Icon, NotFound } from "./components/ui";
 
-function App() {
-  return (
-    <BrowserRouter><AuthProvider><AppShell /></AuthProvider></BrowserRouter>
-  );
-}
+// A data router (one splat route around the existing <Routes>) so pages can use useBlocker,
+// e.g. to ask before leaving an unsent recording (useLeaveGuard.ts).
+const router = createBrowserRouter([{ path: "*", element: <AuthProvider><AppShell /></AuthProvider> }]);
 
 function AppShell() {
   const { pathname } = useLocation();
@@ -76,6 +74,6 @@ function AppRoutes({ landing }: { landing: boolean }) {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </React.StrictMode>,
 );
