@@ -7,6 +7,9 @@ import { TEMPLATES, type PresentationTemplate } from "./templates";
 
 type Task = "start" | "pdf" | "confirm";
 
+/** Longest target the user may set (minutes) = longest clip the pipeline accepts (pipeline-v0.yaml prep.max_duration_s, API MAX_TARGET_S). */
+export const MAX_TARGET_MIN = 30;
+
 export function useNewSession() {
   const navigate = useNavigate();
   const [minutes, setMinutes] = useState(15);
@@ -17,7 +20,7 @@ export function useNewSession() {
   const [template, setTemplate] = useState<PresentationTemplate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pending = useRef<AbortController | null>(null);
-  const validTarget = Number.isFinite(minutes) && minutes >= 1 && minutes <= 60;
+  const validTarget = Number.isFinite(minutes) && minutes >= 1 && minutes <= MAX_TARGET_MIN;
   const problems = topics && session ? topicProblems(topics, session.topic_limits) : [];
 
   useEffect(() => () => pending.current?.abort(), []);

@@ -1,5 +1,5 @@
 import TopicEditor from "../components/TopicEditor";
-import { useNewSession } from "../useNewSession";
+import { MAX_TARGET_MIN, useNewSession } from "../useNewSession";
 import { Icon, Message, PageHeading, Steps } from "../components/ui";
 import { TEMPLATES } from "../templates";
 
@@ -34,10 +34,10 @@ export default function NewSession() {
           {template?.note && <p className="muted small">{template.note}</p>}
         </div>
         <label>เวลาเป้าหมายในการนำเสนอ (นาที)
-          <input type="number" min={1} max={60} step={0.5} value={minutes || ""} disabled={busy !== null}
+          <input type="number" min={1} max={MAX_TARGET_MIN} step={0.5} value={minutes || ""} disabled={busy !== null}
             onChange={(e) => setMinutes(Number(e.target.value))} />
         </label>
-        {!validTarget && <Message kind="error">กรุณาตั้งเวลาเป้าหมาย 1–60 นาที</Message>}
+        {!validTarget && <Message kind="error">กรุณาตั้งเวลาเป้าหมาย 1–{MAX_TARGET_MIN} นาที</Message>}
         {!session && <button className="fit" disabled={busy !== null || !validTarget} onClick={start}>
           {busy === "start" ? "กำลังสร้าง…" : "เริ่ม"} <Icon name="arrow" />
         </button>}

@@ -62,6 +62,17 @@ def test_request_validation_errors_are_thai():
     assert "target_duration_s" in body["detail"]
 
 
+def test_target_cannot_exceed_longest_accepted_clip():
+    """A target the user could never meet is refused: cap = pipeline prep.max_duration_s (1800 s)."""
+    from promptpres_shared.settings import pipeline_config
+    cap = float(pipeline_config()["prep"]["max_duration_s"])
+    assert main.MAX_TARGET_S == cap
+    assert client.post("/api/sessions", json={"target_duration_s": cap}).status_code == 201
+    assert client.post("/api/sessions", json={"target_duration_s": cap + 1}).status_code == 422
+    sid = client.post("/api/sessions", json={"target_duration_s": 600}).json()["session_id"]
+    assert client.patch(f"/api/sessions/{sid}", json={"target_duration_s": cap + 1}).status_code == 422
+
+
 def make_pdf(path, text_lines, password=None):
     import pymupdf
     doc = pymupdf.open()

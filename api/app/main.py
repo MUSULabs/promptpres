@@ -203,8 +203,12 @@ def feedback() -> dict[str, str]:
 
 
 # --------------------------------------------------------------------------- sessions
+# A target longer than the longest clip the pipeline accepts could never be met (pipeline-v0.yaml prep.max_duration_s).
+MAX_TARGET_S = float(pipeline_config()["prep"]["max_duration_s"])
+
+
 class NewSession(BaseModel):
-    target_duration_s: Optional[float] = Field(None, gt=0)
+    target_duration_s: Optional[float] = Field(None, gt=0, le=MAX_TARGET_S)
 
 
 class TopicIn(BaseModel):
