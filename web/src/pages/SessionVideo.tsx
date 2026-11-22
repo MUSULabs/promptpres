@@ -94,16 +94,17 @@ function VideoSetup({ id }: { id: string }) {
   return (
     <section>
       <Steps current={2} />
-      <PageHeading badge="ขั้นตอนที่ 02" title="เตรียมและส่งวิดีโอ">
-        อัดจากกล้องหรือเลือกคลิปที่มีอยู่ แล้วดูตัวอย่างก่อนส่งวิเคราะห์
+      <PageHeading title="เตรียมและส่งวิดีโอ">
+        เลือกวิธีเตรียมคลิป แล้วตรวจวิดีโอก่อนส่งวิเคราะห์
       </PageHeading>
-      <p className="context-strip">
-        <span><Icon name="clock" /> เป้าหมาย <strong>{fmtTime(info.target_duration_s)}</strong></span>
-        <span><Icon name="document" /> {topics.length
-          ? `ยืนยัน ${topics.length} หัวข้อ: ${topics.map((t) => t.title).join(" → ")}`
-          : "ไม่ได้ยืนยันหัวข้อ (C1–C2 จะวิเคราะห์ไม่ได้)"}</span>
-      </p>
-      <div className="tabs" role="group" aria-label="โหมดวิดีโอ">
+      <div className="context-strip">
+        <p><Icon name="clock" /> เวลาเป้าหมาย <strong>{fmtTime(info.target_duration_s)}</strong></p>
+        {topics.length > 0 ? <details className="context-topics">
+          <summary><Icon name="document" /> หัวข้อที่ยืนยัน {topics.length} หัวข้อ</summary>
+          <ol>{topics.map((topic, index) => <li key={topic.id ?? index}>{topic.title}</li>)}</ol>
+        </details> : <p><Icon name="document" /> ข้ามหัวข้อ · C1–C2 จะวิเคราะห์ไม่ได้</p>}
+      </div>
+      <div className="tabs video-modes" role="group" aria-label="โหมดวิดีโอ">
         <button ref={tab === "record" ? activeModeButton : undefined} className="segment" aria-pressed={tab === "record"}
           disabled={sending} onClick={() => requestMode("record")}><Icon name="camera" /> อัดจากกล้องสด</button>
         <button ref={tab === "upload" ? activeModeButton : undefined} className="segment" aria-pressed={tab === "upload"}
@@ -113,38 +114,29 @@ function VideoSetup({ id }: { id: string }) {
       {tab === "record" ? <Recorder disabled={sending} onActivityChange={setRecorderActive}
         onRecordingStart={() => { setClip(null); setError(null); }}
         onRecorded={(blob, name) => setClip({ blob, name })} /> : (
-        <div className="grid2">
-          <div className="panel">
+        <div className="panel upload-workspace">
+          <div className="upload-selection">
             <h2><Icon name="upload" /> เลือกและตรวจคลิป</h2>
             <label className="file-field file-picker">
               <span className="button secondary"><Icon name="upload" /> {clip ? "เปลี่ยนไฟล์วิดีโอ" : "เลือกไฟล์วิดีโอ"}</span>
-              <span className="muted">ไฟล์ .mp4 / .webm / .mov</span>
-              <input className="sr-only" type="file" accept={VIDEO_ACCEPT} disabled={sending} onChange={(e) => {
-                selectFile(e.currentTarget.files?.[0]);
-                e.currentTarget.value = "";
-              }} />
+              <span className="muted small" id="video-file-help">ไฟล์ .mp4 / .webm / .mov ขนาดไม่เกิน 512 MB</span>
+              <input className="sr-only" type="file" accept={VIDEO_ACCEPT} disabled={sending}
+                aria-label={clip ? "เปลี่ยนไฟล์วิดีโอ" : "เลือกไฟล์วิดีโอ"} aria-describedby="video-file-help" onChange={(e) => {
+                  selectFile(e.currentTarget.files?.[0]);
+                  e.currentTarget.value = "";
+                }} />
             </label>
             {clip && <div className="selected-file">
               <Icon name="video" />
               <div><strong>{clip.name}</strong><p className="muted">{(clip.blob.size / 1e6).toFixed(1)} MB</p></div>
             </div>}
+          </div>
+          <div className="upload-visual">
             {clipUrl && <video key={clipUrl} className="video upload-preview" controls playsInline preload="metadata" src={clipUrl}
               aria-label="ตัวอย่างคลิปที่เลือก" onError={() => setPreviewError(true)} />}
             {!clipUrl && <div className="preview-wrap"><div className="preview-placeholder"><Icon name="video" /> ตัวอย่างวิดีโอจะแสดงที่นี่</div></div>}
             {previewError && <Message>เบราว์เซอร์เปิดตัวอย่างไฟล์นี้ไม่ได้ คุณยังส่งไฟล์ให้ระบบตรวจสอบได้</Message>}
           </div>
-          <aside className="panel guidance">
-            <span className="state-icon"><Icon name="sparkles" /></span>
-            <h2>คำแนะนำคลิปที่นำมาอัปโหลด</h2>
-            <ul>
-              <li><Icon name="camera" /> ตั้งกล้องแนวนอนและวางให้นิ่ง</li>
-              <li><Icon name="video" /> ยืนนำเสนอให้เห็นศีรษะถึงเอวและมือ</li>
-              <li><Icon name="microphone" /> เสียงพูดชัดเจนและมีเสียงรบกวนน้อย</li>
-              <li><Icon name="check" /> มีผู้นำเสนอเพียงคนเดียว</li>
-              <li><Icon name="camera" /> อัดผ่านเบราว์เซอร์ (720p) หรือตั้งกล้องมือถือเป็น 720p เพื่อให้ไฟล์ไม่เกิน 512 MB</li>
-              <li><Icon name="alert" /> ระบบออนไลน์เก็บไฟล์วิดีโอ 7 วันสำหรับผู้ทดลองใช้ และ 30 วันสำหรับสมาชิก คะแนนและข้อเสนอแนะยังอยู่ครบหลังลบวิดีโอ</li>
-            </ul>
-          </aside>
         </div>
       )}
 
@@ -162,6 +154,16 @@ function VideoSetup({ id }: { id: string }) {
         </div>
         {sending && <progress aria-label="ความคืบหน้าการอัปโหลดไฟล์" max={1} value={progress ?? undefined} />}
       </div>
+
+      {tab === "upload" && <details className="disclosure guidance">
+        <summary>คำแนะนำสำหรับคลิปที่อัปโหลด <Icon name="chevronDown" /></summary>
+        <ul>
+          <li><Icon name="camera" /> ตั้งกล้องแนวนอนให้นิ่ง และใช้ความละเอียด 720p เพื่อลดขนาดไฟล์</li>
+          <li><Icon name="video" /> ยืนนำเสนอคนเดียว ให้เห็นศีรษะถึงเอวและมือ</li>
+          <li><Icon name="microphone" /> พูดให้ได้ยินชัดในที่ที่มีเสียงรบกวนน้อย</li>
+          <li><Icon name="clock" /> ระบบออนไลน์เก็บคลิป 7 วันสำหรับผู้ทดลองใช้ และ 30 วันสำหรับสมาชิก ผลและข้อเสนอแนะยังเปิดดูได้หลังระบบลบคลิป</li>
+        </ul>
+      </details>}
 
       <dialog ref={dialog} className="confirm-dialog" aria-labelledby="change-mode-title"
         aria-describedby="change-mode-description" onClose={() => { pendingMode.current = null; }}>

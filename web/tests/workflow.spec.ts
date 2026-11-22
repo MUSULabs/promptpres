@@ -1,4 +1,4 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
 
 const target = { target_duration_s: 900 };
 const sample = async (request: APIRequestContext) => {
@@ -13,9 +13,88 @@ async function newRound(request: APIRequestContext) {
   return (await response.json()).session_id as string;
 }
 
+async function setPdfAvailability(page: Page, enabled: boolean) {
+  await page.route("**/api/sessions", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...await response.json(), pdf_enabled: enabled } });
+  });
+}
+
+test("mobile setup has a keyboard path from the first viewport to skipping topics", async ({ page, request }) => {
+  await setPdfAvailability(page, false);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByRole("button", { name: /ทดลองใช้งานทันที/ }).click();
+  await page.getByRole("navigation").getByRole("link", { name: "ซ้อมใหม่" }).click();
+
+  const next = page.getByRole("button", { name: "ไปตั้งหัวข้อ" });
+  const minutes = page.getByLabel("เวลาเป้าหมายในการนำเสนอ (นาที)");
+  await expect(next).toBeInViewport({ ratio: 1 });
+  await expect(minutes).toHaveValue("15");
+  expect(await next.evaluate((button) => button.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+  const logo = page.getByAltText("PromptPre's", { exact: true });
+  await expect(logo).toHaveAttribute("src", /^\/assets\/horizontal-.*\.svg$/);
+  await expect.poll(() => logo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+  const icon = await request.get("/assets/favicon.svg");
+  expect(icon.ok()).toBeTruthy();
+  expect(icon.headers()["content-type"]).toContain("image/svg+xml");
+  expect(await page.evaluate(async () => (await document.fonts.load('400 16px Prompt', 'เวลาเป้าหมาย')).length)).toBe(1);
+
+  await minutes.fill("31");
+  await expect(minutes).toHaveAttribute("aria-invalid", "true");
+  await expect(next).toBeDisabled();
+  await minutes.fill("12");
+  await minutes.press("Enter");
+  await expect(page.getByRole("heading", { name: "หัวข้อที่จะนำเสนอ" })).toBeFocused();
+  await expect(page.getByLabel("เลือก PDF รายงานหรือสไลด์โครงงาน")).toHaveCount(0);
+
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "เพิ่มหัวข้อเอง" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "ข้ามหัวข้อ" })).toBeFocused();
+  const warned = page.waitForEvent("dialog");
+  const skipped = page.keyboard.press("Enter");
+  const dialog = await warned;
+  expect(dialog.message()).toContain("C1 และ C2");
+  await dialog.accept();
+  await skipped;
+  await expect(page).toHaveURL(/\/sessions\/[^/]+\/video$/);
+  await expect(page.getByRole("main")).toBeFocused();
+  await expect(page.getByText("ข้ามหัวข้อ · C1–C2 จะวิเคราะห์ไม่ได้")).toBeVisible();
+});
+
+test("PDF draft stays editable before topics are confirmed", async ({ page }) => {
+  await setPdfAvailability(page, true);
+  const uploadUrl = "/browser-test/synthetic-pdf";
+  await page.route("**/api/sessions/*/uploads", (route) => {
+    expect(route.request().postDataJSON()).toMatchObject({ kind: "pdf", filename: "sample.pdf" });
+    return route.fulfill({ json: { url: uploadUrl, token: "test-pdf", chunks: 1, chunk_bytes: 8192 } });
+  });
+  await page.route(`**${uploadUrl}/chunks/0`, (route) => route.fulfill({ json: {} }));
+  await page.route(`**${uploadUrl}/complete`, (route) => route.fulfill({ json: {
+    topics: ["วัตถุประสงค์", "วิธีดำเนินงาน", "สรุปผล"].map((title) => ({ title, key_point: "" })),
+    model: null,
+  } }));
+
+  await page.goto("/new");
+  await page.getByRole("button", { name: "ไปตั้งหัวข้อ" }).click();
+  await page.getByLabel("เลือก PDF รายงานหรือสไลด์โครงงาน").setInputFiles({
+    name: "sample.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n"),
+  });
+  await expect(page.getByText("sample.pdf", { exact: true })).toBeVisible();
+  const firstTopic = page.getByLabel("ชื่อหัวข้อที่ 1", { exact: true });
+  await expect(firstTopic).toHaveValue("วัตถุประสงค์");
+  await firstTopic.fill("วัตถุประสงค์โครงงาน");
+  await page.getByRole("button", { name: "ยืนยันหัวข้อ แล้วไปขั้นวิดีโอ" }).click();
+  await expect(page.getByText("หัวข้อที่ยืนยัน 3 หัวข้อ")).toBeVisible();
+  await page.getByText("หัวข้อที่ยืนยัน 3 หัวข้อ").click();
+  await expect(page.getByText("วัตถุประสงค์โครงงาน", { exact: true })).toBeVisible();
+});
+
 test("leaving setup during confirm never pulls the user back", async ({ page }) => {
   await page.goto("/new");
-  await page.getByRole("button", { name: "เริ่ม", exact: true }).click();
+  await page.getByRole("button", { name: "ไปตั้งหัวข้อ", exact: true }).click();
   await page.getByRole("button", { name: "เพิ่มหัวข้อเอง" }).click();
   for (let i = 1; i <= 3; i++) await page.getByLabel(`ชื่อหัวข้อที่ ${i}`, { exact: true }).fill(`หัวข้อ ${i}`);
 
@@ -132,7 +211,27 @@ async function finishedRound(request: APIRequestContext) {
   return id;
 }
 
-async function rewind(page: import("@playwright/test").Page) {
+test("result keeps criteria and readable evidence when the coach and video are unavailable", async ({ page, request }) => {
+  const id = await finishedRound(request);
+  await page.route(`**/api/sessions/${id}/result`, async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...await response.json(), coach: null, video_url: null } });
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`/sessions/${id}`);
+  const coach = page.getByRole("region", { name: "สิ่งที่ควรฝึกต่อ" });
+  await expect(coach.getByText("AI Coach", { exact: true })).toHaveCount(0);
+  await expect(coach).toContainText("เปิดข้อเสนอแนะรายเกณฑ์");
+  await coach.getByRole("link", { name: "ดูผลทั้ง 8 เกณฑ์" }).press("Enter");
+  await expect(page).toHaveURL(/#result-criteria$/);
+  await expect(page.getByRole("heading", { name: "ผลรายเกณฑ์" })).toBeFocused();
+  await expect(page.getByText("รอบนี้ไม่มีวิดีโอสำหรับเปิดดู")).toBeVisible();
+  await expect(page.locator(".card")).toHaveCount(8);
+  await expect(page.locator(".evidence .time-unavailable").first()).toContainText("0:02.0 – 0:03.0");
+  await expect(page.getByRole("button", { name: /ไปยังเวลา/ })).toHaveCount(0);
+});
+
+async function rewind(page: Page) {
   const video = page.getByLabel("วิดีโอการซ้อม", { exact: true });
   await video.evaluate((el: HTMLVideoElement) => { el.pause(); el.currentTime = 0; });
   return () => video.evaluate((el: HTMLVideoElement) => el.currentTime);
@@ -141,15 +240,19 @@ async function rewind(page: import("@playwright/test").Page) {
 test("coach times, timeline markers and transcript phrases seek the video", async ({ page, request }) => {
   const id = await finishedRound(request);
   await page.goto(`/sessions/${id}`);
-  const coach = page.getByRole("region", { name: "คำแนะนำจาก AI Coach" });
-  await expect(coach).toContainText("จุดที่ทำได้ดี");
-  await expect(coach).toContainText("ควรโฟกัสปรับก่อน");
-  await expect(coach).toContainText("แผนฝึกซ้อมรอบถัดไป");
-  await expect(coach.getByRole("button", { name: "ไปยังเวลา 0:02 ที่โค้ชอ้าง" })).toHaveCount(2);   // [0:02] and [00:02]
+  const coach = page.getByRole("region", { name: "สิ่งที่ควรฝึกต่อ" });
+  const coachTimes = coach.getByRole("button", { name: "ไปยังเวลา 0:02 ที่โค้ชอ้าง" });
+  await expect(coachTimes).toHaveCount(1);
+  await expect(coach).toContainText("มือนิ่งค้างที่");
 
   let now = await rewind(page);
-  await coach.getByRole("button", { name: "ไปยังเวลา 0:02 ที่โค้ชอ้าง" }).first().click();
+  await coachTimes.click();
   await expect.poll(now).toBeGreaterThanOrEqual(2);
+
+  await coach.getByText("ดูคำแนะนำที่เหลือ", { exact: true }).click();
+  await expect(coach.getByText("จุดที่ทำได้ดี", { exact: true })).toBeVisible();
+  await expect(coach.getByText("แผนฝึกซ้อมรอบถัดไป", { exact: true })).toBeVisible();
+  await expect(coachTimes).toHaveCount(2);   // [0:02] and [00:02]
 
   now = await rewind(page);
   const timeline = page.getByLabel("แถบเวลาหลักฐานทุกเกณฑ์");
@@ -190,6 +293,8 @@ test("two finished rounds show the level-change panel and a delta badge", async 
   await page.goto("/");
   const trend = page.getByRole("region", { name: "แนวโน้มผลการฝึกซ้อมข้ามรอบ" });
   await expect(trend).toBeVisible();
+  const historyHeading = page.getByRole("heading", { name: "รอบซ้อมล่าสุด" });
+  expect((await historyHeading.boundingBox())!.y).toBeLessThan((await trend.boundingBox())!.y);
   await expect(trend.getByRole("row")).toHaveCount(9);                        // header + 8 criteria
   await expect(trend.getByRole("row", { name: /S2/ })).toContainText("= คงที่");
   await page.goto(`/sessions/${second}`);
@@ -205,12 +310,14 @@ test("two finished rounds show the level-change panel and a delta badge", async 
 test("four university presentation templates, each with 4-5 topics so C1 can give a level", async ({ page }) => {
   await page.goto("/new");
   const templates = page.getByRole("group", { name: "เลือกแม่แบบโครงสร้างการนำเสนอ" });
+  await expect(templates).toBeHidden();
+  await page.getByText("เลือกแม่แบบ (ไม่บังคับ)", { exact: true }).click();
   await expect(templates.getByRole("button")).toHaveCount(4);
   for (const [label, summary] of [
-    ["สอบเค้าโครงโครงงาน", "10 นาที • 4 หัวข้อ"],
-    ["สอบความก้าวหน้าโครงงาน", "10 นาที • 4 หัวข้อ"],
-    ["สอบป้องกันโครงงานฉบับสมบูรณ์", "15 นาที • 5 หัวข้อ"],
-    ["สัมมนา / นำเสนอบทความวิจัย", "10 นาที • 4 หัวข้อ"],
+    ["สอบเค้าโครงโครงงาน", "10 นาที · 4 หัวข้อ"],
+    ["สอบความก้าวหน้าโครงงาน", "10 นาที · 4 หัวข้อ"],
+    ["สอบป้องกันโครงงานฉบับสมบูรณ์", "15 นาที · 5 หัวข้อ"],
+    ["สัมมนา / นำเสนอบทความวิจัย", "10 นาที · 4 หัวข้อ"],
   ]) {
     await expect(templates.getByRole("button", { name: label })).toContainText(summary);
   }
@@ -219,10 +326,11 @@ test("four university presentation templates, each with 4-5 topics so C1 can giv
 test("a presentation template sets the target time and draft topics", async ({ page }) => {
   await page.goto("/new");
   const templates = page.getByRole("group", { name: "เลือกแม่แบบโครงสร้างการนำเสนอ" });
+  await page.getByText("เลือกแม่แบบ (ไม่บังคับ)", { exact: true }).click();
   await templates.getByRole("button", { name: /สอบความก้าวหน้าโครงงาน/ }).click();
   await expect(templates.getByRole("button", { name: /สอบความก้าวหน้าโครงงาน/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("เวลาเป้าหมายในการนำเสนอ (นาที)")).toHaveValue("10");
-  await page.getByRole("button", { name: "เริ่ม", exact: true }).click();
+  await page.getByRole("button", { name: "ไปตั้งหัวข้อ", exact: true }).click();
   await expect(page.getByLabel("ชื่อหัวข้อที่ 1", { exact: true })).toHaveValue("ทบทวนเป้าหมายและขอบเขตโครงงาน");
   await expect(page.getByLabel("ชื่อหัวข้อที่ 4", { exact: true })).toHaveValue("แผนการดำเนินงานขั้นถัดไป");
   await expect(page.getByLabel("ชื่อหัวข้อที่ 5", { exact: true })).toHaveCount(0);
@@ -265,6 +373,8 @@ test("radar draws all eight levels and the S3 evidence shows what was said", asy
   const id = await finishedRound(request);
   await page.goto(`/sessions/${id}`);
   const radar = page.getByRole("region", { name: "โปรไฟล์ทักษะ 8 เกณฑ์" });
+  await expect(radar).toBeHidden();
+  await page.getByText("ดูกราฟเรดาร์ 8 เกณฑ์", { exact: true }).click();
   await expect(radar.locator("g[data-criterion]")).toHaveCount(8);
   await expect(radar.locator('g[data-level="unanalyzable"]')).toHaveCount(0);
   await expect(radar.locator(".radar-edge")).toHaveCount(8);                  // closed outline through all 8 axes
@@ -284,6 +394,7 @@ test("radar has eight axes, a good-level count and hollow unavailable points", a
   await request.post(`/browser-test/${id}/partial`);
   await page.goto(`/sessions/${id}`);
   const radar = page.getByRole("region", { name: "โปรไฟล์ทักษะ 8 เกณฑ์" });
+  await page.getByText("ดูกราฟเรดาร์ 8 เกณฑ์", { exact: true }).click();
   await expect(radar.locator("g[data-criterion]")).toHaveCount(8);
   await expect(radar.locator('[data-criterion="C2"]')).toHaveAttribute("data-level", "unanalyzable");
   await expect(radar.locator('[data-criterion="C2"] circle')).toHaveAttribute("fill-opacity", "0.15");

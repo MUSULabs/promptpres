@@ -38,8 +38,9 @@ test("thesis chapter 4 screenshots", async ({ page, request }) => {
 
   await page.goto("/new");
   const templates = page.getByRole("group", { name: "เลือกแม่แบบโครงสร้างการนำเสนอ" });
+  await page.getByText("เลือกแม่แบบ (ไม่บังคับ)", { exact: true }).click();
   await templates.getByRole("button", { name: /สอบป้องกันโครงงานฉบับสมบูรณ์/ }).click();
-  await page.getByRole("button", { name: "เริ่ม", exact: true }).click();
+  await page.getByRole("button", { name: "ไปตั้งหัวข้อ", exact: true }).click();
   await expect(page.getByLabel("ชื่อหัวข้อที่ 5", { exact: true })).toBeVisible();
   await shot("ch4_03_new_session_topics.png");
 

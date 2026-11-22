@@ -1,0 +1,55 @@
+@font-face {
+  font-family: Prompt;
+  src: url("./assets/brand/fonts/Prompt-400.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: Prompt;
+  src: url("./assets/brand/fonts/Prompt-500.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: Prompt;
+  src: url("./assets/brand/fonts/Prompt-600.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: Prompt;
+  src: url("./assets/brand/fonts/Prompt-700.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* PromptPres WebApp Brand Kit v1.0 */
+:root {
+  --bg: #f7f7fb;
+  --panel: #fff;
+  --fg: #000;
+  --muted: #525252;
+  --line: #e5e5e5;
+  --control-line: #767686;
+  --accent: #2823ef;
+  --accent-hover: #201cc4;
+  --accent-active: #19169f;
+  --tint: #eeedff;
+  --focus: #2823ef;
+  --error: #98172d;
+  --error-bg: #fff0f2;
+  --ready: #16583f;
+  --ready-bg: #e7f5ee;
+  --pending: #684900;
+  --pending-bg: #fff4cc;
+  --signal: #f81934;
+  --content-width: 1200px;
+  --target-size: 44px;
+  --control-radius: 12px;
+  --radius: 20px;
+  --font-ui: Prompt, "Noto Sans Thai", system-ui, sans-serif;
+}

@@ -43,8 +43,10 @@ export default function Recorder(props: {
       <legend className="sr-only">สตูดิโออัดวิดีโอ</legend>
       <div className="grid2">
         <div className="panel">
-          <h2><Icon name="camera" /> สตูดิโออัดวิดีโอ</h2>
+          <h2><Icon name="camera" /> กล้องและไมโครโฟน</h2>
           {!mime && <Message kind="error">เบราว์เซอร์นี้อัดวิดีโอไม่ได้ (ไม่มี MediaRecorder ที่รองรับ) — ใช้โหมดอัปโหลดไฟล์แทน</Message>}
+          {!stream && <button className="fit" disabled={!mime || opening} onClick={openCamera}><Icon name="camera" /> {opening ? "กำลังเปิดกล้อง…" : "เปิดกล้อง"}</button>}
+          {err && <Message kind="error">{err} ลองตรวจสิทธิ์ของเบราว์เซอร์ หรือใช้โหมดอัปโหลดไฟล์</Message>}
           <div className="preview-wrap">
             <video ref={preview} className="video" playsInline aria-label="ภาพจากกล้อง"
               onLoadedMetadata={(e) => {
@@ -62,29 +64,6 @@ export default function Recorder(props: {
               แสดงเส้นช่วยจัดระยะ (ให้ศีรษะถึงเอวอยู่ในเส้นประ)
             </label>
           )}
-          <div className="row">
-            {!stream && <button disabled={!mime || opening} onClick={openCamera}><Icon name="camera" /> {opening ? "กำลังเปิดกล้อง…" : "เปิดกล้อง"}</button>}
-            {live && <button disabled={!ready || !mime} onClick={begin}>เริ่มอัด</button>}
-            {live && (
-              <label className="inline muted">นับถอยหลัง
-                <select value={countdownS} onChange={(e) => setCountdownS(Number(e.target.value))}>
-                  {COUNTDOWN_CHOICES.map((s) => <option key={s} value={s}>{s ? `${s} วินาที` : "ไม่นับ"}</option>)}
-                </select>
-              </label>
-            )}
-            {count !== null && <button className="ghost" onClick={stopCountdown}>ยกเลิก (เริ่มใน {count})</button>}
-            {recording && <button className="danger" onClick={stop} disabled={finishing}>
-              {finishing ? "กำลังเตรียมคลิป…" : `หยุด (${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, "0")})`}
-            </button>}
-          </div>
-          {stream && !recording && (
-            <p className="note">
-              กดเริ่มอัดแล้วเดินเข้าจุดยืนได้เลย (ระหว่างเดินอย่าเพิ่งพูด) ระบบเริ่มนับเวลาพูดเมื่อคุณพูดคำแรก
-              และไม่นำช่วงเงียบหัว–ท้ายคลิปมาคิดผล
-            </p>
-          )}
-          {err && <Message kind="error">{err} ลองตรวจสิทธิ์ของเบราว์เซอร์ หรือใช้โหมดอัปโหลดไฟล์</Message>}
-          {mime && <p className="muted">รูปแบบที่ใช้อัด: <code>{mime}</code></p>}
         </div>
         <div className="panel">
           <h2><Icon name="check" /> ตรวจการจัดเฟรมก่อนอัด</h2>
@@ -107,6 +86,21 @@ export default function Recorder(props: {
           })}
           <button type="button" className="ghost" disabled={ready} onClick={tickAll}>ติ๊กครบทุกข้อ (ยืนยันพร้อมอัด)</button>
           {!ready && <p className="muted">ติ๊กครบทุกข้อจึงเริ่มอัดได้ — ข้อที่มีจุดสีระบบตรวจและติ๊กให้เองเมื่อผ่าน</p>}
+          {(live || active) && <div className="row">
+            {live && (
+              <label className="inline muted">นับถอยหลัง
+                <select value={countdownS} onChange={(e) => setCountdownS(Number(e.target.value))}>
+                  {COUNTDOWN_CHOICES.map((s) => <option key={s} value={s}>{s ? `${s} วินาที` : "ไม่นับ"}</option>)}
+                </select>
+              </label>
+            )}
+            {live && <button disabled={!ready || !mime} onClick={begin}>เริ่มอัด</button>}
+            {count !== null && <button className="ghost" onClick={stopCountdown}>ยกเลิก (เริ่มใน {count})</button>}
+            {recording && <button className="danger" onClick={stop} disabled={finishing}>
+              {finishing ? "กำลังเตรียมคลิป…" : `หยุด (${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, "0")})`}
+            </button>}
+          </div>}
+          {live && <p className="note">หลังเริ่มอัด ให้เดินเข้าจุดยืนก่อนพูด ระบบนับเวลานำเสนอตั้งแต่คำแรก</p>}
         </div>
       </div>
 

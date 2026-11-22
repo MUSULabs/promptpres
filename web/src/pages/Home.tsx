@@ -25,9 +25,9 @@ export default function Home() {
 
   return (
     <section>
-      <PageHeading badge="PromptPre's · การซ้อมนำเสนอ" title="ประวัติการซ้อม"
-        action={<Link className="button" to="/new"><Icon name="plus" /> ซ้อมใหม่</Link>}>
-        กลับมาดูวิดีโอ ผลรายเกณฑ์ และหลักฐานจากแต่ละรอบซ้อม
+      <PageHeading title="ประวัติการซ้อม"
+        action={rows?.length === 0 ? undefined : <Link className="button" to="/new"><Icon name="plus" /> ซ้อมใหม่</Link>}>
+        ทำรอบที่ค้างต่อ หรือกลับมาดูผลและหลักฐานของรอบที่ผ่านมา
       </PageHeading>
       {err && <>
         <Message kind="error">โหลดรายการไม่ได้: {err}</Message>
@@ -44,7 +44,6 @@ export default function Home() {
       )}
       {rows && rows.length > 0 && (
         <>
-          <TrendPanel rows={rows} />
           <div className="section-heading"><h2>รอบซ้อมล่าสุด</h2><span className="tag">{rows.length} รายการ</span></div>
           <ul className="session-list">
             {rows.map((r) => (
@@ -67,6 +66,7 @@ export default function Home() {
               </li>
             ))}
           </ul>
+          <TrendPanel rows={rows} />
         </>
       )}
     </section>

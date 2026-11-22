@@ -29,9 +29,8 @@ function ResultView({ id }: { id: string }) {
   return (
     <section>
       <Steps current={3} />
-      <PageHeading badge="ขั้นตอนที่ 03" title={waiting ? "สถานะการวิเคราะห์" : "ผลการซ้อม"}
-        action={<Link className="button secondary" to="/"><Icon name="history" /> ประวัติการซ้อม</Link>}>
-        รอบซ้อม <code>{res.session_id}</code>
+      <PageHeading title={waiting ? "สถานะการวิเคราะห์" : "ผลการซ้อม"}>
+        รอบซ้อมวันที่ <time dateTime={res.created_at}>{new Date(res.created_at).toLocaleString("th-TH")}</time>
       </PageHeading>
       {reconnecting && <Message>ติดต่อเซิร์ฟเวอร์ไม่ได้ กำลังลองใหม่…</Message>}
       {waiting && <AnalysisStatus result={res} now={now} />}
@@ -132,15 +131,17 @@ function ResultDetails({ result, feedback, metadata }: {
 
   return (
     <>
-      <SkillRadar criteria={result.criteria} />
-      <dl className="result-times">
-        {times.map(([label, value]) => <div className="panel" key={label}>
-          <dt>{label}</dt><dd>{value == null ? "—" : fmtTime(value)}</dd>
-        </div>)}
-      </dl>
+      <div className="result-overview">
+        <CoachPanel coach={result.coach} media={media} seek={seek} />
+        <dl className="panel result-times">
+          {times.map(([label, value]) => <div key={label}>
+            <dt>{label}</dt><dd>{value == null ? "—" : fmtTime(value)}</dd>
+          </div>)}
+        </dl>
+      </div>
       <div className="result-workspace">
-        <aside className="panel result-player">
-          <h2><Icon name="video" /> วิดีโอการซ้อม</h2>
+        <aside className="panel result-player" aria-labelledby="result-evidence">
+          <h2 id="result-evidence" tabIndex={-1}><Icon name="video" /> วิดีโอและหลักฐาน</h2>
           {result.video_url ? <SessionPlayer url={result.video_url} video={video} onState={setMedia} />
             : <Message>รอบนี้ไม่มีวิดีโอสำหรับเปิดดู</Message>}
           <EventTimeline criteria={result.criteria} duration={result.duration_s} media={media} seek={seek} />
@@ -150,11 +151,14 @@ function ResultDetails({ result, feedback, metadata }: {
           <p className="muted">รูบริก {result.versions.rubric ?? "—"} · ค่าตั้ง {result.versions.config ?? "—"}</p>
         </aside>
         <div className="result-content">
-          <CoachPanel coach={result.coach} media={media} seek={seek} />
-          <div className="section-heading"><h2>ผลรายเกณฑ์</h2><span className="tag">{result.criteria.length} เกณฑ์</span></div>
+          <div className="section-heading"><h2 id="result-criteria" tabIndex={-1}>ผลรายเกณฑ์</h2><span className="tag">{result.criteria.length} เกณฑ์</span></div>
           <p className="muted">ผลแยกรายเกณฑ์ ไม่มีคะแนนรวม และไม่ใช่การให้เกรด</p>
           {previous && previous.rubric_version !== result.versions.rubric &&
             <p className="muted small cross-version-note">{MIXED_RUBRIC_NOTE}</p>}
+          <details className="disclosure radar-disclosure">
+            <summary>ดูกราฟเรดาร์ 8 เกณฑ์ <Icon name="chevronDown" /></summary>
+            <SkillRadar criteria={result.criteria} />
+          </details>
           <div className="tabs filter-bar" role="group" aria-label="กรองผลตามด้าน">
             <button className="segment" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>ทั้งหมด</button>
             {SKILLS.map((s) => <button className="segment" key={s.key}

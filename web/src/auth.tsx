@@ -23,9 +23,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
 }
 export function AccountMenu() {
   const { state, refresh } = useAuth();
+  const { pathname } = useLocation();
   const [error, setError] = useState("");
   async function logout() { try { await api.logout(); await refresh(); window.location.assign("/login"); }
     catch { setError("ออกจากระบบไม่สำเร็จ กรุณาลองใหม่"); } }
+  if (!state?.user && pathname === "/login") return null;
   return <div className="account-menu">{state?.user ? <>
     <span>{state.user.display_name}</span>{state.user.is_guest && <Link to="/login?mode=register">สมัครสมาชิกเพื่อเก็บประวัติ</Link>}
     <button className="button secondary" onClick={() => void logout()}>ออกจากระบบ</button>

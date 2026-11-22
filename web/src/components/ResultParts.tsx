@@ -1,7 +1,7 @@
 // Building blocks of the result page (D-046 layers 2 and 3). No thresholds or feedback text here:
 // level bands and interpretation words come from the API (config/), coach text from the worker.
 import type { Coach, CoachKind, Criterion, CriterionMeta } from "../contract";
-import { fmtTime, splitClocks } from "../presentation";
+import { CRITERION_NAME, fmtTime, splitClocks } from "../presentation";
 import { Icon } from "./ui";
 
 export type Seek = (seconds: number) => void;
@@ -23,36 +23,56 @@ export function TimeChip({ start, end, media, seek, label: text }: {
 function CoachText({ text, media, seek }: { text: string; media: MediaState; seek: Seek }) {
   return <>{splitClocks(text).map((part, i) => typeof part === "string" ? <span key={i}>{part}</span>
     : media === "ready" ? <button key={i} type="button" className="time coach-time"
-      aria-label={`ไปยังเวลา ${part.label} ที่โค้ชอ้าง`} onClick={() => seek(part.seconds)}>▶ {part.label}</button>
-      : <span key={i} className="time time-unavailable">▶ {part.label}</span>)}</>;
+      aria-label={`ไปยังเวลา ${part.label} ที่โค้ชอ้าง`} onClick={() => seek(part.seconds)}><Icon name="play" /> {part.label}</button>
+      : <span key={i} className="time time-unavailable"><Icon name="clock" /> {part.label}</span>)}</>;
 }
 
 const COACH_SECTIONS: [CoachKind, string][] = [
-  ["strength", "จุดที่ทำได้ดี"], ["focus", "ควรโฟกัสปรับก่อน"], ["plan", "แผนฝึกซ้อมรอบถัดไป"],
+  ["focus", "สิ่งที่ควรปรับเพิ่มเติม"], ["plan", "แผนฝึกซ้อมรอบถัดไป"], ["strength", "จุดที่ทำได้ดี"],
 ];
 
-/** Layer 3: evidence-grounded coach (worker/llm/coach.py). Hidden when the guard rejected it (coach = null). */
+/** Surface the first suggested adjustment and keep the rest of the coach advice expandable. */
 export function CoachPanel({ coach, media, seek }: { coach: Coach | null; media: MediaState; seek: Seek }) {
-  if (!coach || coach.status !== "ok" || coach.items.length === 0) return null;
+  const items = coach?.status === "ok" ? coach.items : [];
+  const lead = items.find((item) => item.kind === "focus") ?? items.find((item) => item.kind === "plan");
+  const remaining = items.filter((item) => item !== lead);
+  const evidenceLink = <a className={lead ? "button" : "button secondary"} href="#result-evidence">
+    <Icon name="video" /> {media === "unavailable" ? "ดูหลักฐาน" : "ดูวิดีโอและหลักฐาน"}
+  </a>;
+  const criteriaLink = <a className={lead ? "button secondary" : "button"} href="#result-criteria">
+    ดูผลทั้ง 8 เกณฑ์
+  </a>;
+
   return (
     <section className="panel coach" aria-labelledby="coach-title">
-      <div className="section-heading">
-        <h2 id="coach-title"><Icon name="sparkles" /> คำแนะนำจาก AI Coach</h2>
-        <span className="tag">สรุปจากผลด้านล่าง ไม่เปลี่ยนระดับ</span>
+      <div className="coach-heading">
+        <h2 id="coach-title">สิ่งที่ควรฝึกต่อ</h2>
+        {items.length > 0 && <span className="tag"><Icon name="sparkles" /> AI Coach</span>}
       </div>
-      <div className="coach-grid">
-        {COACH_SECTIONS.map(([kind, label]) => {
-          const items = coach.items.filter((item) => item.kind === kind);
-          return items.length > 0 && <div key={kind} className={`coach-col coach-${kind}`}>
-            <h3>{label}</h3>
-            <ul>{items.map((item, i) => <li key={i}>
-              {item.code && <span className="code">{item.code}</span>}{" "}
-              <CoachText text={item.text} media={media} seek={seek} />
-            </li>)}</ul>
-          </div>;
-        })}
+      {lead ? <div className="coach-lead">
+        {lead.code && <strong>{lead.code} · {CRITERION_NAME[lead.code]}</strong>}
+        <p><CoachText text={lead.text} media={media} seek={seek} /></p>
+      </div> : <p>เปิดข้อเสนอแนะรายเกณฑ์เพื่อเลือกสิ่งที่จะลองปรับในการซ้อมครั้งถัดไป</p>}
+
+      <div className="row result-jump-links">
+        {lead ? <>{evidenceLink}{criteriaLink}</> : <>{criteriaLink}{evidenceLink}</>}
       </div>
-      <p className="muted small">ข้อความสร้างโดยแบบจำลองภาษาและผ่านการตรวจว่าเวลาที่อ้างตรงกับหลักฐานจริง</p>
+
+      {remaining.length > 0 && <details className="disclosure coach-more">
+        <summary>ดูคำแนะนำที่เหลือ <Icon name="chevronDown" /></summary>
+        <div className="coach-groups">
+          {COACH_SECTIONS.map(([kind, label]) => {
+            const group = remaining.filter((item) => item.kind === kind);
+            return group.length > 0 && <section key={kind} className="coach-group">
+              <h3>{label}</h3>
+              <ul>{group.map((item, i) => <li key={i}>
+                {item.code && <strong>{item.code} </strong>}
+                <CoachText text={item.text} media={media} seek={seek} />
+              </li>)}</ul>
+            </section>;
+          })}
+        </div>
+      </details>}
     </section>
   );
 }

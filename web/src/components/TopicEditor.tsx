@@ -23,16 +23,17 @@ export default function TopicEditor({ topics, limits, onChange }: { topics: Draf
           <li key={i} className="topic-row">
             <span className="topic-number" aria-hidden="true">{i + 1}</span>
             <div className="topic-fields">
-              <input aria-label={`ชื่อหัวข้อที่ ${i + 1}`} placeholder="ชื่อหัวข้อ" value={t.title}
-                onChange={(e) => set(i, { title: e.target.value })} />
-              <textarea aria-label={`ใจความสำคัญหัวข้อที่ ${i + 1}`} rows={2}
-                placeholder="ใจความสำคัญ (ช่วยให้ระบบตรวจว่าอธิบายครบ)" value={t.key_point}
-                onChange={(e) => set(i, { key_point: e.target.value })} />
+              <label><span>ชื่อหัวข้อ<span className="sr-only">ที่ {i + 1}</span></span>
+                <input value={t.title} onChange={(e) => set(i, { title: e.target.value })} />
+              </label>
+              <label><span>ใจความสำคัญ<span className="sr-only">หัวข้อที่ {i + 1}</span></span>
+                <textarea rows={2} value={t.key_point} onChange={(e) => set(i, { key_point: e.target.value })} />
+              </label>
             </div>
             <div className="topic-tools">
-              <button type="button" className="ghost" aria-label={`เลื่อนหัวข้อที่ ${i + 1} ขึ้น`} title="เลื่อนขึ้น" disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
-              <button type="button" className="ghost" aria-label={`เลื่อนหัวข้อที่ ${i + 1} ลง`} title="เลื่อนลง" disabled={i === topics.length - 1} onClick={() => move(i, 1)}>↓</button>
-              <button type="button" className="ghost danger-text" aria-label={`ลบหัวข้อที่ ${i + 1}`} title="ลบหัวข้อ" onClick={() => remove(i)}>✕</button>
+              <button type="button" className="ghost" aria-label={`เลื่อนหัวข้อที่ ${i + 1} ขึ้น`} title="เลื่อนขึ้น" disabled={i === 0} onClick={() => move(i, -1)}><Icon name="chevronUp" /></button>
+              <button type="button" className="ghost" aria-label={`เลื่อนหัวข้อที่ ${i + 1} ลง`} title="เลื่อนลง" disabled={i === topics.length - 1} onClick={() => move(i, 1)}><Icon name="chevronDown" /></button>
+              <button type="button" className="ghost danger-text" aria-label={`ลบหัวข้อที่ ${i + 1}`} title="ลบหัวข้อ" onClick={() => remove(i)}><Icon name="close" /></button>
             </div>
           </li>
         ))}
