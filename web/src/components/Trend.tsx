@@ -39,7 +39,7 @@ export function TrendPanel({ rows }: { rows: SessionRow[] }) {
         {left_out > 0 && ` · ไม่นับ ${left_out} รอบที่ใช้เกณฑ์รุ่นอื่นหรือชุดเกณฑ์ต่างกัน (ยังเปิดดูได้จากรายการรอบซ้อม)`}</p>
       {improved.length > 0 && <p className="trend-summary"><strong>ดีขึ้นจากรอบก่อน ↑</strong> {improved.map((code) =>
         <span key={code} className="tag">{code} {CRITERION_NAME[code]}</span>)}</p>}
-      <div className="trend-scroll">
+      <div className="trend-scroll" tabIndex={0} role="region" aria-label="ตารางแนวโน้ม เลื่อนแนวนอนได้">
         <table className="trend-table">
           <thead><tr>
             <th scope="col">เกณฑ์</th>

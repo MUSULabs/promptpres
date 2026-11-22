@@ -3,20 +3,41 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { api } from "../api";
 import type { Criterion, TranscriptItem } from "../contract";
-import { CRITERION_NAME, SKILLS, fmtTime } from "../presentation";
-import type { MediaState, Seek } from "./ResultParts";
+import { CRITERION_NAME, SKILLS, fmtDuration, fmtTime } from "../presentation";
+import type { EvidencePoint, MediaState, Seek } from "./ResultParts";
+import { Icon } from "./ui";
 
-export function EventTimeline({ criteria, duration, media, seek }: {
-  criteria: Criterion[]; duration: number | null; media: MediaState; seek: Seek;
+export function EventTimeline({ criteria, duration, video, media, selection, seek }: {
+  criteria: Criterion[]; duration: number | null; video: RefObject<HTMLVideoElement>; media: MediaState;
+  selection: EvidencePoint | null; seek: Seek;
 }) {
+  const timeline = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const player = video.current;
+    const track = timeline.current;
+    if (!player || !track || !duration || media !== "ready") return;
+    const sync = () => track.style.setProperty("--playhead", `${Math.min(100, Math.max(0, player.currentTime / duration * 100))}%`);
+    sync();
+    player.addEventListener("timeupdate", sync);
+    player.addEventListener("seeked", sync);
+    return () => {
+      player.removeEventListener("timeupdate", sync);
+      player.removeEventListener("seeked", sync);
+      track.style.removeProperty("--playhead");
+    };
+  }, [duration, media, video]);
+
   if (!duration) return null;
   const byCode = Object.fromEntries(criteria.map((c) => [c.code, c]));
   const pct = (s: number) => `${Math.min(100, Math.max(0, (s / duration) * 100))}%`;
   const total = criteria.reduce((n, c) => n + c.evidence.length, 0);
   if (total === 0) return null;
   return (
-    <div className="timeline" aria-label="แถบเวลาหลักฐานทุกเกณฑ์">
-      <p className="timeline-title">แถบเวลาหลักฐาน <span className="muted small">({total} จุด)</span></p>
+    <div ref={timeline} className="timeline" data-playing={media === "ready"} aria-label="แถบเวลาหลักฐานทุกเกณฑ์">
+      <div className="timeline-heading">
+        <p className="timeline-title">แถบเวลาหลักฐาน <span className="muted small">({total} จุด)</span></p>
+        {selection && <p className="timeline-selection"><i aria-hidden="true" /> เลือก {fmtTime(selection.seconds)}</p>}
+      </div>
       {SKILLS.map((skill) => {
         const spans = skill.codes.flatMap((code) => (byCode[code]?.evidence ?? []).map((e) => ({ code, e })));
         return <div key={skill.key} className={`lane lane-${skill.key}`}>
@@ -27,13 +48,20 @@ export function EventTimeline({ criteria, duration, media, seek }: {
               const style = { left: pct(e.start_s), width: `max(6px, ${pct(e.end_s - e.start_s)})` };
               return media === "ready"
                 ? <button key={i} type="button" className="marker" style={style} title={`${label}${e.note ? ` — ${e.note}` : ""}`}
-                  aria-label={`ไปยังเวลา ${label}`} onClick={() => seek(e.start_s)} />
+                  aria-label={`ไปยังเวลา ${label}`} onClick={() => seek(e.start_s, code)} />
                 : <span key={i} className="marker" style={style} title={label} />;
             })}
+            {selection?.code && skill.codes.includes(selection.code) &&
+              <span className="timeline-pin" style={{ left: pct(selection.seconds) }} aria-hidden="true" />}
           </div>
         </div>;
       })}
-      <div className="timeline-scale muted small" aria-hidden="true"><span>0:00</span><span>{fmtTime(duration)}</span></div>
+      <div className="timeline-scale muted small" aria-hidden="true">
+        <span>0:00</span><span>{fmtDuration(duration)}</span>
+        {selection && !selection.code && <span className="timeline-scale-pin">
+          <i className="timeline-pin" style={{ left: pct(selection.seconds) }} />
+        </span>}
+      </div>
     </div>
   );
 }
@@ -42,16 +70,19 @@ export function TranscriptBox({ sessionId, video, media, seek }: {
   sessionId: string; video: RefObject<HTMLVideoElement>; media: MediaState; seek: Seek;
 }) {
   const [items, setItems] = useState<TranscriptItem[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [active, setActive] = useState(-1);
   const list = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
+    setFailed(false);
     api.transcript(sessionId, controller.signal).then(setItems).catch(() => {
-      if (!controller.signal.aborted) setItems([]);
+      if (!controller.signal.aborted) setFailed(true);   // a failed request is not "no transcript"
     });
     return () => controller.abort();
-  }, [sessionId]);
+  }, [sessionId, attempt]);
 
   useEffect(() => {
     const player = video.current;
@@ -75,6 +106,10 @@ export function TranscriptBox({ sessionId, video, media, seek }: {
     }
   }, [active]);
 
+  if (failed) return <div className="transcript-error" role="alert">
+    <p className="muted small">โหลดบทพูดที่ถอดเสียงไม่สำเร็จ</p>
+    <button type="button" className="ghost fit" onClick={() => setAttempt((n) => n + 1)}><Icon name="refresh" /> ลองใหม่</button>
+  </div>;
   if (items === null) return <p className="muted small">กำลังโหลดบทพูด…</p>;
   const fillers = items.filter((i) => i.is_filler).length;
   const pauses = items.filter((i) => i.pause_after_s != null).length;
@@ -83,7 +118,8 @@ export function TranscriptBox({ sessionId, video, media, seek }: {
       <summary>บทพูดที่ถอดเสียง <span className="muted small">
         {items.length ? `· เสียงเติม ${fillers} · หยุดยาว ${pauses}` : ""}</span></summary>
       {items.length === 0 ? <p className="muted">ไม่มีบทพูดสำหรับรอบนี้</p> : <>
-        <p className="muted small">กดข้อความเพื่อไปยังช่วงนั้นในวิดีโอ · <mark className="filler-key">เสียงเติม</mark> (S3) ·
+        <p className="muted small">{media === "ready" ? "กดข้อความเพื่อไปยังช่วงนั้นในวิดีโอ"
+          : "อ่านบทพูดได้ระหว่างที่วิดีโอยังไม่พร้อม"} · <mark className="filler-key">เสียงเติม</mark> (S3) ·
           <span className="pause-key"> ⏸ หยุดยาว</span> (S2) · ข้อความจากระบบถอดเสียงอาจสะกดผิด</p>
         <ol ref={list} className="phrases">
           {items.map((item, i) => <li key={i}>

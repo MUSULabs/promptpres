@@ -496,6 +496,7 @@ if dist.is_dir():
 
     @app.get("/", include_in_schema=False)
     @app.get("/login", include_in_schema=False)
+    @app.get("/logout", include_in_schema=False)
     @app.get("/new", include_in_schema=False)
     @app.get("/sessions/{web_path:path}", include_in_schema=False)
     def web_app(web_path: str = ""):

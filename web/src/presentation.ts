@@ -46,6 +46,13 @@ export function fmtTime(s: number): string {
   return `${m}:${((tenths % 600) / 10).toFixed(1).padStart(4, "0")}`;
 }
 
+/** A length of time (clip, speech span, target) -> m:ss rounded to the second: "15:00", not "15:00.0".
+ *  Evidence times keep fmtTime's tenths because they point at a moment in the video. */
+export function fmtDuration(s: number): string {
+  const t = Math.max(0, Math.round(s));
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
+}
+
 /** Seconds -> m:ss (whole seconds), the clock format the AI coach quotes. */
 export function fmtClock(s: number): string {
   const t = Math.max(0, Math.floor(s));

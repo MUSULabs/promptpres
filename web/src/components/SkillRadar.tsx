@@ -27,9 +27,10 @@ export default function SkillRadar({ criteria }: { criteria: Criterion[] }) {
           const next = (i + 1) % 8, nextLevel = levels[next];
           const q = point(next, (nextLevel ?? 0) * 29);
           return <g key={code} data-criterion={code} data-level={level ?? "unanalyzable"}>
-            <line x1={180} y1={180} x2={tip.x} y2={tip.y} stroke="#cbd5e1" />
-            {level != null && nextLevel != null && <line className="radar-edge" x1={p.x} y1={p.y} x2={q.x} y2={q.y} stroke="#2563eb" strokeWidth={2.5} />}
-            <circle cx={p.x} cy={p.y} r={5} fill={level == null ? "#64748b" : "#2563eb"} fillOpacity={level == null ? 0.15 : 1} stroke={level == null ? "#64748b" : "#2563eb"} strokeWidth={2} />
+            <line x1={180} y1={180} x2={tip.x} y2={tip.y} stroke="var(--radar-grid, #cbd5e1)" />
+            {level != null && nextLevel != null && <line className="radar-edge" x1={p.x} y1={p.y} x2={q.x} y2={q.y} stroke="var(--accent)" strokeWidth={2.5} />}
+            <circle cx={p.x} cy={p.y} r={5} fill={level == null ? "var(--control-line)" : "var(--accent)"}
+              fillOpacity={level == null ? 0.15 : 1} stroke={level == null ? "var(--control-line)" : "var(--accent)"} strokeWidth={2} />
             <text x={label.x} y={label.y} textAnchor="middle" dominantBaseline="middle" fontSize="13">{code}</text>
           </g>;
         })}

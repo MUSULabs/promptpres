@@ -1,0 +1,59 @@
+.practice-setup { gap: 1rem clamp(1.5rem, 4vw, 3rem); }
+.setup-intro .page-heading h1 { font-size: clamp(2rem, 4.3vw, 3.5rem); font-weight: 700; }
+.setup-intro .page-description { max-width: 35ch; }
+.setup-art {
+  position: relative;
+  width: min(100%, 22rem);
+  margin-block-start: 1.5rem;
+  padding: .65rem;
+  color: #fff;
+  background: var(--brand-blue);
+  border-radius: var(--radius);
+}
+.setup-art svg { display: block; width: 100%; height: auto; }
+.setup-art img { position: absolute; width: 43%; height: auto; inset: 11% auto auto 40%; filter: brightness(0) invert(1); }
+.setup-panel { border-block-start: 3px solid var(--brand-blue); align-self: start; }
+.target-number input { color: var(--brand-blue); font-weight: 600; }
+.setup-panel .target-field { margin-bottom: .35rem; }
+.topics-panel { border-block-start: 3px solid var(--brand-blue); }
+.video-page .page-heading h1 { font-weight: 700; }
+.video-page .video-modes { max-width: 33rem; margin-block: 1rem 1.25rem; }
+.video-page .video-modes button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.video-page .recording-workspace { grid-template-columns: minmax(0, 2.18fr) minmax(0, 1fr); }
+.video-page .camera-panel { background: var(--panel); border: 1px solid var(--line); padding: clamp(.65rem, 2vw, 1.1rem); }
+.camera-heading, .camera-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem .75rem; }
+.camera-heading { justify-content: space-between; }
+.camera-actions { justify-content: flex-end; }
+.camera-actions button { min-inline-size: 7rem; }
+.recording-workspace .preview-wrap[data-reviewing] > video:first-child { display: none; }
+.recording-workspace .preview-wrap[data-reviewing]::after { display: none; }
+.recording-readout {
+  position: absolute;
+  inset: .65rem auto auto .65rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem;
+  max-width: calc(100% - 1.3rem);
+  pointer-events: none;
+}
+.recording-readout .recording-label, .recording-clock {
+  position: static;
+  padding: .3rem .65rem;
+  font-size: .87rem;
+  border-radius: var(--control-radius);
+}
+.recording-readout .recording-label { background: var(--brand-yellow); color: var(--fg); }
+.recording-readout .recording-label i { background: currentColor; box-shadow: none; }
+.recording-clock { background: #171717; color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
+.recording-checks[hidden] { display: none; }
+.recording-workspace .recording-checks .check { min-height: 44px; align-items: center; }
+.recording-workspace .recording-checks .check input { margin-top: 0; }
+.video-page .submit-panel { border-inline-start: 3px solid var(--brand-blue); }
+@media (max-width: 800px) {
+  .video-page .recording-workspace { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+@media (max-width: 700px) {
+  .setup-art { display: none; }
+  .video-page .recording-workspace .camera-actions { justify-content: space-between; }
+}

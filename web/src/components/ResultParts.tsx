@@ -1,10 +1,11 @@
 // Building blocks of the result page (D-046 layers 2 and 3). No thresholds or feedback text here:
 // level bands and interpretation words come from the API (config/), coach text from the worker.
-import type { Coach, CoachKind, Criterion, CriterionMeta } from "../contract";
+import type { Criterion, CriterionCode, CriterionMeta } from "../contract";
 import { fmtTime, splitClocks } from "../presentation";
 import { Icon } from "./ui";
 
-export type Seek = (seconds: number) => void;
+export type Seek = (seconds: number, code?: CriterionCode) => void;
+export type EvidencePoint = { seconds: number; code?: CriterionCode };
 export type MediaState = "loading" | "ready" | "unavailable";
 
 export function TimeChip({ start, end, media, seek, label: text }: {
@@ -20,41 +21,11 @@ export function TimeChip({ start, end, media, seek, label: text }: {
 }
 
 /** Coach text with every [m:ss] turned into a ▶ m:ss button that seeks the video. */
-function CoachText({ text, media, seek }: { text: string; media: MediaState; seek: Seek }) {
+export function CoachText({ text, media, seek }: { text: string; media: MediaState; seek: Seek }) {
   return <>{splitClocks(text).map((part, i) => typeof part === "string" ? <span key={i}>{part}</span>
     : media === "ready" ? <button key={i} type="button" className="time coach-time"
-      aria-label={`ไปยังเวลา ${part.label} ที่โค้ชอ้าง`} onClick={() => seek(part.seconds)}>▶ {part.label}</button>
-      : <span key={i} className="time time-unavailable">▶ {part.label}</span>)}</>;
-}
-
-const COACH_SECTIONS: [CoachKind, string][] = [
-  ["strength", "จุดที่ทำได้ดี"], ["focus", "ควรโฟกัสปรับก่อน"], ["plan", "แผนฝึกซ้อมรอบถัดไป"],
-];
-
-/** Layer 3: evidence-grounded coach (worker/llm/coach.py). Hidden when the guard rejected it (coach = null). */
-export function CoachPanel({ coach, media, seek }: { coach: Coach | null; media: MediaState; seek: Seek }) {
-  if (!coach || coach.status !== "ok" || coach.items.length === 0) return null;
-  return (
-    <section className="panel coach" aria-labelledby="coach-title">
-      <div className="section-heading">
-        <h2 id="coach-title"><Icon name="sparkles" /> คำแนะนำจาก AI Coach</h2>
-        <span className="tag">สรุปจากผลด้านล่าง ไม่เปลี่ยนระดับ</span>
-      </div>
-      <div className="coach-grid">
-        {COACH_SECTIONS.map(([kind, label]) => {
-          const items = coach.items.filter((item) => item.kind === kind);
-          return items.length > 0 && <div key={kind} className={`coach-col coach-${kind}`}>
-            <h3>{label}</h3>
-            <ul>{items.map((item, i) => <li key={i}>
-              {item.code && <span className="code">{item.code}</span>}{" "}
-              <CoachText text={item.text} media={media} seek={seek} />
-            </li>)}</ul>
-          </div>;
-        })}
-      </div>
-      <p className="muted small">ข้อความสร้างโดยแบบจำลองภาษาและผ่านการตรวจว่าเวลาที่อ้างตรงกับหลักฐานจริง</p>
-    </section>
-  );
+      aria-label={`ไปยังเวลา ${part.label} ที่โค้ชอ้าง`} onClick={() => seek(part.seconds)}><Icon name="play" /> {part.label}</button>
+      : <span key={i} className="time time-unavailable"><Icon name="clock" /> {part.label}</span>)}</>;
 }
 
 /** The level the worker gave, placed on a 4-step band (1 = left, 4 = right). Never a total score. */
