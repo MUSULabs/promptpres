@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CHECKLIST, COUNTDOWN_CHOICES, useRecorder } from "../useRecorder";
 import { Icon, Message } from "./ui";
 
@@ -34,38 +34,74 @@ export default function Recorder(props: {
     useRecorder(props);
   const [guide, setGuide] = useState(true);
   const [aspect, setAspect] = useState(16 / 9);
+  const countdownControl = useRef<HTMLSelectElement>(null);
+  const recordControl = useRef<HTMLButtonElement>(null);
+  const stopControl = useRef<HTMLButtonElement>(null);
+  const reviewControl = useRef<HTMLVideoElement>(null);
   const { onActivityChange } = props;
   const active = recording || count !== null;
+  const reviewing = !!blobUrl && !stream;
+  const clock = `${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, "0")}`;
   useEffect(() => { onActivityChange(active); }, [active, onActivityChange]);
+  useEffect(() => {
+    if (document.activeElement !== document.body) return;
+    const next = reviewing ? reviewControl.current : active ? stopControl.current : countdownControl.current;
+    next?.focus({ preventScroll: true });
+  }, [active, recording, reviewing, stream]);
 
   return (
     <fieldset className="editor-fields" disabled={props.disabled}>
       <legend className="sr-only">สตูดิโออัดวิดีโอ</legend>
-      <div className="grid2">
+      <div className="grid2 recording-workspace">
         <div className="panel camera-panel">
-          <h2><Icon name="camera" /> กล้องและไมโครโฟน</h2>
-          {!mime && <Message kind="error">เบราว์เซอร์นี้อัดวิดีโอไม่ได้ (ไม่มี MediaRecorder ที่รองรับ) — ใช้โหมดอัปโหลดไฟล์แทน</Message>}
-          {!stream && <button className="fit" disabled={!mime || opening} onClick={openCamera}><Icon name="camera" /> {opening ? "กำลังเปิดกล้อง…" : "เปิดกล้อง"}</button>}
-          {err && <Message kind="error">{err} ลองตรวจสิทธิ์ของเบราว์เซอร์ หรือใช้โหมดอัปโหลดไฟล์</Message>}
-          <div className="preview-wrap">
+          <header className="camera-heading">
+            <h2><Icon name={reviewing ? "play" : "camera"} /> {reviewing ? "ตรวจคลิปก่อนส่ง" : "กล้องและไมโครโฟน"}</h2>
+            {reviewing && blob && <span className="tag">{(blob.size / 1e6).toFixed(1)} MB</span>}
+          </header>
+          <div className="preview-wrap" data-reviewing={reviewing || undefined}>
             <video ref={preview} className="video" playsInline aria-label="ภาพจากกล้อง"
               onLoadedMetadata={(e) => {
                 const v = e.currentTarget;
                 if (v.videoWidth && v.videoHeight) setAspect(v.videoWidth / v.videoHeight);
               }} />
-            {!stream && <div className="preview-placeholder"><Icon name="camera" /><span>เปิดกล้องเพื่อดูภาพก่อนอัด</span></div>}
-            {recording && <span className="recording-label"><i /> กำลังอัด</span>}
+            {reviewing && <video ref={reviewControl} className="video review-video" controls playsInline src={blobUrl} aria-label="คลิปที่อัดไว้" />}
+            {!stream && !reviewing && <div className="preview-placeholder"><Icon name="camera" /><span>เปิดกล้องเพื่อดูภาพก่อนอัด</span></div>}
+            {recording && <div className="recording-readout">
+              <span className="recording-label" role="status"><i /> กำลังอัด</span>
+              <time className="recording-clock" dateTime={`PT${Math.floor(elapsed)}S`} aria-label={`เวลาที่อัด ${clock}`}>{clock}</time>
+            </div>}
             {stream && !recording && guide && <FramingGuide aspect={aspect} />}
             {count !== null && <div className="countdown">{count}</div>}
           </div>
-          {stream && !recording && (
+          {!mime && <Message kind="error">เบราว์เซอร์นี้อัดวิดีโอไม่ได้ ใช้โหมดอัปโหลดไฟล์แทนได้</Message>}
+          {err && <Message kind="error">{err} {!reviewing && "ลองตรวจสิทธิ์ของเบราว์เซอร์ หรือใช้โหมดอัปโหลดไฟล์"}</Message>}
+          <div className="camera-actions">
+            {!stream && <button disabled={!mime || opening} onClick={openCamera}><Icon name="camera" />
+              {opening ? "กำลังเปิดกล้อง…" : reviewing ? "เปิดกล้องเพื่ออัดใหม่" : "เปิดกล้อง"}
+            </button>}
+            {live && <label className="inline muted">นับถอยหลัง
+              <select ref={countdownControl} value={countdownS} onChange={(e) => setCountdownS(Number(e.target.value))}>
+                {COUNTDOWN_CHOICES.map((s) => <option key={s} value={s}>{s ? `${s} วินาที` : "ไม่นับ"}</option>)}
+              </select>
+            </label>}
+            {live && <button ref={recordControl} disabled={!ready || !mime} onClick={begin}><Icon name="video" /> เริ่มอัด</button>}
+            {count !== null && <button ref={stopControl} className="ghost" onClick={() => {
+              stopCountdown();
+              requestAnimationFrame(() => recordControl.current?.focus({ preventScroll: true }));
+            }}>ยกเลิก (เริ่มใน {count})</button>}
+            {recording && <button ref={stopControl} className="danger" onClick={stop} disabled={finishing}>
+              <Icon name="stop" /> {finishing ? "กำลังเตรียมคลิป…" : "หยุดอัด"}
+            </button>}
+          </div>
+          {stream && !active && (
             <label className="check muted">
               <input type="checkbox" checked={guide} onChange={() => setGuide(!guide)} />
               แสดงเส้นช่วยจัดระยะ (ให้ศีรษะถึงเอวอยู่ในเส้นประ)
             </label>
           )}
+          {live && <p className="muted small">หลังเริ่มอัด ให้เดินเข้าจุดยืนก่อนพูด ระบบนับเวลานำเสนอตั้งแต่คำแรก</p>}
         </div>
-        <div className="panel recording-checks">
+        <div className="panel recording-checks" hidden={active || reviewing}>
           <h2><Icon name="check" /> ตรวจการจัดเฟรมก่อนอัด</h2>
           {CHECKLIST.map((c, i) => {
             const status = c.auto && stream && !recording ? checks[c.auto] : null;
@@ -86,31 +122,8 @@ export default function Recorder(props: {
           })}
           <button type="button" className="ghost" disabled={ready} onClick={tickAll}>ติ๊กครบทุกข้อ (ยืนยันพร้อมอัด)</button>
           {!ready && <p className="muted">ติ๊กครบทุกข้อจึงเริ่มอัดได้ — ข้อที่มีจุดสีระบบตรวจและติ๊กให้เองเมื่อผ่าน</p>}
-          {(live || active) && <div className="row">
-            {live && (
-              <label className="inline muted">นับถอยหลัง
-                <select value={countdownS} onChange={(e) => setCountdownS(Number(e.target.value))}>
-                  {COUNTDOWN_CHOICES.map((s) => <option key={s} value={s}>{s ? `${s} วินาที` : "ไม่นับ"}</option>)}
-                </select>
-              </label>
-            )}
-            {live && <button disabled={!ready || !mime} onClick={begin}>เริ่มอัด</button>}
-            {count !== null && <button className="ghost" onClick={stopCountdown}>ยกเลิก (เริ่มใน {count})</button>}
-            {recording && <button className="danger" onClick={stop} disabled={finishing}>
-              {finishing ? "กำลังเตรียมคลิป…" : `หยุด (${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, "0")})`}
-            </button>}
-          </div>}
-          {live && <p className="note">หลังเริ่มอัด ให้เดินเข้าจุดยืนก่อนพูด ระบบนับเวลานำเสนอตั้งแต่คำแรก</p>}
         </div>
       </div>
-
-      {blob && (
-        <div className="panel">
-          <h2>ตรวจคลิปก่อนส่ง <span className="tag">{(blob.size / 1e6).toFixed(1)} MB</span></h2>
-          <p className="muted">อัดใหม่ได้จากปุ่มเปิดกล้อง</p>
-          {blobUrl && <video className="video" controls playsInline src={blobUrl} aria-label="คลิปที่อัดไว้" />}
-        </div>
-      )}
     </fieldset>
   );
 }

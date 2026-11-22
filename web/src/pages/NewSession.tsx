@@ -3,6 +3,8 @@ import TopicEditor from "../components/TopicEditor";
 import { MAX_TARGET_MIN, useNewSession } from "../useNewSession";
 import { Icon, Message, PageHeading, Steps } from "../components/ui";
 import { TEMPLATES } from "../templates";
+import { PracticeMascot } from "../components/PracticeMascot";
+import "./practice.css";
 
 /** Step 1 of a practice: target time, PDF -> draft topics, edit and confirm (or skip C1/C2). */
 export default function NewSession() {
@@ -27,6 +29,15 @@ export default function NewSession() {
         <PageHeading title="ตั้งค่ารอบซ้อม">
           กำหนดเวลาที่ต้องการใช้ แล้วเตรียมหัวข้อตามลำดับที่จะพูด
         </PageHeading>
+        <div className="setup-art" aria-hidden="true">
+          <svg viewBox="0 0 330 174" fill="none">
+            <rect x="15" y="28" width="220" height="124" rx="12" stroke="currentColor" strokeWidth="2" />
+            <path d="M15 54h220M35 78h30m-30 19h54m-54 19h40" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="34" cy="41" r="4" fill="var(--brand-yellow)" />
+            <path d="M252 48l10-9m-14-1 4-11m11 24 13-3" stroke="var(--brand-yellow)" strokeWidth="3" strokeLinecap="round" />
+          </svg>
+          <PracticeMascot pose="guiding" />
+        </div>
       </div>
       <form className="panel setup-panel" noValidate onSubmit={(event) => {
         event.preventDefault();

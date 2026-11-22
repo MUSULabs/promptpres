@@ -84,6 +84,29 @@ export function useRecorder({ onRecorded, onRecordingStart }: {
     const id = setInterval(() => setElapsed((Date.now() - t0) / 1000), 500);
     return () => clearInterval(id);
   }, [recording]);
+  useEffect(() => {
+    if (!stream) return;
+    const tracks = stream.getTracks();
+    function onDeviceEnded() {
+      if (camera.current !== stream) return;
+      setErr("กล้องหรือไมโครโฟนหลุดระหว่างใช้งาน");
+      if (countTimer.current !== null) clearInterval(countTimer.current);
+      countTimer.current = null;
+      setCount(null);
+      const rec = recorder.current;
+      if (rec) {
+        // Keep the data recorded so far and let the normal stop handler prepare it for review.
+        if (rec.state !== "inactive") rec.stop();
+        setFinishing(true);
+        return;
+      }
+      releaseCamera(stream, preview.current);
+      camera.current = null;
+      setStream(null);
+    }
+    tracks.forEach((track) => track.addEventListener("ended", onDeviceEnded));
+    return () => tracks.forEach((track) => track.removeEventListener("ended", onDeviceEnded));
+  }, [stream]);
   // auto-tick a checked row once it has passed STEADY_SAMPLES in a row (never auto-untick: the user stays in control)
   useEffect(() => {
     setChecked((prev) => {

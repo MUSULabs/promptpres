@@ -5,7 +5,7 @@ import type { FlowStatus, SessionRow } from "../contract";
 import { fmtTime } from "../presentation";
 import { Icon, Message } from "../components/ui";
 import { TrendPanel } from "../components/Trend";
-import ppreDefault from "../../design/mascot/ppre-default.svg?no-inline";
+import { PracticeMascot } from "../components/PracticeMascot";
 import "./dashboard.css";
 
 const STATUS_LABEL: Record<FlowStatus, string> = {
@@ -66,7 +66,7 @@ export default function Home() {
             <path d="M51 32h35m229 157h24m-12-12v24" stroke="var(--brand-yellow)" strokeWidth="3" strokeLinecap="round" />
             <path d="M112 164h-45m31-10H67" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          <img src={ppreDefault} alt="" width="320" height="320" />
+          <PracticeMascot pose="default" />
         </div>
       </div>
       {latest && <div className="dashboard-rounds">

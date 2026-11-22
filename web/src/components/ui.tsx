@@ -17,6 +17,7 @@ const ICONS = {
   play: <path d="m8 5 11 7-11 7V5Z" />,
   plus: <path d="M12 5v14M5 12h14" />,
   refresh: <><path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 5v6h-6" /></>,
+  stop: <rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor" />,
   upload: <><path d="M12 16V4m-5 5 5-5 5 5" /><path d="M5 20h14" /></>,
   user: <><circle cx="12" cy="8" r="3" /><path d="M5 20v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2" /></>,
   video: <><rect x="3" y="6" width="13" height="12" rx="2" /><path d="m16 10 5-3v10l-5-3" /></>,

@@ -7,6 +7,7 @@ import { Icon, Message, NotFound, PageHeading, Steps } from "../components/ui";
 import { fmtTime } from "../presentation";
 import { useObjectUrl } from "../useObjectUrl";
 import { useVideoUpload, type Clip } from "../useVideoUpload";
+import "./practice.css";
 
 type VideoMode = "record" | "upload";
 const VIDEO_EXTENSIONS = /\.(mp4|webm|mov)$/i;
@@ -94,7 +95,7 @@ function VideoSetup({ id }: { id: string }) {
   return (
     <section className="video-page">
       <Steps current={2} />
-      <PageHeading title="เตรียมและส่งวิดีโอ" />
+      <PageHeading title={tab === "record" ? "ห้องซ้อมนำเสนอ" : "เตรียมวิดีโอจากไฟล์"} />
       <div className="context-strip">
         <p><Icon name="clock" /> เวลาเป้าหมาย <strong>{fmtTime(info.target_duration_s)}</strong></p>
         {topics.length > 0 ? <details className="context-topics">

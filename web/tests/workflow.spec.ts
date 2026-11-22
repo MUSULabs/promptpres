@@ -186,8 +186,8 @@ test("recording stops tracks and switching modes requires confirmation", async (
   await page.getByRole("button", { name: "ติ๊กครบทุกข้อ (ยืนยันพร้อมอัด)" }).click();
   await page.getByLabel("นับถอยหลัง").selectOption("0");
   await page.getByRole("button", { name: "เริ่มอัด", exact: true }).click();
-  await expect(page.getByRole("button", { name: /หยุด \(0:01/ })).toBeVisible();
-  await page.getByRole("button", { name: /^หยุด \(/ }).click();
+  await expect(page.locator(".recording-clock")).toHaveText(/0:0[1-9]/);
+  await page.getByRole("button", { name: "หยุดอัด" }).click();
   await expect.poll(() => page.evaluate(() =>
     (window as unknown as { testTracks: MediaStreamTrack[] }).testTracks.map((track) => track.readyState)
   )).toEqual(["ended", "ended"]);
@@ -200,6 +200,42 @@ test("recording stops tracks and switching modes requires confirmation", async (
   await page.getByRole("button", { name: "อัปโหลดไฟล์วิดีโอ" }).click();
   await dialog.getByRole("button", { name: "เปลี่ยนโหมดและล้างคลิป" }).click();
   await expect(page.getByLabel("คลิปที่อัดไว้")).toHaveCount(0);
+});
+
+test("camera permission denial can be retried and interruption preserves the recorded clip", async ({ page, request }) => {
+  const id = await newRound(request);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    const media = navigator.mediaDevices;
+    const get = media.getUserMedia.bind(media);
+    let denied = false;
+    media.getUserMedia = async (constraints) => {
+      if (!denied) {
+        denied = true;
+        throw new DOMException("Denied for test", "NotAllowedError");
+      }
+      const stream = await get(constraints);
+      Object.assign(window, { testStream: stream });
+      return stream;
+    };
+  });
+  await page.goto(`/sessions/${id}/video`);
+  const open = page.getByRole("button", { name: "เปิดกล้อง", exact: true });
+  await open.click();
+  await expect(page.getByRole("alert")).toContainText("ไม่ได้รับอนุญาต");
+  await open.click();
+  await page.getByLabel("นับถอยหลัง").selectOption("0");
+  await page.getByRole("button", { name: "ติ๊กครบทุกข้อ (ยืนยันพร้อมอัด)" }).click();
+  await page.getByRole("button", { name: "เริ่มอัด", exact: true }).press("Enter");
+  await expect(page.locator(".recording-clock")).toHaveText(/0:0[1-9]/);
+  await page.evaluate(() => {
+    const track = (window as unknown as { testStream: MediaStream }).testStream.getAudioTracks()[0];
+    track.stop();
+    track.dispatchEvent(new Event("ended"));
+  });
+  await expect(page.getByRole("alert")).toContainText("หลุดระหว่างใช้งาน");
+  await expect(page.getByLabel("คลิปที่อัดไว้")).toBeVisible();
+  await expect(page.getByRole("button", { name: "ส่งวิเคราะห์", exact: true })).toBeEnabled();
 });
 
 // ---- D-046: coaching and explainability ----
