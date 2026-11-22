@@ -129,6 +129,7 @@ button.quiet:disabled { color: var(--muted); }
 .banner + button { margin-top: .7rem; }
 .state-icon { display: grid; place-items: center; width: 3.25rem; height: 3.25rem; flex: none; border-radius: 16px; background: var(--tint); color: var(--accent); font-size: 1.35rem; }
 .empty-state { align-items: center; text-align: center; padding-block: clamp(2rem, 5vw, 4rem); }
+.empty-state > .row { justify-content: center; }
 
 .session-list { list-style: none; padding: 0; margin-bottom: 2rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
 .session-card { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.5fr) minmax(5rem, max-content); gap: 1rem; align-items: center; border: 0; border-radius: 0; background: transparent; }
@@ -256,6 +257,7 @@ progress { width: 100%; height: .8rem; accent-color: var(--accent); }
 .values dt, .values small { color: var(--muted); font-size: .86rem; }
 .values dd { font-variant-numeric: tabular-nums; font-weight: 600; }
 .values small { font-weight: 500; }
+.value-note { margin-bottom: .4rem; }
 .primary-values { padding-top: .55rem; border-top: 1px solid var(--line); }
 .primary-values dd { font-size: 1.08rem; }
 .template { padding: .55rem .75rem; border-inline-start: 2px solid var(--accent); background: var(--bg); }

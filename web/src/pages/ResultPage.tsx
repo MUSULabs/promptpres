@@ -297,7 +297,9 @@ function Card({ c, feedback, meta, metaStatus, before, topics, media, seek, cros
   </>;
   const values = <>
     {!scored && all.length > 0 && <div>
-      {metaStatus === "ready" && <p className="muted">ไม่ทราบว่าค่าใดใช้คิดระดับในผลรุ่นนี้</p>}
+      <p className="muted small value-note">{metaStatus === "ready" ? "ไม่ทราบว่าค่าใดใช้คิดระดับในผลรุ่นนี้"
+        : metaStatus === "loading" ? "กำลังโหลดว่าค่าใดใช้คิดระดับ…"
+        : "โหลดคำอธิบายค่าไม่สำเร็จ ค่าด้านล่างวัดได้จริง แต่ยังแยกไม่ได้ว่าค่าใดใช้คิดระดับและค่าใดเป็นข้อมูลประกอบ"}</p>
       <ValueList entries={all} />
     </div>}
     {main.length > 0 && <div className="primary-values"><ValueList entries={main} />

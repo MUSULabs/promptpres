@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { api, type AuthState } from "./api";
 import { Icon, Message } from "./components/ui";
 
@@ -27,10 +27,35 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (state.required && !state.user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
   return <>{children}</>;
 }
+/**
+ * /logout signs out, then reloads at /login (a fresh page drops everything the old account had loaded).
+ * The menu gets here through the router, so a page that holds unsent work (useLeaveGuard) asks first
+ * and nothing is signed out if the person stays.
+ */
+export function LogoutPage() {
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let live = true;
+    setFailed(false);
+    api.logout().then(() => { if (live) window.location.replace("/login"); })
+      .catch(() => { if (live) setFailed(true); });
+    return () => { live = false; };
+  }, [attempt]);
+  if (!failed) return <p role="status" className="muted">กำลังออกจากระบบ…</p>;
+  return <section className="panel empty-state">
+    <Message kind="error">ออกจากระบบไม่สำเร็จ กรุณาตรวจการเชื่อมต่อแล้วลองใหม่</Message>
+    <div className="row">
+      <button className="ghost" onClick={() => setAttempt((n) => n + 1)}><Icon name="refresh" /> ลองใหม่</button>
+      <Link className="button secondary" to="/"><Icon name="history" /> กลับหน้าประวัติ</Link>
+    </div>
+  </section>;
+}
+
 export function AccountMenu() {
-  const { state, refresh } = useAuth();
+  const { state } = useAuth();
   const { pathname } = useLocation();
-  const [error, setError] = useState("");
+  const navigate = useNavigate();
   const menu = useRef<HTMLDetailsElement>(null);
   const summary = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -41,8 +66,10 @@ export function AccountMenu() {
     document.addEventListener("pointerdown", dismiss);
     return () => document.removeEventListener("pointerdown", dismiss);
   }, []);
-  async function logout() { try { await api.logout(); await refresh(); window.location.assign("/login"); }
-    catch { setError("ออกจากระบบไม่สำเร็จ กรุณาลองใหม่"); } }
+  function logout() {
+    if (menu.current) menu.current.open = false;
+    navigate("/logout");
+  }
   if (!state?.user && pathname === "/login") return null;
   if (!state) return null;
   if (!state.user) return <div className="account-menu"><Link to="/login">เข้าสู่ระบบ</Link></div>;
@@ -59,8 +86,7 @@ export function AccountMenu() {
     </summary>
     <div className="account-options">
       {state.user.is_guest && <Link to="/login?mode=register">สมัครสมาชิกเพื่อเก็บประวัติ</Link>}
-      <button className="quiet" onClick={() => void logout()}>ออกจากระบบ</button>
-      {error && <p className="error small" role="alert">{error}</p>}
+      <button className="quiet" onClick={logout}>ออกจากระบบ</button>
     </div>
   </details>;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import type { FlowStatus, SessionRow } from "../contract";
@@ -41,12 +41,17 @@ export default function Home() {
   const [err, setErr] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [refresh, setRefresh] = useState(0);
+  // A request still running is never cut off by the next timer tick: on an API slower than REFRESH_MS
+  // every tick would cancel the one before it and the list would never update.
+  const loading = useRef(false);
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
+    loading.current = true;
     api.sessions(signal).then((data) => { if (!signal.aborted) { setRows(data); setErr(null); } })
-      .catch((e) => { if (!signal.aborted) setErr(String(e.message)); });   // a failed refresh keeps the list shown
-    return () => controller.abort();
+      .catch((e) => { if (!signal.aborted) setErr(String(e.message)); })   // a failed refresh keeps the list shown
+      .finally(() => { if (!signal.aborted) loading.current = false; });
+    return () => { controller.abort(); loading.current = false; };
   }, [attempt, refresh]);
   const rehearsals = rows?.filter((row) => row.source === "session");
   const latest = rehearsals?.[0];
@@ -55,7 +60,7 @@ export default function Home() {
   const analysing = !!rehearsals?.some((row) => row.status === "queued" || row.status === "processing");
   useEffect(() => {
     if (!analysing) return;
-    const tick = () => { if (!document.hidden) setRefresh((n) => n + 1); };
+    const tick = () => { if (!document.hidden && !loading.current) setRefresh((n) => n + 1); };
     const timer = setInterval(tick, REFRESH_MS);
     document.addEventListener("visibilitychange", tick);
     return () => { clearInterval(timer); document.removeEventListener("visibilitychange", tick); };

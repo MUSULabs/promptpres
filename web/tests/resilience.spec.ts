@@ -107,3 +107,55 @@ test("the dashboard updates a round's status while it is being analysed", async 
   await expect(card.locator(".status")).toHaveText("พร้อมดูผล");
   await expect(card.locator("dd").first()).toHaveText("0:05");        // whole seconds, not "0:05.0"
 });
+
+test("without criterion metadata the measured values say they cannot be split yet", async ({ page, request }) => {
+  const id = await finishedRound(request);
+  await page.route(`**/api/sessions/${id}/metadata`, (route) => route.fulfill({ status: 503, body: "" }), { times: 1 });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`/sessions/${id}`);
+  const card = page.locator(".card").filter({ has: page.locator("dl.values") }).first();
+  await expect(card.locator(".value-note")).toContainText("ยังแยกไม่ได้ว่าค่าใดใช้คิดระดับ");
+  await expect(card.locator("dl.values").first()).toBeVisible();
+  await page.locator(".result-load-error").getByRole("button", { name: "ลองใหม่" }).click();
+  await expect(page.getByText("ยังแยกไม่ได้ว่าค่าใดใช้คิดระดับ")).toHaveCount(0);
+  await expect(card.locator(".primary-values")).toBeVisible();
+});
+
+test("a dashboard refresh slower than the timer is not cut off by the next tick", async ({ page, request }) => {
+  const id = await finishedRound(request);
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let listRequests = 0;
+  await page.route("**/api/sessions", async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    listRequests += 1;
+    const first = listRequests === 1;
+    if (!first) await held;                   // every refresh after the first answers only when released
+    try {
+      const response = await route.fetch();
+      const rows = (await response.json()) as { session_id: string; status: string }[];
+      await route.fulfill({ response, json: first ? rows.map((row) => row.session_id === id ? { ...row, status: "queued" } : row) : rows });
+    } catch { /* the page dropped the request */ }
+  });
+  await page.clock.install();
+  await page.goto("/");
+  const card = page.locator(".session-card").filter({ has: page.locator(`a[href="/sessions/${id}"]`) });
+  await expect(card.locator(".status")).toHaveText("รอคิว");
+  await page.clock.runFor(10_000);            // the refresh starts and hangs
+  await expect.poll(() => listRequests).toBe(2);
+  await page.clock.runFor(20_000);            // two more ticks while it hangs: neither cancels or repeats it
+  expect(listRequests).toBe(2);
+  release();
+  await expect(card.locator(".status")).toHaveText("พร้อมดูผล");
+});
+
+test("a page file that fails to load offers a reload instead of an empty screen", async ({ page }) => {
+  await page.route(/\/assets\/Home-[^/]+\.js$/, (route) => route.abort("internetdisconnected"));
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "เปิดหน้านี้ไม่สำเร็จ" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "เมนูหลัก" })).toBeVisible();      // header still works
+  await page.unroute(/\/assets\/Home-[^/]+\.js$/);
+  await page.getByRole("button", { name: "โหลดหน้าใหม่" }).click();
+  await expect(page.getByRole("heading", { name: "พร้อมซ้อมนำเสนอ" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "เปิดหน้านี้ไม่สำเร็จ" })).toHaveCount(0);
+});

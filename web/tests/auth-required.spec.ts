@@ -227,3 +227,40 @@ test("registering from Guest moves the rehearsal to the new account and other ac
   expect(await (await stranger.request.get("/api/sessions")).json()).toEqual([]);
   await third.close();
 });
+
+test("logging out with an unsent clip asks first, and staying keeps the clip and the account", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: GUEST }).click();
+  await expect(page.locator(".account-menu")).toContainText("ผู้ทดลองใช้งาน");
+  const response = await page.request.post("/api/sessions", { data: { target_duration_s: 900 } });
+  expect(response.status()).toBe(201);
+  const { session_id: id } = await response.json();
+  await page.goto(`/sessions/${id}/video`);
+  await page.getByRole("button", { name: "เปิดกล้อง", exact: true }).click();
+  await page.getByLabel("นับถอยหลัง").selectOption("0");
+  await page.getByRole("button", { name: /ติ๊กครบทุกข้อ/ }).click();
+  await page.getByRole("button", { name: "เริ่มอัด", exact: true }).click();
+  await expect(page.locator(".recording-clock")).toHaveText(/0:0[1-9]/);
+  await page.getByRole("button", { name: "หยุดอัด" }).click();
+  await expect(page.getByLabel("คลิปที่อัดไว้")).toBeVisible();
+
+  const logout = async () => {
+    await page.locator(".account-menu summary").click();
+    await page.getByRole("button", { name: "ออกจากระบบ", exact: true }).click();
+  };
+  await logout();
+  const dialog = page.getByRole("dialog", { name: "ออกจากขั้นวิดีโอหรือไม่?" });
+  await expect(dialog).toContainText("ยังไม่ได้ส่งวิเคราะห์");
+  await dialog.getByRole("button", { name: "ยกเลิก", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  await expect(page).toHaveURL(`/sessions/${id}/video`);
+  await expect(page.getByLabel("คลิปที่อัดไว้")).toBeVisible();
+  expect((await page.request.get(`/api/sessions/${id}`)).status()).toBe(200);   // still signed in
+
+  await logout();
+  await dialog.getByRole("button", { name: "ออกและทิ้งคลิป" }).click();
+  await expect(page).toHaveURL((url) => url.pathname === "/login");
+  await expect(page.getByRole("button", { name: GUEST })).toBeVisible();
+  expect((await page.request.get(`/api/sessions/${id}`)).status()).toBe(401);
+});
