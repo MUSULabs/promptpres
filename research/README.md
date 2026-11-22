@@ -31,6 +31,8 @@ a production fallback for the target design (see `SCOPE_FREEZE_V1.md` §6).
 | [manifests/pilot_manifest_TEMPLATE.csv](manifests/pilot_manifest_TEMPLATE.csv) | Column template with one invented row. The real 15-item pilot manifest is **private research data outside git** |
 | [tests/test_n1_n2_label_schema.py](tests/test_n1_n2_label_schema.py) | Schema test matrix: `python -m pytest research/tests -q` |
 | [validate_labels.py](validate_labels.py) | Phase 2 semantic validator (LABEL_PROVENANCE_V1 §6): time order, media and source times, accepted, consensus, immutability, coverage, audit pairs |
+| [labeler/index.html](labeler/index.html) | D-069 main labelling tool: offline page, plays a masked clip from disk, keys 1–4 at each change, saves `<annotator>_<blind_id>.json` (no network: CSP `default-src 'none'`) |
+| [keylog_to_records.py](keylog_to_records.py) | D-069: labeller `.json` → JSONL records (same as the ELAN converter), contiguous spans, short spans merged, optional `--manifest` validation and `--times` work minutes |
 | [elan_to_records.py](elan_to_records.py) | Phase 2: ELAN `.eaf` → JSONL records (GOLD independent), then the validator; also writes the template |
 | [elan/n1_n2_template_v1.etf](elan/n1_n2_template_v1.etf) | ELAN template generated from `elan_to_records.py` (tiers and vocabularies = the schema label sets) |
 | [features/README.md](features/README.md) | Phase 2 local extractor v2: per-frame feature table on a 10 fps grid, column list, versions (draft, locked before the first outer LOSO run) |
@@ -46,15 +48,14 @@ CSV files start with `#` metadata lines; read them with `pandas.read_csv(path, c
 No video, label or answer from a real clip may be committed here (CLAUDE.md rule 7); the CSVs hold IDs and
 rules only.
 
-## วิธีติดป้าย pilot ใน ELAN (ผู้ติดป้าย A1–A3)
+## วิธีติดป้าย (ผู้ติดป้าย A1–A3, D-069)
 
-1. ติดตั้ง ELAN จาก The Language Archive (MPI) แล้วเปิด `File → New` เลือกวิดีโอ `<blind_id>.mp4` ที่ผู้ดูแลข้อมูลส่งให้ และเลือกแม่แบบ `elan/n1_n2_template_v1.etf`
-2. ติดป้ายตาม [คู่มือ](ANNOTATION_MANUAL_N1_N2_V1.md) ความละเอียด 0.1 วินาที:
-   - `N1_function` และ `N2_direction` ต้องมีป้ายต่อกันตลอดคลิปตั้งแต่ 0 ถึงท้ายไฟล์ ไม่มีช่องว่าง ไม่ซ้อนกัน
-   - `N1_intensity` และ `N1_exploratory` ติดเฉพาะช่วง `GESTURE` หรือ `ADAPTOR_MANIPULATION` (ไม่บังคับ)
-   - flag แต่ละตัวมี tier ของตัวเอง (`N1_flag_holding_notes`, `N1_flag_one_hand_hidden`, `N1_flag_repetitive`) ทับกันได้
-   - ช่วงที่ไม่แน่ใจ ใส่ `ambiguous` ใน tier ลูก `<tier>_ambiguous` ของช่วงนั้น · ความมั่นใจ 1–3 ใน `<tier>_confidence` · หมายเหตุสั้นใน `<tier>_note` (ห้ามมีชื่อหรือข้อมูลส่วนตัว)
-3. บันทึกเป็น `<รหัสผู้ติดป้าย>_<blind_id>.eaf` เช่น `A2_PV01-07.eaf` แล้วส่งให้ผู้ดูแลข้อมูลทางไดรฟ์จำกัดสิทธิ์
-4. ห้ามเปิดไฟล์ของผู้ติดป้ายคนอื่น ห้ามเปิดคลิปต้นฉบับหรือ manifest และห้ามใช้ผลของระบบหรือ AI ระหว่างติดป้าย
+1. เปิด `labeler/index.html` ด้วย Chrome หรือ Edge (ดับเบิลคลิกไฟล์ ไม่ต้องต่ออินเทอร์เน็ต) เลือกรหัสผู้ติดป้าย แล้วเลือกคลิป `<blind_id>.mp4` ที่ผู้ดูแลข้อมูลส่งให้ (ห้ามเปลี่ยนชื่อคลิป)
+2. ติดทีละแถว: แถว N1 (มือ) หนึ่งรอบ แล้วกด `N` สลับไปแถว N2 (การมอง) อีกหนึ่งรอบ · ก่อนกดเล่นให้กดป้ายแรกที่ 0 วินาที · ระหว่างเล่นกด `1`–`4` ทันทีที่พฤติกรรมเปลี่ยน · หยุดแล้วใช้ `,` `.` หรือปุ่ม −/+ เลื่อนขอบให้ตรง ตาม[คู่มือ](ANNOTATION_MANUAL_N1_N2_V1.md)
+3. `A` = ช่วงนี้ไม่แน่ใจ (`ambiguous`) · `H` = เริ่ม/จบช่วงถือโน้ต · `Backspace` = ลบจุดเปลี่ยนล่าสุดก่อนเวลานี้ · งานบันทึกในเบราว์เซอร์เองทุกครั้งที่แก้
+4. กด "บันทึกไฟล์ส่งงาน" ได้ไฟล์ `<รหัสผู้ติดป้าย>_<blind_id>.json` เช่น `A2_PV01-07.json` ส่งให้ผู้ดูแลข้อมูลทางไดรฟ์จำกัดสิทธิ์ · หน้าเว็บจับเวลาทำงานให้เอง
+5. ห้ามเปิดไฟล์ของผู้ติดป้ายคนอื่น ห้ามเปิดคลิปต้นฉบับหรือ manifest และห้ามใช้ผลของระบบหรือ AI ระหว่างติดป้าย
 
-ผู้ดูแลข้อมูลแปลงและตรวจด้วย `python -m research.elan_to_records <ไฟล์ .eaf> -o <labels.jsonl> --manifest <manifest ส่วนตัว>` แก้ตามรายการที่ validator แจ้งก่อน แล้วรัน `validate_labels.py ... --hashes <ไฟล์ส่วนตัว> --record-hashes` เพื่อบันทึกว่ารับป้ายแล้ว (หลังจากนี้ห้ามแก้ป้าย independent)
+ผู้ดูแลข้อมูลแปลงและตรวจด้วย `python -m research.keylog_to_records <ไฟล์ .json> -o <labels.jsonl> --manifest <manifest ส่วนตัว> --times <เวลา.csv>` แล้วรัน `validate_labels.py ... --hashes <ไฟล์ส่วนตัว> --record-hashes` เพื่อบันทึกว่ารับป้ายแล้ว (หลังจากนี้ห้ามแก้ป้าย independent) และ `agreement_report.py` สำหรับ κ
+
+**ทางสำรอง ELAN:** แม่แบบ `elan/n1_n2_template_v1.etf` บันทึก `<รหัส>_<blind_id>.eaf` แล้วแปลงด้วย `python -m research.elan_to_records` (ติดเฉพาะแถวตาม D-069)

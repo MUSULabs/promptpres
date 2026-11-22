@@ -1,7 +1,7 @@
 ---
 doc: research/EXPERIMENT_PROTOCOL_V1
-version: v1.1 (Phase 1.2 + 1.2a corrections within D-067, 22 Nov 2026)
-date: 2026-11-22
+version: v1.2 (D-069 fast track, 23 Nov 2026; v1.1 = Phase 1.2 + 1.2a corrections within D-067)
+date: 2026-11-23
 status: OWNER_APPROVED / ADVISOR_APPROVED
 decisions: D-067
 implementation: TARGET DESIGN — no extractor v2, features, labels or models exist yet
@@ -12,6 +12,17 @@ advisor_approval: approved 2026-11-22 (project title unchanged)
 # Experiment protocol v1.1 — N1/N2 (speaker-disjoint)
 
 Tags used below: **[SRC]** supported by a verified source (vault `SOURCE_TABLE.md`) · **[DES]** project design decision · **[PILOT]** value pending the annotation pilot · **[EXPERT]** value pending expert review.
+
+## 0. D-069 changes (v1.2, owner-approved 23 Nov 2026; these override the sections below where they differ)
+
+Reason: N1/N2 results must reach the thesis draft by 31 Dec 2026, and labelling time is the bottleneck.
+
+1. **Labelling tool.** GOLD labels are entered with the offline key-press labeller `labeler/index.html`: the annotator plays the masked clip and presses 1–4 when the behaviour changes, one layer per pass, then corrects boundaries while paused. `keylog_to_records.py` turns the saved file into the same independent records as the ELAN converter (ELAN stays as a fallback). Key presses during playback are shifted back by a fixed reaction allowance (default 0.3 s, stored per session in the page); remaining reaction lag is reported as a limitation and is covered by the ±0.5 s / ±1.0 s boundary agreement and the 0.5 s bins.
+2. **Layers labelled.** `N1_function`, `N2_direction`, the `holding_notes` flag and `ambiguous` only. `N1_intensity`, `N1_exploratory`, `one_hand_hidden`, `repetitive` and per-span confidence are not labelled; intensity is studied only as the continuous feature values (§6).
+3. **Pilot.** One round on the 15 pilot items. If a layer's κ is below 0.70, classes are merged or simplified at the pilot meeting (order in the manual §4); there is no second pilot round.
+4. **GOLD set (replaces §5.2–5.3).** 90 items labelled for **both** layers: the S01 window 30–90 s after speech onset for each of the 15 primary speakers (§5.1, kept as the final rule after a full-clip check of 3 S01 clips; reported as a limitation) and the full clips of S06–S09 and S12. S02–S05 are not labelled. If time runs short, S12 is dropped first, then S09, and the reason is logged. 100% double labelling and adjudication (§4.2) are kept.
+5. **Expert review.** The IOC addendum (F1) is sent after the pilot meeting. The blind clip review (F2) moves to January as supplementary evidence and is not part of the 31 Dec draft.
+6. **No AI-proposed labels** (no SILVER) in this round; MediaPipe rules appear only as the baseline (§7).
 
 ## 1. Research questions
 
