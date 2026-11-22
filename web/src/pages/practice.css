@@ -25,8 +25,6 @@
 .camera-heading { justify-content: space-between; }
 .camera-actions { justify-content: flex-end; }
 .camera-actions button { min-inline-size: 7rem; }
-.recording-workspace .preview-wrap::after { border-color: #fff5; }
-.recording-workspace .preview-placeholder .icon { color: var(--brand-yellow); }
 .recording-workspace .preview-wrap[data-reviewing] > video:first-child { display: none; }
 .recording-workspace .preview-wrap[data-reviewing]::after { display: none; }
 .recording-readout {

@@ -119,6 +119,61 @@ test("dashboard shows an empty state, then a real unfinished round with a resume
   await expect(page).toHaveURL(`/sessions/${id}/video`);
 });
 
+test("a visitor can record, submit, review and start another rehearsal at narrow widths", async ({ page }) => {
+  const widths = [320, 360, 390, 430, 768, 1024, 1280, 1440];
+  async function reflows() {
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), `viewport ${width}px`).toBeLessThanOrEqual(width);
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+  }
+
+  await page.goto("/");
+  await expect(page.locator(".landing-hero")).toBeVisible();
+  await reflows();
+  await page.keyboard.press("Tab");
+  const skip = page.getByRole("link", { name: "ข้ามไปเนื้อหาหลัก" });
+  await expect(skip).toBeFocused();
+  expect(await skip.evaluate((link) => getComputedStyle(link).outlineStyle)).not.toBe("none");
+  await page.getByRole("link", { name: "เข้าสู่ระบบ" }).press("Enter");
+  await reflows();
+  await page.getByRole("button", { name: GUEST }).press("Enter");
+  await expect(page.getByRole("heading", { name: "ยังไม่มีรอบซ้อม" })).toBeVisible();
+  await reflows();
+  const start = page.getByRole("link", { name: "เริ่มซ้อม", exact: true });
+  expect((await start.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  await start.press("Enter");
+  await expect(page.getByRole("heading", { name: "ตั้งค่ารอบซ้อม" })).toBeVisible();
+  await reflows();
+  await page.getByRole("button", { name: "ไปตั้งหัวข้อ" }).press("Enter");
+  await page.getByRole("button", { name: "ข้ามหัวข้อ" }).press("Enter");
+  await page.getByRole("button", { name: "ข้ามและไปขั้นวิดีโอ" }).press("Enter");
+  await expect(page.getByRole("heading", { name: "ห้องซ้อมนำเสนอ" })).toBeVisible();
+  await reflows();
+  await page.getByRole("button", { name: "เปิดกล้อง", exact: true }).click();
+  await page.getByLabel("นับถอยหลัง").selectOption("0");
+  await page.getByRole("button", { name: /ติ๊กครบทุกข้อ/ }).click();
+  await page.getByRole("button", { name: "เริ่มอัด", exact: true }).click();
+  const stop = page.getByRole("button", { name: "หยุดอัด" });
+  await expect(page.locator(".recording-clock")).toHaveText(/0:0[1-9]/);
+  expect((await stop.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  await stop.click();
+  await expect(page.getByLabel("คลิปที่อัดไว้")).toBeVisible();
+  const [, id] = page.url().match(/\/sessions\/([^/]+)\/video$/) ?? [];
+  await page.getByRole("button", { name: "ส่งวิเคราะห์", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "อยู่ในคิว รอเครื่องวิเคราะห์" })).toBeVisible();
+  expect((await page.request.post(`/browser-test/${id}/processing`)).ok()).toBeTruthy();
+  await expect(page.getByRole("heading", { name: "กำลังวิเคราะห์วิดีโอการซ้อม" })).toBeVisible();
+  expect((await page.request.post(`/browser-test/${id}/partial`)).ok()).toBeTruthy();
+  await expect(page.getByRole("heading", { name: "ผลการซ้อม", exact: true })).toBeVisible();
+  await reflows();
+  expect(await page.locator(".cover-frame h1").evaluate((h) => getComputedStyle(h, "::after").animationName)).toBe("none");
+  await page.getByRole("link", { name: "เริ่มซ้อมอีกครั้ง" }).press("Enter");
+  await expect(page).toHaveURL("/new");
+  await expect(page.getByRole("main")).toBeFocused();
+});
+
 test("registering from Guest moves the rehearsal to the new account and other accounts cannot open it", async ({ page, browser }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "เข้าสู่ระบบ" }).click();

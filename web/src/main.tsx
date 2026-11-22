@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, NavLink, Route, Routes, matchPath, useLocation } from "react-router-dom";
 import "./brand.css";
 import "./styles.css";
 import { AuthProvider, AuthGate, AccountMenu, useAuth } from "./auth";
@@ -51,6 +51,7 @@ function SiteHeader({ checkingEntry }: { checkingEntry: boolean }) {
 
 function AppRoutes({ landing }: { landing: boolean }) {
   const { pathname } = useLocation();
+  const resultRoute = matchPath("/sessions/:id", pathname);
   const previousPath = useRef(pathname);
   const main = useRef<HTMLElement>(null);
 
@@ -61,7 +62,7 @@ function AppRoutes({ landing }: { landing: boolean }) {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  return <main id="main-content" className={landing ? "landing-main" : undefined} tabIndex={-1} ref={main}>
+  return <main id="main-content" className={landing ? "landing-main" : resultRoute ? "result-main" : undefined} tabIndex={-1} ref={main}>
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={landing ? <LandingPage /> : <AuthGate><Home /></AuthGate>} />

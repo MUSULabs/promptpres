@@ -110,7 +110,8 @@ export function TranscriptBox({ sessionId, video, media, seek }: {
       <summary>บทพูดที่ถอดเสียง <span className="muted small">
         {items.length ? `· เสียงเติม ${fillers} · หยุดยาว ${pauses}` : ""}</span></summary>
       {items.length === 0 ? <p className="muted">ไม่มีบทพูดสำหรับรอบนี้</p> : <>
-        <p className="muted small">กดข้อความเพื่อไปยังช่วงนั้นในวิดีโอ · <mark className="filler-key">เสียงเติม</mark> (S3) ·
+        <p className="muted small">{media === "ready" ? "กดข้อความเพื่อไปยังช่วงนั้นในวิดีโอ"
+          : "อ่านบทพูดได้ระหว่างที่วิดีโอยังไม่พร้อม"} · <mark className="filler-key">เสียงเติม</mark> (S3) ·
           <span className="pause-key"> ⏸ หยุดยาว</span> (S2) · ข้อความจากระบบถอดเสียงอาจสะกดผิด</p>
         <ol ref={list} className="phrases">
           {items.map((item, i) => <li key={i}>

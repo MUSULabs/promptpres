@@ -93,6 +93,7 @@ export default function Recorder(props: {
               <Icon name="stop" /> {finishing ? "กำลังเตรียมคลิป…" : "หยุดอัด"}
             </button>}
           </div>
+          {live && !ready && <p className="muted small">ตรวจรายการจัดเฟรมให้ครบเพื่อเริ่มอัด</p>}
           {stream && !active && (
             <label className="check muted">
               <input type="checkbox" checked={guide} onChange={() => setGuide(!guide)} />

@@ -10,7 +10,7 @@
   border-radius: var(--radius);
 }
 .dashboard-hero h1 { font-size: clamp(2rem, 4.3vw, 3.65rem); font-weight: 700; }
-.dashboard-hero p { margin-block: .65rem 1.25rem; max-width: 34ch; }
+.dashboard-hero p { margin-block: .65rem 1.25rem; max-width: 41ch; text-wrap: pretty; }
 .dashboard-hero .button { min-block-size: 3rem; }
 .dashboard-hero .button .icon:last-child { transition: transform 160ms ease-out; }
 .dashboard-hero .button:is(:hover, :focus-visible) .icon:last-child { transform: translateX(3px); }

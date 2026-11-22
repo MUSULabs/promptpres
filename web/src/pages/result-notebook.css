@@ -1,4 +1,9 @@
-main:has(.notebook-result) { width: 100%; padding-top: 0; }
+.result-main { display: flow-root; width: 100%; padding-top: 0; }
+.result-main > :not(.result-route),
+.result-route > :not(:has(.notebook-result)) {
+  width: min(calc(100% - 2 * var(--gutter)), var(--content-width));
+  margin: clamp(1.6rem, 4.5vw, 4rem) auto 0;
+}
 
 .notebook-frame { width: min(calc(100% - 2 * var(--gutter)), var(--content-width)); margin-inline: auto; }
 .notebook-cover { background: var(--brand-blue); color: #fff; }

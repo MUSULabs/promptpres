@@ -4,6 +4,7 @@ import { COVERAGE_LABEL, CRITERION_NAME, SKILLS, VALUE_LABEL, fmtTime } from "..
 import type { CoachItem, Criterion, CriterionCode, CriterionMeta, Result, Skill, Topic } from "../contract";
 import { useSessionResult } from "../useSessionResult";
 import { Icon, Message, NotFound, PageHeading, Steps } from "../components/ui";
+import { PracticeMascot } from "../components/PracticeMascot";
 import { LevelBand, TimeChip, readCard, type EvidencePoint, type MediaState, type Seek } from "../components/ResultParts";
 import { CoachNotes, NextPractice, ResultCover } from "../components/ResultNotebook";
 import { EventTimeline, TranscriptBox } from "../components/ResultTrace";
@@ -16,7 +17,7 @@ import "./result-notebook.css";
 
 export default function ResultPage() {
   const { id = "" } = useParams();
-  return <ResultView key={id} id={id} />;
+  return <div className="result-route"><ResultView key={id} id={id} /></div>;
 }
 
 function ResultView({ id }: { id: string }) {
@@ -60,8 +61,13 @@ function AnalysisStatus({ result, now }: { result: Result; now: number }) {
         <li aria-current={!processing ? "step" : undefined}>{processing && <Icon name="check" />} รอคิว</li>
         <li aria-current={processing ? "step" : undefined}>วิเคราะห์</li>
       </ol>
-      <h2>{processing ? "กำลังวิเคราะห์วิดีโอการซ้อม" : "อยู่ในคิว รอเครื่องวิเคราะห์"}</h2>
-      <p className="muted">หน้านี้จะแสดงผลให้เองเมื่อวิเคราะห์เสร็จ</p>
+      <div className="analysis-message">
+        <div>
+          <h2>{processing ? "กำลังวิเคราะห์วิดีโอการซ้อม" : "อยู่ในคิว รอเครื่องวิเคราะห์"}</h2>
+          <p className="muted">หน้านี้จะแสดงผลให้เองเมื่อวิเคราะห์เสร็จ</p>
+        </div>
+        {processing && <PracticeMascot pose="thinking" />}
+      </div>
       {Number.isFinite(time) && <p className="muted small" aria-live="off">เวลาตั้งแต่สร้างรอบ {fmtTime(Math.floor(time))}</p>}
     </div>
   );

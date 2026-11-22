@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { api, type AuthState } from "./api";
-import { Icon } from "./components/ui";
+import { Icon, Message } from "./components/ui";
 
 const Context = createContext<{ state: AuthState | null; refresh: () => Promise<void> }>({ state: null, refresh: async () => {} });
 export const useAuth = () => useContext(Context);
@@ -13,7 +13,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
   useEffect(() => { void refresh(); const update = () => void refresh(); window.addEventListener("pt-auth-expired", update);
     return () => window.removeEventListener("pt-auth-expired", update); }, []);
-  return <Context.Provider value={{ state, refresh }}>{error ? <p role="alert">ติดต่อระบบบัญชีไม่ได้ <button onClick={() => void refresh()}>ลองใหม่</button></p> : children}</Context.Provider>;
+  return <Context.Provider value={{ state, refresh }}>
+    {error ? <div className="app-shell"><main id="main-content">
+      <Message kind="error">ติดต่อระบบบัญชีไม่ได้</Message>
+      <button className="ghost" onClick={() => void refresh()}><Icon name="refresh" /> ลองใหม่</button>
+    </main></div> : children}
+  </Context.Provider>;
 }
 export function AuthGate({ children }: { children: ReactNode }) {
   const { state } = useAuth();

@@ -74,6 +74,8 @@
   --pending: #525252;
   --pending-bg: #fff3c9;
   --signal: var(--brand-yellow);
+  --radar-grid: #bdbdbd;
+  --interactive-speed: 160ms;
 }
 
 .pp-v1 {

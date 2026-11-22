@@ -53,12 +53,11 @@ test("mobile setup has a keyboard path from the first viewport to skipping topic
   await expect(page.getByRole("button", { name: "เพิ่มหัวข้อเอง" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "ข้ามหัวข้อ" })).toBeFocused();
-  const warned = page.waitForEvent("dialog");
-  const skipped = page.keyboard.press("Enter");
-  const dialog = await warned;
-  expect(dialog.message()).toContain("C1 และ C2");
-  await dialog.accept();
-  await skipped;
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("C1 และ C2");
+  await expect(dialog.getByRole("button", { name: "ยกเลิก" })).toBeFocused();
+  await dialog.getByRole("button", { name: "ข้ามและไปขั้นวิดีโอ" }).press("Enter");
   await expect(page).toHaveURL(/\/sessions\/[^/]+\/video$/);
   await expect(page.getByRole("main")).toBeFocused();
   await expect(page.getByText("ข้ามหัวข้อ · C1–C2 จะวิเคราะห์ไม่ได้")).toBeVisible();

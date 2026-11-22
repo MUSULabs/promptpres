@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { SessionInfo } from "../contract";
 import Recorder from "../components/Recorder";
-import { Icon, Message, NotFound, PageHeading, Steps } from "../components/ui";
+import { ConfirmDialog, Icon, Message, NotFound, PageHeading, Steps } from "../components/ui";
 import { fmtTime } from "../presentation";
 import { useObjectUrl } from "../useObjectUrl";
 import { useVideoUpload, type Clip } from "../useVideoUpload";
@@ -65,7 +65,6 @@ function VideoSetup({ id }: { id: string }) {
 
   function confirmMode() {
     const next = pendingMode.current;
-    dialog.current?.close();
     if (next && !isSending()) {
       switchMode(next);
       requestAnimationFrame(() => activeModeButton.current?.focus());
@@ -164,16 +163,10 @@ function VideoSetup({ id }: { id: string }) {
         </ul>
       </details>}
 
-      <dialog ref={dialog} className="confirm-dialog" aria-labelledby="change-mode-title"
-        aria-describedby="change-mode-description" onClose={() => { pendingMode.current = null; }}>
-        <span className="state-icon"><Icon name="alert" /></span>
-        <h2 id="change-mode-title">เปลี่ยนโหมดวิดีโอหรือไม่?</h2>
-        <p id="change-mode-description">คลิปที่ยังไม่ได้ส่งหรือการอัดที่กำลังทำอยู่จะถูกล้างเมื่อเปลี่ยนโหมด</p>
-        <div className="row">
-          <button className="ghost" autoFocus onClick={() => dialog.current?.close()}>ยกเลิก</button>
-          <button className="danger" onClick={confirmMode}>เปลี่ยนโหมดและล้างคลิป</button>
-        </div>
-      </dialog>
+      <ConfirmDialog dialogRef={dialog} title="เปลี่ยนโหมดวิดีโอหรือไม่?"
+        description="คลิปที่ยังไม่ได้ส่งหรือการอัดที่กำลังทำอยู่จะถูกล้างเมื่อเปลี่ยนโหมด"
+        confirmLabel="เปลี่ยนโหมดและล้างคลิป" onConfirm={confirmMode}
+        onClose={() => { pendingMode.current = null; }} />
     </section>
   );
 }

@@ -80,45 +80,43 @@ export default function Home() {
             : <p className="muted">ไม่มีรอบที่ยังดำเนินการ</p>}
         </section>
       </div>}
-      <section className="dashboard-history" aria-labelledby="dashboard-history">
+      {!rows && <div className="dashboard-history-state">
+        {err ? <>
+          <Message kind="error">โหลดรายการไม่ได้: {err}</Message>
+          <button className="ghost" onClick={() => { setErr(null); setAttempt(attempt + 1); }}><Icon name="refresh" /> ลองใหม่</button>
+        </> : <Message>กำลังโหลดประวัติการซ้อม…</Message>}
+      </div>}
+      {rows && <section className="dashboard-history" aria-labelledby="dashboard-history">
         <div className="section-heading"><h2 id="dashboard-history">ประวัติการซ้อม</h2>
-          {rows && rows.length > 0 && <span className="muted small">{rows.length} รอบ</span>}
+          {rows.length > 0 && <span className="muted small">{rows.length} รอบ</span>}
         </div>
-      {err && <>
-        <Message kind="error">โหลดรายการไม่ได้: {err}</Message>
-        <button className="ghost" onClick={() => { setErr(null); setAttempt(attempt + 1); }}><Icon name="refresh" /> ลองใหม่</button>
-      </>}
-      {!rows && !err && <Message>กำลังโหลดประวัติการซ้อม…</Message>}
-      {rows && rows.length === 0 && (
-        <div className="panel dashboard-empty">
-          <span className="state-icon"><Icon name="history" /></span>
-          <div><h3>ยังไม่มีรอบซ้อม</h3><p className="muted">เมื่อเริ่มซ้อมแล้ว คุณกลับมาทำต่อหรือเปิดดูผลจากที่นี่ได้</p></div>
-        </div>
-      )}
-      {rows && rows.length > 0 && (
-        <>
+        {rows.length === 0 ? (
+          <div className="panel dashboard-empty">
+            <span className="state-icon"><Icon name="history" /></span>
+            <div><h3>ยังไม่มีรอบซ้อม</h3><p className="muted">เมื่อเริ่มซ้อมแล้ว คุณกลับมาทำต่อหรือเปิดดูผลจากที่นี่ได้</p></div>
+          </div>
+        ) : (
           <ul className="session-list">
-            {rows.map((r) => (
-              <li className="session-card" key={r.session_id}>
-                <div className="session-card-heading">
-                  <SessionDate row={r} />
-                  <div className="badges">
-                    {r.source === "mock" && <span className="tag">ตัวอย่าง</span>}
-                    <span className={`status ${r.status}`}>{STATUS_LABEL[r.status]}</span>
+              {rows.map((r) => (
+                <li className="session-card" key={r.session_id}>
+                  <div className="session-card-heading">
+                    <SessionDate row={r} />
+                    <div className="badges">
+                      {r.source === "mock" && <span className="tag">ตัวอย่าง</span>}
+                      <span className={`status ${r.status}`}>{STATUS_LABEL[r.status]}</span>
+                    </div>
                   </div>
-                </div>
-                <dl className="session-details">
-                  <div><dt>ความยาวคลิป</dt><dd>{r.duration_s != null ? fmtTime(r.duration_s) : "—"}</dd></div>
-                  <div><dt>เวลาเป้าหมาย</dt><dd>{r.target_duration_s != null ? fmtTime(r.target_duration_s) : "—"}</dd></div>
-                  <div><dt>หัวข้อ</dt><dd>{r.topics_count}</dd></div>
-                </dl>
-                <SessionLink row={r} />
-              </li>
-            ))}
+                  <dl className="session-details">
+                    <div><dt>ความยาวคลิป</dt><dd>{r.duration_s != null ? fmtTime(r.duration_s) : "—"}</dd></div>
+                    <div><dt>เวลาเป้าหมาย</dt><dd>{r.target_duration_s != null ? fmtTime(r.target_duration_s) : "—"}</dd></div>
+                    <div><dt>หัวข้อ</dt><dd>{r.topics_count}</dd></div>
+                  </dl>
+                  <SessionLink row={r} />
+                </li>
+              ))}
           </ul>
-        </>
-      )}
-      </section>
+        )}
+      </section>}
       {rows && <TrendPanel rows={rows} />}
     </section>
   );

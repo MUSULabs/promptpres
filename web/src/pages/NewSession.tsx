@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import TopicEditor from "../components/TopicEditor";
 import { MAX_TARGET_MIN, useNewSession } from "../useNewSession";
-import { Icon, Message, PageHeading, Steps } from "../components/ui";
+import { ConfirmDialog, Icon, Message, PageHeading, Steps } from "../components/ui";
 import { TEMPLATES } from "../templates";
 import { PracticeMascot } from "../components/PracticeMascot";
 import "./practice.css";
@@ -11,15 +11,14 @@ export default function NewSession() {
   const { minutes, setMinutes, validTarget, session, topics, setTopics, draft, busy, error, problems, template,
     start, readPdf, addManualTopics, applyTemplate, goToVideo } = useNewSession();
   const topicsHeading = useRef<HTMLHeadingElement>(null);
+  const skipDialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     if (session) topicsHeading.current?.focus();
   }, [session]);
 
   function skip() {
-    if (window.confirm("ข้ามการยืนยันหัวข้อ? เกณฑ์เนื้อหา C1 และ C2 จะเป็น “วิเคราะห์ไม่ได้”")) {
-      void goToVideo(null);
-    }
+    skipDialog.current?.showModal();
   }
 
   return (
@@ -130,6 +129,9 @@ export default function NewSession() {
           )}
         </section>
       )}
+      <ConfirmDialog dialogRef={skipDialog} title="ข้ามการยืนยันหัวข้อหรือไม่?"
+        description="ถ้าข้าม ระบบจะแสดงวิเคราะห์ไม่ได้ในเกณฑ์เนื้อหา C1 และ C2"
+        confirmLabel="ข้ามและไปขั้นวิดีโอ" onConfirm={() => void goToVideo(null)} />
     </section>
   );
 }

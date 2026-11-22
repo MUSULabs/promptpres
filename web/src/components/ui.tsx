@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode, type RefObject } from "react";
 import { Link } from "react-router-dom";
 import horizontalBrand from "../assets/brand/horizontal.svg";
 
@@ -73,6 +73,30 @@ export function Message({ kind = "info", children }: { kind?: "error" | "info"; 
       <Icon name={kind === "error" ? "alert" : "clock"} /><div>{children}</div>
     </div>
   );
+}
+
+export function ConfirmDialog({ dialogRef, title, description, confirmLabel, onConfirm, onClose }: {
+  dialogRef: RefObject<HTMLDialogElement>;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  onClose?: () => void;
+}) {
+  const id = useId();
+  return <dialog ref={dialogRef} className="confirm-dialog" aria-labelledby={`${id}-title`}
+    aria-describedby={`${id}-description`} onClose={onClose}>
+    <span className="state-icon"><Icon name="alert" /></span>
+    <h2 id={`${id}-title`}>{title}</h2>
+    <p id={`${id}-description`}>{description}</p>
+    <div className="row">
+      <button className="ghost" type="button" autoFocus onClick={() => dialogRef.current?.close()}>ยกเลิก</button>
+      <button className="danger" type="button" onClick={() => {
+        dialogRef.current?.close();
+        onConfirm();
+      }}>{confirmLabel}</button>
+    </div>
+  </dialog>;
 }
 
 export function NotFound({ message = "ไม่พบหน้าที่คุณต้องการ" }: { message?: string }) {

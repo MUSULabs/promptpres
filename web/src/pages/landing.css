@@ -1,5 +1,5 @@
 .pp-v1 {
-  --landing-gold: #ffc400;
+  --landing-gold: var(--brand-yellow);
   min-height: 100svh;
   background: var(--pp-blue);
   color: var(--pp-white);
