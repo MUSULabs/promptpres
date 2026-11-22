@@ -1,5 +1,5 @@
 # Create or replace the Modal Secret `promptpres-secrets` (D-062) from Code/promptpres/.env without printing values.
-#   ./tools/set_modal_secret.ps1 -Origin https://promptpres.vercel.app -DirectOrigin https://<workspace>--promptpres-web.us-east.modal.run -Replace
+#   ./tools/set_modal_secret.ps1 -Origin "https://www.promptpres.app,https://promptpres.app,https://promptpres.vercel.app" -DirectOrigin https://<workspace>--promptpres-web.us-east.modal.run -Replace
 # -Origin: the web app address(es), comma-separated; the first is the canonical one (a custom domain can be added later).
 # -DirectOrigin: the Modal web URL (printed by `modal deploy`); empty on the very first deploy.
 # Reads from .env (the last line of a key wins, like python-dotenv): DATABASE_URL (Supabase session pooler),

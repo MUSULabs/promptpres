@@ -38,7 +38,7 @@ promptpres.example.org {
 
 ขั้นตอนติดตั้งทีละคำสั่งอยู่ใน `DEPLOY_RUNBOOK.md` หัวข้อ ก. ภาพรวม:
 
-- **หน้าเว็บ:** Vercel Hobby (`https://promptpres.vercel.app`) เสิร์ฟ `web/dist` และ rewrite `/api/*` ไป Modal (`web/vercel.json`) คุกกี้ล็อกอินจึงอยู่ใน origin เดียวกับหน้าเว็บ Vercel Hobby ใช้ได้เฉพาะงานที่ไม่ใช่เชิงพาณิชย์ ซึ่งตรงกับโครงงานนี้
+- **หน้าเว็บ:** Vercel Hobby (`https://promptpres.app`; เดิม `promptpres.vercel.app` ยังใช้ได้) เสิร์ฟ `web/dist` และ rewrite `/api/*` ไป Modal (`web/vercel.json`) คุกกี้ล็อกอินจึงอยู่ใน origin เดียวกับหน้าเว็บ Vercel Hobby ใช้ได้เฉพาะงานที่ไม่ใช่เชิงพาณิชย์ ซึ่งตรงกับโครงงานนี้
 - **ฐานข้อมูล:** Supabase PostgreSQL (Free, `us-east-1`) ผ่าน Session Pooler พอร์ต 5432 (`pool_size=3`) migration v4 เปิด RLS ทุกตาราง และปิด Data API ไว้ จึงเข้าถึงได้เฉพาะผ่านแอป
 - **API (CPU):** ฟังก์ชัน `web` บน Modal ภูมิภาค us-east (ใกล้ Supabase) CPU 1 ตัว หน่วยความจำ 1 GB `max_containers=1` รับพร้อมกัน 32 คำขอ ปิดเองหลังว่าง 5 นาที
 - **วิเคราะห์ (GPU):** `Analyser` บน T4 เปิดเมื่อมีงาน (สูงสุด 4 ตัวพร้อมกัน) ปิดเองหลังว่าง 60 วินาที โมเดลอยู่ใน Volume `promptpres-models` ที่เตรียมครั้งเดียวด้วย `modal run deploy_modal.py::download_models` หาก GPU ถูกเรียกคืนกลางงาน exit handler คืนรอบนั้นเข้าคิว

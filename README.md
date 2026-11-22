@@ -35,7 +35,7 @@ python dev.py
 docker compose up --build -d     # API + หน้าเว็บที่ build แล้ว (127.0.0.1:8000), PostgreSQL, worker GPU
 ```
 
-เริ่มจาก [คู่มือเปิด Cloud และ smoke test](DEPLOY_RUNBOOK.md) สำหรับบริการจริง: หน้าเว็บบน Vercel (`https://promptpres.vercel.app`), PostgreSQL บน Supabase, API บน Modal CPU และการวิเคราะห์บน Modal GPU T4 ที่เปิดเฉพาะเมื่อมีงาน (`deploy_modal.py`, `web/vercel.json`) หรือ Docker Compose บน VM เดียว (PostgreSQL + HTTPS reverse proxy) · ขั้นตอนสำรองและค่าใช้จ่าย: [PILOT_RUNBOOK.md](PILOT_RUNBOOK.md)
+เริ่มจาก [คู่มือเปิด Cloud และ smoke test](DEPLOY_RUNBOOK.md) สำหรับบริการจริง: หน้าเว็บบน Vercel (`https://promptpres.app`), PostgreSQL บน Supabase, API บน Modal CPU และการวิเคราะห์บน Modal GPU T4 ที่เปิดเฉพาะเมื่อมีงาน (`deploy_modal.py`, `web/vercel.json`) หรือ Docker Compose บน VM เดียว (PostgreSQL + HTTPS reverse proxy) · ขั้นตอนสำรองและค่าใช้จ่าย: [PILOT_RUNBOOK.md](PILOT_RUNBOOK.md)
 
 ## คิวงานทำงานอย่างไร
 

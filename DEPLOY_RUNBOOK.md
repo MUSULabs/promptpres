@@ -4,7 +4,7 @@
 
 ### ก. Vercel + Supabase + Modal (D-062) — PowerShell 7
 
-สถาปัตยกรรม: หน้าเว็บอยู่บน Vercel (`https://promptpres.vercel.app`, rewrite `/api/*` ไป Modal) ฐานข้อมูล Supabase PostgreSQL ภูมิภาค `us-east-1` ผ่าน Session Pooler พอร์ต 5432 และ Modal สองชั้น: `web` (CPU 1 ตัว, us-east, scale to zero) รับคำขอ API ชิ้นอัปโหลด 8 MB และเสิร์ฟวิดีโอ ส่วน `Analyser` (GPU T4) เปิดเฉพาะเมื่อมีงานวิเคราะห์แล้วปิดเองหลังว่าง 60 วินาที ไฟล์เก็บใน Modal Volume v2 สองชุด: `promptpres-models` (น้ำหนักโมเดล) และ `promptpres-media` (เฉพาะ `playback.mp4` ≤480p กับไฟล์ JSON ขนาดเล็กของแต่ละรอบ) ชั้น CPU ไม่ mount `promptpres-media` และไม่เรียก `volume.reload()` แต่อ่าน/เขียนผ่าน API ของ Volume
+สถาปัตยกรรม: หน้าเว็บอยู่บน Vercel (`https://promptpres.app` ส่งต่อไป `https://www.promptpres.app`; ที่อยู่เดิม `https://promptpres.vercel.app` ยังใช้ได้, rewrite `/api/*` ไป Modal) ฐานข้อมูล Supabase PostgreSQL ภูมิภาค `us-east-1` ผ่าน Session Pooler พอร์ต 5432 และ Modal สองชั้น: `web` (CPU 1 ตัว, us-east, scale to zero) รับคำขอ API ชิ้นอัปโหลด 8 MB และเสิร์ฟวิดีโอ ส่วน `Analyser` (GPU T4) เปิดเฉพาะเมื่อมีงานวิเคราะห์แล้วปิดเองหลังว่าง 60 วินาที ไฟล์เก็บใน Modal Volume v2 สองชุด: `promptpres-models` (น้ำหนักโมเดล) และ `promptpres-media` (เฉพาะ `playback.mp4` ≤480p กับไฟล์ JSON ขนาดเล็กของแต่ละรอบ) ชั้น CPU ไม่ mount `promptpres-media` และไม่เรียก `volume.reload()` แต่อ่าน/เขียนผ่าน API ของ Volume
 
 `.env` ในโฟลเดอร์ repo ต้องมี `DATABASE_URL` (Supabase Session Pooler, `?sslmode=require`) `PROMPTPRES_SESSION_SECRET` และ `OPENROUTER_API_KEY` สคริปต์ secret อ่านค่าจากไฟล์โดยตรงและไม่พิมพ์ค่าใด ๆ ออกจอ
 
@@ -13,7 +13,7 @@ python -m pip install modal
 modal setup
 modal volume create promptpres-models --version 2
 modal volume create promptpres-media --version 2
-& ./tools/set_modal_secret.ps1 -Origin https://promptpres.vercel.app -Replace
+& ./tools/set_modal_secret.ps1 -Origin "https://www.promptpres.app,https://promptpres.app,https://promptpres.vercel.app" -Replace
 $env:PYTHONUTF8 = '1'
 modal deploy deploy_modal.py
 modal run deploy_modal.py::download_models
@@ -32,7 +32,7 @@ vercel pull --yes --environment=production
 vercel build --prod
 vercel deploy --prebuilt --prod
 Pop-Location
-python deploy_smoke.py https://promptpres.vercel.app --direct $PT_DIRECT
+python deploy_smoke.py https://www.promptpres.app --direct $PT_DIRECT
 ```
 
 D-065: โปรเจกต์ Vercel เชื่อม GitHub `MUSULabs/promptpres` (Root Directory = `web`) ทุก push ขึ้น `main` deploy ขึ้น Production เอง · `web/vercel.json` ติดตั้งด้วย `npm ci` (Vite รุ่นใน `package-lock.json`) และ build ด้วย `npx --no-install vite build` (ไม่ดาวน์โหลด Vite รุ่นอื่น; `tsc` ตรวจใน CI เพราะอ่าน `contracts/` นอก `web/`) · `web/.vercelignore` เป็นรายการไฟล์ที่ไม่ส่งเท่านั้น ห้ามใช้รูปแบบ `/*` แล้วยกเว้นทีละไฟล์ เพราะ Git deployment อ่านไฟล์นี้จากรากของ repo จึงลบ `web/` ทั้งโฟลเดอร์ ดูผล build ด้วย `vercel ls promptpres` และ `vercel inspect <url> --logs`

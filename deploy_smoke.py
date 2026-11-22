@@ -1,7 +1,7 @@
 """Read-only HTTPS smoke test for a deployed PromptPre's service.
 
-    python deploy_smoke.py https://promptpres.vercel.app
-    python deploy_smoke.py https://promptpres.vercel.app --direct https://<workspace>--promptpres-web.us-east.modal.run
+    python deploy_smoke.py https://www.promptpres.app
+    python deploy_smoke.py https://www.promptpres.app --direct https://<workspace>--promptpres-web.us-east.modal.run
 
 Web origin: API health + contract version, the login page, anonymous history denied.
 --direct (D-062, the API address that receives upload chunks and serves the player): health, anonymous
