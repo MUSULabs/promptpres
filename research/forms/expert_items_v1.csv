@@ -1,0 +1,23 @@
+# doc: research/forms/expert_items_v1.csv | version: v1.2 | date: 2026-11-22 | status: OWNER_APPROVED / ADVISOR_REVIEW_PENDING | decisions: D-067
+# implementation: TARGET DESIGN - item SLOTS only; source segments are chosen after the annotation pilot from GOLD spans with a team consensus label | owner_approval: approved 2026-11-22 | advisor_approval: pending
+# Selection rule: primary-pool (non-team) speakers only; at most 2 segments per speaker; 8-20 s; the planned difficulty mix is described in EXPERT_MICROVALIDATION_V1 F2; which item has which difficulty is recorded ONLY in the private answer key.
+# This file is shown to the form builder. It holds NO answers, NO difficulty slot, NO clip/speaker/scenario id and NO team label. The answer key is a private research artifact outside this repository (see EXPERT_MICROVALIDATION_V1). Rows are in form order (shuffled once, seed 20261122); media files are named by form position (Q01..Q16).
+# Options = the 4 classes of the criterion + one abstention 'ไม่แน่ใจ'. UNOBSERVABLE is the class for insufficient visual information (no separate option).
+# Read with pandas.read_csv(path, comment='#').
+form_position,criterion,segment_length_s,answer_options,confidence_scale,source_segment_status,media_file
+1,N2,8-20,CAMERA_REGION|NOTES|OTHER|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q01.mp4
+2,N1,8-20,GESTURE|REST_OR_HOLD|ADAPTOR_MANIPULATION|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q02.mp4
+3,N1,8-20,GESTURE|REST_OR_HOLD|ADAPTOR_MANIPULATION|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q03.mp4
+4,N1,8-20,GESTURE|REST_OR_HOLD|ADAPTOR_MANIPULATION|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q04.mp4
+5,N1,8-20,GESTURE|REST_OR_HOLD|ADAPTOR_MANIPULATION|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q05.mp4
+6,N1,8-20,GESTURE|REST_OR_HOLD|ADAPTOR_MANIPULATION|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q06.mp4
+7,N2,8-20,CAMERA_REGION|NOTES|OTHER|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q07.mp4
+8,N2,8-20,CAMERA_REGION|NOTES|OTHER|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q08.mp4
+9,N1,8-20,GESTURE|REST_OR_HOLD|ADAPTOR_MANIPULATION|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q09.mp4
+10,N2,8-20,CAMERA_REGION|NOTES|OTHER|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q10.mp4
+11,N2,8-20,CAMERA_REGION|NOTES|OTHER|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q11.mp4
+12,N1,8-20,GESTURE|REST_OR_HOLD|ADAPTOR_MANIPULATION|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q12.mp4
+13,N2,8-20,CAMERA_REGION|NOTES|OTHER|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q13.mp4
+14,N2,8-20,CAMERA_REGION|NOTES|OTHER|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q14.mp4
+15,N2,8-20,CAMERA_REGION|NOTES|OTHER|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q15.mp4
+16,N1,8-20,GESTURE|REST_OR_HOLD|ADAPTOR_MANIPULATION|UNOBSERVABLE|ไม่แน่ใจ,1-3 optional,PENDING_PILOT,Q16.mp4

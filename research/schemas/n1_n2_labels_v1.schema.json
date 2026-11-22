@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "promptpres/research/n1_n2_labels_v1.schema.json",
+  "title": "N1/N2 annotation record v1",
+  "description": "One labelled time span for N1 (hand behaviour) or N2 (camera-relative visual direction). Rules: research/ANNOTATION_MANUAL_N1_N2_V1.md and research/LABEL_PROVENANCE_V1.md. Cross-field and cross-record rules JSON Schema cannot express (start_s < end_s, accepted = proposal unchanged, consensus sources exist and are independent, agreed consensus matches its sources, audit/reviewed pairs share blind_id and layer with different reviewers, source times = source_offset_s + masked-media times) are enforced by the semantic validator described in LABEL_PROVENANCE_V1 section 6, which must exist before the first pilot labels are accepted.",
+  "x-version": "v1.1",
+  "x-date": "2026-11-22",
+  "x-status": "OWNER_APPROVED / ADVISOR_REVIEW_PENDING",
+  "x-decisions": ["D-067"],
+  "x-implementation": "TARGET DESIGN - no labels or tools use this schema yet",
+  "x-owner-approval": "approved 2026-11-22",
+  "x-advisor-approval": "pending",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "annotation_id", "blind_id", "tier", "record_role", "layer", "start_s", "end_s",
+    "final_label", "label_source", "reviewer_id", "manual_version", "created_at", "ambiguous"
+  ],
+  "properties": {
+    "annotation_id": {"type": "string", "minLength": 1},
+    "blind_id": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}[0-9]{2}-[0-9]{2}$",
+      "description": "Masked media code shown to annotators, e.g. PV01-03; mapped to the source clip only in the private manifest"
+    },
+    "clip_id": {
+      "type": ["string", "null"],
+      "description": "Source clip id; filled only in private custodian copies, never in annotator files"
+    },
+    "tier": {"enum": ["GOLD_MANUAL", "SILVER_ASSISTED"]},
+    "record_role": {
+      "enum": ["independent", "consensus", "reviewed", "audit"],
+      "description": "GOLD: independent = one annotator's raw record (immutable once submitted); consensus = final GOLD record created from independent records, never an edit of them. SILVER: reviewed = annotation produced after reviewing an AI proposal (accept/modify/reject/add); audit = second person's label with the AI proposal and first label hidden, QA evidence for anchoring/agreement only, never a training label"
+    },
+    "layer": {"enum": ["N1_function", "N1_flags", "N1_intensity", "N1_exploratory", "N2_direction"]},
+    "start_s": {
+      "type": "number", "minimum": 0,
+      "description": "Seconds from 0 of the masked media file the annotator saw. Invariant 0 <= start_s < end_s (ordering checked by the semantic validator)"
+    },
+    "end_s": {"type": "number", "exclusiveMinimum": 0},
+    "source_start_s": {
+      "type": ["number", "null"], "minimum": 0,
+      "description": "Custodian-derived: source_offset_s (private manifest) + start_s. Null in annotator files"
+    },
+    "source_end_s": {"type": ["number", "null"], "exclusiveMinimum": 0},
+    "final_label": {
+      "type": ["string", "null"],
+      "description": "Null only for N1_flags records or rejected proposals"
+    },
+    "flags": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"enum": ["holding_notes", "one_hand_hidden", "repetitive"]},
+      "description": "Allowed only on N1_flags records. Ambiguity is the top-level ambiguous field, never a flag"
+    },
+    "label_source": {"enum": ["manual", "ai_assisted"]},
+    "proposal_model": {"type": ["string", "null"]},
+    "proposal_model_version": {"type": ["string", "null"]},
+    "proposal_prompt_or_rule_version": {"type": ["string", "null"]},
+    "proposed_label": {"type": ["string", "null"]},
+    "review_action": {"enum": ["accepted", "modified", "rejected", "added", null]},
+    "reviewer_id": {"type": "string", "pattern": "^A[0-9]+$", "description": "Annotator code, never a name"},
+    "adjudicator_id": {"type": ["string", "null"], "pattern": "^A[0-9]+$"},
+    "consensus_basis": {"enum": ["agreed", "adjudicated", null]},
+    "source_annotation_ids": {
+      "type": ["array", "null"], "minItems": 2, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1},
+      "description": "Consensus records only: annotation_id of every independent record the consensus was built from"
+    },
+    "manual_version": {"type": "string", "pattern": "^ANNOTATION_MANUAL_N1_N2_V[0-9]+\\.[0-9]+$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "confidence": {"type": ["integer", "null"], "minimum": 1, "maximum": 3},
+    "ambiguous": {"type": "boolean"},
+    "evidence_note": {"type": ["string", "null"], "maxLength": 200}
+  },
+  "allOf": [
+    {
+      "description": "Label values per layer (final and proposed)",
+      "if": {"properties": {"layer": {"const": "N1_function"}}},
+      "then": {"properties": {
+        "final_label": {"enum": ["GESTURE", "REST_OR_HOLD", "ADAPTOR_MANIPULATION", "UNOBSERVABLE", null]},
+        "proposed_label": {"enum": ["GESTURE", "REST_OR_HOLD", "ADAPTOR_MANIPULATION", "UNOBSERVABLE", null]}
+      }}
+    },
+    {
+      "if": {"properties": {"layer": {"const": "N2_direction"}}},
+      "then": {"properties": {
+        "final_label": {"enum": ["CAMERA_REGION", "NOTES", "OTHER", "UNOBSERVABLE", null]},
+        "proposed_label": {"enum": ["CAMERA_REGION", "NOTES", "OTHER", "UNOBSERVABLE", null]}
+      }}
+    },
+    {
+      "if": {"properties": {"layer": {"const": "N1_intensity"}}},
+      "then": {"properties": {"final_label": {"enum": ["LOW", "MODERATE", "HIGH", null]}}}
+    },
+    {
+      "if": {"properties": {"layer": {"const": "N1_exploratory"}}},
+      "then": {"properties": {"final_label": {"enum": ["MESSAGE_SUPPORTING", "POTENTIALLY_DISTRACTING", "UNCERTAIN", null]}}}
+    },
+    {
+      "description": "Flags only on N1_flags (required there, final_label null); forbidden on every other layer",
+      "if": {"properties": {"layer": {"const": "N1_flags"}}},
+      "then": {"required": ["flags"], "properties": {"final_label": {"const": null}}},
+      "else": {"properties": {"flags": false}}
+    },
+    {
+      "description": "Labelled layers need a non-null final_label unless the record is a rejected proposal; a rejected proposal has final_label null",
+      "if": {"properties": {"layer": {"enum": ["N1_function", "N1_intensity", "N1_exploratory", "N2_direction"]}}},
+      "then": {
+        "if": {"required": ["review_action"], "properties": {"review_action": {"const": "rejected"}}},
+        "then": {"properties": {"final_label": {"const": null}}},
+        "else": {"properties": {"final_label": {"type": "string"}}}
+      }
+    },
+    {
+      "description": "GOLD never sees or stores AI proposals: every AI provenance field null or absent; roles independent or consensus only",
+      "if": {"properties": {"tier": {"const": "GOLD_MANUAL"}}},
+      "then": {"properties": {
+        "record_role": {"enum": ["independent", "consensus"]},
+        "label_source": {"const": "manual"},
+        "proposal_model": {"const": null},
+        "proposal_model_version": {"const": null},
+        "proposal_prompt_or_rule_version": {"const": null},
+        "proposed_label": {"const": null},
+        "review_action": {"const": null}
+      }}
+    },
+    {
+      "description": "SILVER: only N1_function / N2_direction, roles reviewed or audit only, never independent or consensus",
+      "if": {"properties": {"tier": {"const": "SILVER_ASSISTED"}}},
+      "then": {
+        "properties": {
+          "layer": {"enum": ["N1_function", "N2_direction"]},
+          "record_role": {"enum": ["reviewed", "audit"]}
+        }
+      }
+    },
+    {
+      "description": "reviewed: SILVER, always an explicit review action",
+      "if": {"required": ["record_role"], "properties": {"record_role": {"const": "reviewed"}}},
+      "then": {
+        "required": ["review_action"],
+        "properties": {
+          "tier": {"const": "SILVER_ASSISTED"},
+          "review_action": {"enum": ["accepted", "modified", "rejected", "added"]}
+        }
+      }
+    },
+    {
+      "description": "audit: SILVER blind re-label for anchoring/agreement QA only (never a training label): manual, no review action, no AI provenance, non-null final label",
+      "if": {"required": ["record_role"], "properties": {"record_role": {"const": "audit"}}},
+      "then": {"properties": {
+        "tier": {"const": "SILVER_ASSISTED"},
+        "layer": {"enum": ["N1_function", "N2_direction"]},
+        "label_source": {"const": "manual"},
+        "review_action": {"const": null},
+        "proposal_model": {"const": null},
+        "proposal_model_version": {"const": null},
+        "proposal_prompt_or_rule_version": {"const": null},
+        "proposed_label": {"const": null},
+        "final_label": {"type": "string"}
+      }}
+    },
+    {
+      "description": "AI-assisted = a reviewed proposal: full proposal provenance, a proposed label, and accepted/modified/rejected",
+      "if": {"properties": {"label_source": {"const": "ai_assisted"}}},
+      "then": {
+        "required": ["proposal_model", "proposal_model_version", "proposal_prompt_or_rule_version", "proposed_label", "review_action"],
+        "properties": {
+          "tier": {"const": "SILVER_ASSISTED"},
+          "record_role": {"const": "reviewed"},
+          "layer": {"enum": ["N1_function", "N2_direction"]},
+          "proposal_model": {"type": "string"},
+          "proposal_model_version": {"type": "string"},
+          "proposal_prompt_or_rule_version": {"type": "string"},
+          "proposed_label": {"type": "string"},
+          "review_action": {"enum": ["accepted", "modified", "rejected"]}
+        }
+      }
+    },
+    {
+      "description": "A manual reviewed record exists only for a span the reviewer added that the proposer missed",
+      "if": {"required": ["record_role", "label_source"], "properties": {"record_role": {"const": "reviewed"}, "label_source": {"const": "manual"}}},
+      "then": {"properties": {"review_action": {"const": "added"}}}
+    },
+    {
+      "description": "added: no proposed label, non-null final label, entered by hand",
+      "if": {"required": ["review_action"], "properties": {"review_action": {"const": "added"}}},
+      "then": {"properties": {
+        "label_source": {"const": "manual"},
+        "proposed_label": {"const": null},
+        "final_label": {"type": "string"}
+      }}
+    },
+    {
+      "description": "Consensus records: GOLD only, built from at least two independent records",
+      "if": {"properties": {"record_role": {"const": "consensus"}}},
+      "then": {
+        "required": ["source_annotation_ids", "consensus_basis"],
+        "properties": {
+          "tier": {"const": "GOLD_MANUAL"},
+          "source_annotation_ids": {"type": "array"},
+          "consensus_basis": {"enum": ["agreed", "adjudicated"]}
+        }
+      },
+      "else": {"properties": {
+        "source_annotation_ids": {"const": null},
+        "consensus_basis": {"const": null},
+        "adjudicator_id": {"const": null}
+      }}
+    },
+    {
+      "description": "An adjudicated consensus names its adjudicator",
+      "if": {"required": ["consensus_basis"], "properties": {"consensus_basis": {"const": "adjudicated"}}},
+      "then": {"required": ["adjudicator_id"], "properties": {"adjudicator_id": {"type": "string"}}}
+    },
+    {
+      "description": "An agreed consensus has no adjudicator",
+      "if": {"required": ["consensus_basis"], "properties": {"consensus_basis": {"const": "agreed"}}},
+      "then": {"properties": {"adjudicator_id": {"const": null}}}
+    },
+    {
+      "description": "Source times come as a pair: a numeric source_start_s needs a numeric source_end_s (null counts as absent)",
+      "if": {"required": ["source_start_s"], "properties": {"source_start_s": {"type": "number"}}},
+      "then": {"required": ["source_end_s"], "properties": {"source_end_s": {"type": "number"}}}
+    },
+    {
+      "description": "Source times come as a pair: a numeric source_end_s needs a numeric source_start_s (null counts as absent)",
+      "if": {"required": ["source_end_s"], "properties": {"source_end_s": {"type": "number"}}},
+      "then": {"required": ["source_start_s"], "properties": {"source_start_s": {"type": "number"}}}
+    }
+  ]
+}

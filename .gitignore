@@ -31,3 +31,11 @@ web/playwright-report/
 *.db-wal
 *.db-shm
 *.sqlite
+
+# D-067 expert answer key is a private research artifact (lives in vault Data/Research_Private/) - never in git
+research/forms/expert_answer_key_v*.csv
+research/private/
+# D-067 real pilot manifests, mappings and labels are private research data - never in git (templates end in _TEMPLATE.csv and stay tracked)
+research/manifests/*.csv
+!research/manifests/*_TEMPLATE.csv
+research/labels/
