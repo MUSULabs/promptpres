@@ -5,6 +5,7 @@
   font-weight: 400;
   font-display: swap;
 }
+
 @font-face {
   font-family: Prompt;
   src: url("./assets/brand/fonts/Prompt-500.woff2") format("woff2");
@@ -54,4 +55,19 @@
   --control-radius: 7px;
   --radius: 12px;
   --font-ui: Prompt, "Noto Sans Thai", system-ui, sans-serif;
+}
+
+.pp-v1 {
+  --pp-blue: var(--accent);
+  --pp-gold: #d9a400;
+  --pp-white: #fff;
+  --pp-ink: #171717;
+  --pp-muted: #525252;
+  --pp-line: #e5e5e5;
+  --pp-surface: #f7f7f7;
+  --pp-container: 75rem;
+  --pp-gutter: clamp(1rem, 3vw, 2rem);
+  --pp-control-radius: .5rem;
+  --pp-panel-radius: 1.125rem;
+  --pp-control-size: var(--target-size);
 }

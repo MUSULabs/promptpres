@@ -1,0 +1,213 @@
+.pp-v1 {
+  min-height: 100svh;
+  background: var(--pp-blue);
+  color: var(--pp-white);
+  --focus: var(--pp-white);
+}
+
+.pp-v1 .skip-link {
+  --focus: var(--pp-blue);
+  color: var(--pp-blue);
+}
+
+.landing-container {
+  width: min(calc(100% - 2 * var(--pp-gutter)), var(--pp-container));
+  margin-inline: auto;
+}
+
+.landing-header {
+  border-bottom: 1px solid rgb(255 255 255 / 30%);
+}
+
+.landing-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: .25rem 1rem;
+  min-height: 4.75rem;
+  padding-block: .5rem;
+}
+
+.landing-topbar nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(.25rem, 2vw, 1.5rem);
+}
+
+.landing-logo, .landing-link, .landing-start {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: var(--pp-control-size);
+  border-radius: var(--pp-control-radius);
+}
+
+.landing-logo img {
+  display: block;
+  width: clamp(7.625rem, 15vw, 11.25rem);
+  height: auto;
+}
+
+.landing-link {
+  padding-inline: .55rem;
+  color: inherit;
+  font-size: .9rem;
+  text-decoration: none;
+  text-underline-offset: .23em;
+}
+
+.landing-link:hover {
+  text-decoration: underline;
+}
+
+.landing-link.landing-login {
+  border: 1px solid var(--pp-white);
+  padding-inline: clamp(.65rem, 2vw, 1.15rem);
+  border-radius: 2rem;
+}
+
+.landing-login:hover {
+  background: var(--pp-white);
+  color: var(--pp-blue);
+  text-decoration: none;
+}
+
+main.landing-main {
+  width: 100%;
+  padding: 0 0 clamp(1.25rem, 4vw, 3.5rem);
+}
+
+.landing-hero {
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: clamp(1rem, 4vw, 3.75rem);
+  padding: clamp(2rem, 5vw, 4.25rem) 0 clamp(2rem, 4vw, 3.5rem);
+}
+
+.landing-copy {
+  position: relative;
+  padding-block-start: 1.8rem;
+}
+
+.landing-emphasis {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(2.35rem, 5vw, 3.625rem);
+  color: var(--pp-gold);
+}
+
+.landing-copy h1 {
+  font-size: clamp(2.6rem, 5.55vw, 5.1rem);
+  font-weight: 700;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.landing-copy p {
+  max-width: 24em;
+  margin-top: 1.2rem;
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  text-wrap: pretty;
+}
+
+.landing-start {
+  gap: .85rem;
+  min-height: 3.5rem;
+  min-width: min(10rem, 100%);
+  margin-top: 1.55rem;
+  padding: .6rem 1.4rem;
+  background: var(--pp-gold);
+  color: var(--pp-ink);
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-underline-offset: .22em;
+}
+
+.landing-start:hover {
+  text-decoration: underline;
+}
+
+.landing-art {
+  display: block;
+  width: 100%;
+  max-width: 36rem;
+  height: auto;
+  margin-inline: auto;
+}
+
+.landing-how {
+  background: var(--pp-white);
+  color: var(--pp-ink);
+  --focus: var(--pp-gold);
+  border-radius: var(--pp-panel-radius);
+  padding: clamp(1.125rem, 3vw, 2.25rem);
+  scroll-margin-block: 1rem;
+}
+
+.landing-how h2 {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+}
+
+.landing-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin: 1.05rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-steps li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: .85rem;
+}
+
+.landing-steps li + li {
+  border-inline-start: 1px solid var(--pp-line);
+  padding-inline-start: 1.25rem;
+}
+
+.landing-step-icon {
+  display: grid;
+  place-items: center;
+  width: 2.875rem;
+  height: 2.875rem;
+  border: 1px solid var(--pp-line);
+  border-radius: var(--pp-control-radius);
+  background: var(--pp-surface);
+  color: var(--pp-blue);
+  font-size: 1.25rem;
+}
+
+.landing-steps p {
+  margin-top: .25rem;
+  color: var(--pp-muted);
+  font-size: .925rem;
+}
+
+@media (max-width: 840px) {
+  .landing-hero { grid-template-columns: minmax(0, 1fr); }
+  .landing-art { max-width: 25rem; }
+}
+
+@media (max-width: 700px) {
+  .landing-topbar { min-height: 4rem; }
+  .landing-hero { gap: 1.35rem; padding-block: 1.85rem .7rem; }
+  .landing-copy h1 { font-size: clamp(2.45rem, 11vw, 4.65rem); }
+  .landing-copy p { margin-top: .9rem; }
+  .landing-start { width: 100%; min-height: 3.125rem; margin-top: 1.05rem; }
+  .landing-steps { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
+  .landing-steps li + li {
+    border-inline-start: 0;
+    border-block-start: 1px solid var(--pp-line);
+    padding-inline-start: 0;
+    padding-block-start: .8rem;
+  }
+}

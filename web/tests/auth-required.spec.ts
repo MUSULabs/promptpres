@@ -26,10 +26,19 @@ async function register(page: Page, name: string, email: string) {
   await expect(page.locator(".account-menu")).toContainText(name);
 }
 
-test("without an account every page goes to /login and the API answers 401", async ({ page, request }) => {
+test("the landing is public but rehearsal routes and API still require an account", async ({ page, request }) => {
   expect((await request.get("/api/sessions")).status()).toBe(401);
   expect((await request.post("/api/sessions", { data: { target_duration_s: 900 } })).status()).toBe(401);
-  for (const path of ["/", "/new", "/sessions/s_missing", "/sessions/s_missing/video"]) {
+  const historyRequests: string[] = [];
+  page.on("request", (entry) => {
+    if (new URL(entry.url()).pathname === "/api/sessions") historyRequests.push(entry.url());
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: /ซ้อมก่อน.*พรีเซนต์จริง/ })).toBeVisible();
+  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("navigation", { name: "เมนูหลัก" })).toHaveCount(0);
+  expect(historyRequests).toHaveLength(0);
+  for (const path of ["/new", "/sessions/s_missing", "/sessions/s_missing/video"]) {
     await page.goto(path);
     await expect(page).toHaveURL((url) => url.pathname === "/login" && url.searchParams.get("next") === path);
     await expect(page.getByRole("button", { name: GUEST })).toBeVisible();
@@ -37,23 +46,36 @@ test("without an account every page goes to /login and the API answers 401", asy
 });
 
 test("Guest button opens the app and a rehearsal can be analysed", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await expect(page).toHaveURL((url) => url.pathname === "/login");
+  const instructions = page.getByRole("link", { name: "วิธีใช้งาน" });
+  await instructions.press("Enter");
+  await expect(page).toHaveURL(/#how-to-practice$/);
+  await expect(page.getByRole("region", { name: "วิธีใช้งาน" })).toBeFocused();
+  const start = page.getByRole("link", { name: "เริ่มซ้อม" });
+  expect((await start.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  await start.press("Enter");
+  await expect(page).toHaveURL((url) => url.pathname === "/login" && url.searchParams.get("next") === "/new");
   const example = page.getByRole("group", { name: "จุดเวลาในตัวอย่าง" });
   const firstCue = example.getByRole("button", { name: "0:14 เกริ่นที่มาของโครงงาน" });
   await firstCue.press("Enter");
   await expect(firstCue).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText("“ทีมเราเริ่มจากปัญหาที่พบตอนซ้อมนำเสนอ…”")).toBeVisible();
   await page.getByRole("button", { name: GUEST }).click();
-  await expect(page).toHaveURL((url) => url.pathname === "/");
-  await expect(page.locator(".account-menu")).toContainText("ผู้ทดลองใช้งาน");
+  await expect(page).toHaveURL("/new");
+  await expect(page.getByRole("heading", { name: "ตั้งค่ารอบซ้อม" })).toBeVisible();
   const id = await finishedRound(page.request);
+  await page.getByRole("link", { name: "ประวัติ", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "ประวัติการซ้อม" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "ดูผล", exact: true })).toBeVisible();
   await page.goto(`/sessions/${id}`);
   await expect(page.locator(".card")).toHaveCount(8);
 });
 
 test("registering from Guest moves the rehearsal to the new account and other accounts cannot open it", async ({ page, browser }) => {
-  await page.goto("/login");
+  await page.goto("/");
+  await page.getByRole("link", { name: "เข้าสู่ระบบ" }).click();
+  await expect(page).toHaveURL("/login");
   await page.getByRole("button", { name: GUEST }).click();
   await expect(page.locator(".account-menu")).toContainText("ผู้ทดลองใช้งาน");
   const id = await finishedRound(page.request);
