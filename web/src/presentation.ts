@@ -25,7 +25,7 @@ export const VALUE_LABEL: Record<string, [string, string]> = {
   speech_span_s: ["ช่วงนำเสนอ", "วินาที"], deviation_pct: ["ต่างจากเวลาเป้าหมาย", "%"],
   topics_ordered: ["หัวข้อที่ใช้ดูลำดับ (อธิบายชัดเจน)", "หัวข้อ"], concordant_pairs: ["คู่ที่เรียงตามแผน", "คู่"],
   swapped_pairs: ["คู่ที่สลับกับแผน", "คู่"],
-  clear: ["อธิบายชัดเจน", "หัวข้อ"], brief: ["กล่าวถึงบางส่วน", "หัวข้อ"], not_mentioned: ["ไม่ได้กล่าวถึง", "หัวข้อ"],
+  clear: ["อธิบายชัดเจน", "หัวข้อ"], brief: ["พูดถึงสั้น ๆ", "หัวข้อ"], not_mentioned: ["ไม่พูดถึง", "หัวข้อ"],
   topics_total: ["หัวข้อในแผน", "หัวข้อ"], quotes_rejected: ["ข้อความอ้างอิงที่ตรวจไม่พบใน transcript", "หัวข้อ"],
   syllables: ["จำนวนพยางค์", "พยางค์"], filler_words: ["เสียงเติมที่ตัดออก", "ครั้ง"],
   long_pauses: ["หยุดยาวทั้งหมด", "ครั้ง"],
@@ -36,8 +36,9 @@ export const VALUE_LABEL: Record<string, [string, string]> = {
   target_s: ["เวลาเป้าหมาย", "วินาที"], diff_s: ["ต่างจากเป้าหมาย", "วินาที"],
 };
 
+/** One set of words for C2 topic coverage everywhere (card values, donut, topic table). */
 export const COVERAGE_LABEL: Record<Topic["coverage"], string> = {
-  clear: "ชัดเจน", brief: "ผ่าน ๆ", not_mentioned: "ไม่พูดถึง",
+  clear: "อธิบายชัดเจน", brief: "พูดถึงสั้น ๆ", not_mentioned: "ไม่พูดถึง",
 };
 
 export function fmtTime(s: number): string {

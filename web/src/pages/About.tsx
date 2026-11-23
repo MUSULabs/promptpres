@@ -8,7 +8,7 @@ import { PPre } from "@/v2/PPre";
 import { PATH } from "@/v2/paths";
 
 const SECTIONS: Section[] = [
-  { id: "what", title: "PromptPre's คืออะไร", body: <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto]">
+  { id: "what", title: "PromptPre's คืออะไร", body: <div className="grid grid-cols-1 items-center gap-6 sm:grid-cols-[1fr_auto]">
     <div className="space-y-3">
       <p>PromptPre's (พร้อมพรีต์) คือเวทีซ้อมนำเสนอออนไลน์ อัดคลิปตอนซ้อม แล้วระบบจะบอกว่า <b>เกิดอะไรขึ้นจริงในคลิป</b> เช่น พูดเร็วแค่ไหน หยุดยาวกี่ครั้ง พูดครบหัวข้อไหม พร้อมเวลาในวิดีโอให้กดดูหลักฐานได้ทุกจุด</p>
       <p>ไม่มีคะแนนรวม ไม่มีเกรด เพราะเราอยากให้คุณเห็นว่า <b>ควรซ้อมตรงไหนต่อ</b> ไม่ใช่รู้สึกว่าถูกตัดสิน</p>
@@ -16,7 +16,7 @@ const SECTIONS: Section[] = [
     <PPre pose="wave" size={120} className="mx-auto" />
   </div> },
   { id: "why", title: "ทำไมถึงสร้างขึ้นมา", body: <p>นักศึกษาส่วนใหญ่ซ้อมพรีเซนต์คนเดียว ไม่มีใครบอกว่าพูดเร็วไป หรือลืมหัวข้อไหน การดูคลิปตัวเองก็ไม่รู้จะดูอะไร โครงงานนี้จึงแปลงคลิปซ้อมเป็นข้อมูลที่ <b>วัดได้ ตรวจสอบได้ และชี้กลับไปที่วิดีโอ</b> เพื่อให้รอบถัดไปรู้ว่าจะปรับอะไร</p> },
-  { id: "criteria", title: "8 เกณฑ์ใน 4 ทักษะ", body: <div className="grid gap-3 sm:grid-cols-2">
+  { id: "criteria", title: "8 เกณฑ์ใน 4 ทักษะ", body: <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
     {SKILLS.map((s) => <div key={s.key} className="rounded-2xl bg-surface p-4">
       <div className="flex items-center gap-3"><SkillIcon skill={s.key} /><div><b className="block text-ink">{s.label}</b><span className="text-xs">{SKILL_STYLE[s.key].tagline}</span></div></div>
       <ul className="mt-3 !space-y-1 text-sm">{s.codes.map((c) => <li key={c}><b>{c}</b> {CRITERION_NAME[c]}</li>)}</ul>
@@ -31,7 +31,7 @@ const SECTIONS: Section[] = [
     <li>เกณฑ์ตัวเลขยังเป็นร่าง (รูบริก v0.9) อยู่ระหว่างตรวจความเที่ยงตรงกับผู้เชี่ยวชาญ</li>
   </ul> },
   { id: "team", title: "ทีมผู้พัฒนา", body: <>
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       {[[Users, "ผู้พัฒนา", "ชื่อทีมผู้พัฒนา"], [GraduationCap, "อาจารย์ที่ปรึกษา", "ชื่ออาจารย์ที่ปรึกษา"], [Microscope, "สาขา", "วิทยาการคอมพิวเตอร์ มหาวิทยาลัยพะเยา"]].map(([I, k, v]) => { const Icon = I as typeof Users;
         return <div key={k as string} className="rounded-2xl bg-surface p-4"><Icon className="size-5 text-brand" /><p className="mt-2 text-xs">{k as string}</p><b className="text-ink">{v as string}</b></div>; })}
     </div>

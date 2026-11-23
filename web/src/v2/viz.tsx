@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { animate, motion, useInView, useReducedMotion } from "motion/react";
 import { ArrowDown, ArrowUp, Equal, HelpCircle } from "lucide-react";
 import type { Criterion, CriterionCode, Topic } from "@/contract";
-import { fmtDuration } from "@/presentation";
+import { COVERAGE_LABEL, fmtDuration } from "@/presentation";
 import { cn, SHORT_NAME } from "./ui";
 
 export const LEVEL_COLOR = ["", "var(--color-level-1)", "var(--color-level-2)", "var(--color-level-3)", "var(--color-level-4)"];
@@ -121,11 +121,13 @@ export function Radar({ criteria, previous, size = 320, showLabels = true, class
 
 /* ---------- Per-criterion mini charts ---------- */
 
-/** T1: deviation from the target on a −30%…+30% arc; the level-4/3 zones are drawn only as soft bands. */
-export function TimeGauge({ span, target, className }: { span: number; target: number; className?: string }) {
+/** T1: deviation from the target on a −30%…+30% arc. The level-4/3 zones come from config (`bands`, via
+    /api/criteria) and are drawn as soft bands; without them only the needle shows. */
+export function TimeGauge({ span, target, bands, className }: { span: number; target: number; bands?: { l4: number; l3: number } | null; className?: string }) {
   const dev = ((span - target) / target) * 100;
   const clamp = Math.max(-30, Math.min(30, dev));
   const angle = (clamp / 30) * 90; // −90 … 90
+  const deg = (pct: number) => Math.min(90, (pct / 30) * 90);
   const arc = (from: number, to: number) => {
     const p = (a: number) => [100 + 80 * Math.sin((a * Math.PI) / 180), 100 - 80 * Math.cos((a * Math.PI) / 180)];
     const [x1, y1] = p(from), [x2, y2] = p(to);
@@ -134,9 +136,8 @@ export function TimeGauge({ span, target, className }: { span: number; target: n
   return <div className={cn("relative", className)}>
     <svg viewBox="0 0 200 118" className="w-full overflow-visible">
       <path d={arc(-90, 90)} fill="none" stroke="var(--color-brand-50)" strokeWidth={18} strokeLinecap="round" />
-      {/* level 3 band = within 10% of the target, level 4 = within 5% (thresholds-v0.yaml T1, draft): 30° and 15° on a ±30% arc */}
-      <path d={arc(-30, 30)} fill="none" stroke="var(--color-brand-200)" strokeWidth={18} />
-      <path d={arc(-15, 15)} fill="none" stroke="var(--color-lime)" strokeWidth={18} />
+      {bands && <path d={arc(-deg(bands.l3), deg(bands.l3))} fill="none" stroke="var(--color-brand-200)" strokeWidth={18} data-band="3" />}
+      {bands && <path d={arc(-deg(bands.l4), deg(bands.l4))} fill="none" stroke="var(--color-lime)" strokeWidth={18} data-band="4" />}
       <motion.g initial={{ rotate: -90 }} whileInView={{ rotate: angle }} viewport={{ once: true }} transition={{ type: "spring", stiffness: 60, damping: 12, delay: 0.2 }}
         style={{ transformOrigin: "100px 100px", transformBox: "view-box" }}>
         <line x1={100} y1={100} x2={100} y2={34} stroke="var(--color-navy)" strokeWidth={4} strokeLinecap="round" />
@@ -170,9 +171,9 @@ export function SpeedRuler({ value, band, className }: { value: number; band: [n
 export function CoverageDonut({ topics, size = 124, className }: { topics: Topic[]; size?: number; className?: string }) {
   const n = topics.length || 1;
   const parts = [
-    { k: "clear", label: "ชัดเจน", color: "var(--color-brand)", v: topics.filter((t) => t.coverage === "clear").length },
-    { k: "brief", label: "สั้น ๆ", color: "var(--color-brand-300)", v: topics.filter((t) => t.coverage === "brief").length },
-    { k: "not_mentioned", label: "ไม่พูดถึง", color: "var(--color-line)", v: topics.filter((t) => t.coverage === "not_mentioned").length },
+    { k: "clear", label: COVERAGE_LABEL.clear, color: "var(--color-brand)", v: topics.filter((t) => t.coverage === "clear").length },
+    { k: "brief", label: COVERAGE_LABEL.brief, color: "var(--color-brand-300)", v: topics.filter((t) => t.coverage === "brief").length },
+    { k: "not_mentioned", label: COVERAGE_LABEL.not_mentioned, color: "var(--color-line)", v: topics.filter((t) => t.coverage === "not_mentioned").length },
   ];
   const r = 44, C = 2 * Math.PI * r;
   let acc = 0;
@@ -216,7 +217,7 @@ export function OrderFlow({ topics, className }: { topics: Topic[]; className?: 
   </div>;
 }
 
-/** Share-of-time bar (N2 head direction, N1 hands visible/active). Same values as V1, new look. */
+/** Share-of-time bar (N2 head direction, N1 hands visible/active). */
 export function ShareBar({ parts, className }: { parts: { label: string; pct: number; color: string }[]; className?: string }) {
   return <div className={className}>
     <div className="flex h-3 gap-0.5 overflow-hidden rounded-full bg-brand-50">
@@ -224,7 +225,7 @@ export function ShareBar({ parts, className }: { parts: { label: string; pct: nu
         initial={{ width: 0 }} whileInView={{ width: `${p.pct}%` }} viewport={{ once: true }} transition={{ duration: 0.8, delay: i * 0.1 }} />)}
     </div>
     <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
-      {parts.map((p) => <li key={p.label} className="flex items-center gap-1.5"><span className="size-2.5 rounded-full" style={{ background: p.color }} /><span className="text-muted">{p.label}</span> <b className="tabular-nums">{p.pct}%</b></li>)}
+      {parts.map((p) => <li key={p.label} className="flex items-center gap-1.5"><span className="size-2.5 rounded-full" style={{ background: p.color }} /><span className="text-muted">{p.label}</span> <b className="tabular-nums">{Math.round(p.pct)}%</b></li>)}
     </ul>
   </div>;
 }

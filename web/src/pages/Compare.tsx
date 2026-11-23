@@ -14,17 +14,17 @@ import { ErrorPanel, HelpTip } from "@/v2/states";
 import { PPre } from "@/v2/PPre";
 import { api } from "@/api";
 import { DashboardSkeleton, EmptyState } from "@/v2/states";
-import { rehearsals, useSessions } from "@/v2/sessions";
+import { ListLoadError, rehearsals, useSessions } from "@/v2/sessions";
 import { PATH } from "@/v2/paths";
 import { thDate } from "@/v2/time";
 
-const label = (r: SessionRow) => `${thDate(r.created_at, { day: "numeric", month: "short", year: "2-digit" })} · ${fmtDuration(r.duration_s ?? 0)}`;
+const label = (r: SessionRow) => `${thDate(r.created_at, { day: "numeric", month: "short", year: "2-digit" })}${r.duration_s != null ? ` · ${fmtDuration(r.duration_s)}` : ""}`;
 
 export default function Compare() {
-  const { rows } = useSessions();
+  const { rows, error } = useSessions();
   const runs = useMemo(() => [...doneRuns(rehearsals(rows))].reverse(), [rows]); // newest first
   const [params, setParams] = useSearchParams();
-  if (rows === null) return <Shell page="history" title="เทียบ 2 รอบ"><DashboardSkeleton /></Shell>;
+  if (rows === null) return <Shell page="history" title="เทียบ 2 รอบ">{error ? <ListLoadError /> : <DashboardSkeleton />}</Shell>;
   if (runs.length < 2) return <Shell page="history" title="เทียบ 2 รอบ">
     <EmptyState pose="think" title="ต้องมีผลอย่างน้อย 2 รอบ" action={<Button asChild variant="lime"><Link to={PATH.new}>ซ้อมรอบใหม่ <ArrowRight /></Link></Button>}>
       ตอนนี้มีผล {runs.length} รอบ ซ้อมอีกรอบแล้วกลับมาเทียบวิดีโอคู่กันได้ที่นี่
@@ -115,13 +115,17 @@ function Row({ code, a, b, i }: { code: CriterionCode; a: number | null; b: numb
    video was deleted (Guest 7 days, member 30 days) shows a note instead. */
 function SyncedVideos({ older, newer }: { older: SessionRow; newer: SessionRow }) {
   const [urls, setUrls] = useState<(string | null | undefined)[]>([undefined, undefined]);
+  // Keyed by the round ids: the history list refreshes every 10 s while a round is analysed, and each fetch
+  // returns a newly signed video address, which would restart both videos.
+  const ids = [older.session_id, newer.session_id] as const;
   useEffect(() => {
     const c = new AbortController();
-    [older, newer].forEach((r, i) => api.result(r.session_id, c.signal)
+    setUrls([undefined, undefined]);
+    ids.forEach((id, i) => api.result(id, c.signal)
       .then((res) => setUrls((u) => { const n = [...u]; n[i] = res.video_url; return n; }))
       .catch(() => { if (!c.signal.aborted) setUrls((u) => { const n = [...u]; n[i] = null; return n; }); }));
     return () => c.abort();
-  }, [older, newer]);
+  }, [ids[0], ids[1]]); // eslint-disable-line react-hooks/exhaustive-deps
   const vids = useRef<(HTMLVideoElement | null)[]>([null, null]);
   const max = Math.max(older.duration_s ?? 0, newer.duration_s ?? 0);
   const [t, setT] = useState(0), [playing, setPlaying] = useState(false);
@@ -136,7 +140,7 @@ function SyncedVideos({ older, newer }: { older: SessionRow; newer: SessionRow }
   const anyVideo = urls.some((u) => !!u);
 
   return <section className="mt-5 rounded-panel bg-navy p-4 text-white sm:p-6">
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {([["A", older], ["B", newer]] as const).map(([k, row], i) => { const d = row.duration_s ?? 0, ended = t >= d && d > 0, url = urls[i];
         return <div key={k}>
           <div className="relative aspect-video overflow-hidden rounded-2xl bg-black">

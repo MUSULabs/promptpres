@@ -46,7 +46,7 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return <footer className="bg-navy text-white">
-    <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr]">
+    <div className="mx-auto grid grid-cols-1 max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr]">
       <div>
         <Logo dark className="h-8" />
         <p className="mt-3 max-w-sm text-sm text-white/65">ระบบวิเคราะห์พฤติกรรมการซ้อมนำเสนอ โครงงานวิทยาการคอมพิวเตอร์ มหาวิทยาลัยพะเยา</p>
@@ -68,8 +68,9 @@ export function SiteFooter() {
   </footer>;
 }
 
-export function ContentPage({ eyebrow, title, intro, updated, sections, aside, children }: {
-  eyebrow: string; title: ReactNode; intro?: ReactNode; updated?: string; sections: Section[]; aside?: ReactNode; children?: ReactNode;
+export function ContentPage({ eyebrow, title, intro, updated, sections, aside, notice, children }: {
+  eyebrow: string; title: ReactNode; intro?: ReactNode; updated?: string; sections: Section[]; aside?: ReactNode;
+  /** shown above the sections, e.g. a part of the page that failed to load */ notice?: ReactNode; children?: ReactNode;
 }) {
   const [active, setActive] = useState(sections[0]?.id);
   const home = useHome();
@@ -102,6 +103,7 @@ export function ContentPage({ eyebrow, title, intro, updated, sections, aside, c
         </div>
       </nav>
       <div className="min-w-0 space-y-5">
+        {notice}
         {sections.map((s) => <section key={s.id} id={s.id} className="card scroll-mt-24 p-6 sm:p-8">
           <h2 className="text-xl font-bold sm:text-2xl">{s.title}</h2>
           <div className="prose-v2 mt-3">{s.body}</div>

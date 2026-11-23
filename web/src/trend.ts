@@ -1,7 +1,7 @@
 // D-046 layer 3 (self-regulated learning loop): compare levels of the same criterion across rehearsals.
 // Levels are compared one criterion at a time, between results of the same rubric version or of the
 // eight-criterion drafts v0.7-v0.9 (D-050, compatibleRubric).
-import type { CriterionCode, SessionRow } from "./contract";
+import type { SessionRow } from "./contract";
 
 export type Direction = "up" | "same" | "down" | null;
 
@@ -31,10 +31,6 @@ export function previousRun(rows: SessionRow[], sessionId: string, rubric: strin
   if (index <= 0) return null;
   const earlier = runs.slice(0, index).filter((r) => compatibleRubric(r.rubric_version, rubric));
   return earlier[earlier.length - 1] ?? null;
-}
-
-export function levelOf(row: SessionRow | null, code: CriterionCode): number | null {
-  return row?.levels?.[code] ?? null;
 }
 
 /** D-050 explicitly allows the three eight-criterion draft revisions to be shown together. */

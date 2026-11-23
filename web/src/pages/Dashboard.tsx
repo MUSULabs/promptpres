@@ -56,9 +56,12 @@ export default function Dashboard() {
       <StageTile stage={stage} rows={rows} now={now} />
       <StartTile className="lg:col-span-5" />
       {active.length > 0 && <div className="lg:col-span-12"><RunningTile rows={active} /></div>}
-      <EmptyState className="lg:col-span-12" title="ยังไม่มีรอบซ้อม" action={<Button asChild variant="lime" size="lg"><Link to={PATH.new}>ซ้อมรอบแรก <ArrowRight /></Link></Button>}>
+      {/* rounds may exist that are still waiting, being analysed or failed: then say "no result yet", not "no round" */}
+      {rows.length === 0 ? <EmptyState className="lg:col-span-12" title="ยังไม่มีรอบซ้อม" action={<Button asChild variant="lime" size="lg"><Link to={PATH.new}>ซ้อมรอบแรก <ArrowRight /></Link></Button>}>
         ซ้อมรอบแรกแล้วผล 8 เกณฑ์ แนวโน้ม ปฏิทิน และประวัติจะขึ้นที่นี่ ไม่ต้องกังวลเรื่องผล รอบแรกมีไว้รู้จักตัวเอง
-      </EmptyState>
+      </EmptyState> : <EmptyState className="lg:col-span-12" title="ยังไม่มีผลที่ออกแล้ว" action={<Button asChild variant="lime" size="lg"><Link to={PATH.new}>ซ้อมรอบใหม่ <ArrowRight /></Link></Button>}>
+        เมื่อรอบที่ส่งไปวิเคราะห์เสร็จ ผล 8 เกณฑ์ แนวโน้ม และปฏิทินจะขึ้นที่นี่ ดูสถานะของแต่ละรอบได้ในประวัติด้านล่าง
+      </EmptyState>}
       {rows.length > 0 && <HistoryList rows={rows} />}
     </div> : <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
       <StageTile stage={stage} rows={rows} now={now} />
@@ -91,7 +94,7 @@ function StageTile({ stage, rows, now }: { stage: StageState; rows: SessionRow[]
     : { t: `ซ้อมภายใน ${stage.daysLeft} วันเพื่อรักษาไฟ`, d: "ถ้าทั้งสัปดาห์ไม่ได้ซ้อม ไฟจะหรี่ลง 1 ดวง (ไม่ดับหมดทันที)" };
   return <motion.section {...rise(0)} data-tour="stage" className="relative overflow-hidden rounded-panel bg-navy p-5 text-white shadow-lift sm:p-6 lg:col-span-7">
     <div aria-hidden className="absolute -left-20 -top-24 size-72 rounded-full bg-brand/40 blur-3xl" />
-    <div className="relative grid items-center gap-5 sm:grid-cols-[1.15fr_1fr]">
+    <div className="relative grid grid-cols-1 items-center gap-5 sm:grid-cols-[1.15fr_1fr]">
       <StageLights lights={stage.lights} atRisk={stage.atRisk} className="bg-navy-950/60 ring-1 ring-inset ring-white/10" />
       <div className="min-w-0">
         <p className="flex items-center gap-1.5 text-sm font-semibold text-lime"><Lightbulb className="size-4" />ไฟเวที
@@ -212,13 +215,14 @@ function StartTile({ className }: { className?: string }) {
 function MissionTile({ latest }: { latest?: SessionRow }) {
   const id = latest?.session_id;
   const [result, setResult] = useState<Result | null | "error">(null);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (!id) return;
     const c = new AbortController();
     setResult(null);
     api.result(id, c.signal).then(setResult).catch(() => { if (!c.signal.aborted) setResult("error"); });
     return () => c.abort();
-  }, [id]);
+  }, [id, attempt]);
   const plans = result && result !== "error" ? result.coach?.items.filter((i) => i.kind === "plan") ?? [] : [];
   const [done, toggle] = useMissions(id); // same list and ticks as the result page
   const pct = plans.length ? done.length / plans.length : 0;
@@ -228,7 +232,8 @@ function MissionTile({ latest }: { latest?: SessionRow }) {
       {plans.length > 0 && <span className="text-sm font-semibold text-muted tabular-nums">{done.length}/{plans.length}</span>}
     </div>
     {result === null ? <div className="mt-4 space-y-2" role="status" aria-label="กำลังโหลดเป้าหมาย">{[0, 1, 2].map((i) => <span key={i} className="block h-12 animate-pulse rounded-xl bg-brand-50" />)}</div>
-      : result === "error" ? <p className="mt-3 flex items-start gap-2 text-sm text-muted"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-brand" />โหลดแผนจากโค้ชของรอบล่าสุดไม่สำเร็จ ลองเปิดหน้าผลของรอบนั้นแทน</p>
+      : result === "error" ? <div className="mt-3"><p className="flex items-start gap-2 text-sm text-muted"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-brand" />โหลดแผนจากโค้ชของรอบล่าสุดไม่สำเร็จ</p>
+        <Button size="sm" variant="soft" className="mt-3" onClick={() => setAttempt((n) => n + 1)}><RefreshCw />ลองใหม่</Button></div>
       : plans.length === 0 ? <p className="mt-3 text-sm text-muted">รอบล่าสุดไม่มีแผนจากโค้ช AI (โค้ชตอบไม่ผ่านการตรวจหลักฐาน หรือปิดไว้) ดูคำแนะนำรายเกณฑ์ได้ที่หน้าผล</p>
       : <>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-brand-50"><motion.div className="h-full rounded-full bg-lime" animate={{ width: `${pct * 100}%` }} /></div>
@@ -343,7 +348,7 @@ function HistoryList({ rows }: { rows: SessionRow[] }) {
       {rows.map((r, i) => { const prev = previousRun(rows, r.session_id, r.rubric_version); const n = r.levels && prev?.levels ? countUp(prev, r) : 0;
         const to = PATH.round(r.session_id, r.status);
         return <motion.li key={r.session_id} data-session={r.session_id} data-status={r.status} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: Math.min(i, 6) * 0.04 }}>
-          <Link to={to} className="group grid items-center gap-x-4 gap-y-2 rounded-xl px-3 py-3 transition-colors hover:bg-surface md:grid-cols-[9rem_1fr_12rem_1.5rem]">
+          <Link to={to} className="group grid grid-cols-1 items-center gap-x-4 gap-y-2 rounded-xl px-3 py-3 transition-colors hover:bg-surface md:grid-cols-[9rem_1fr_12rem_1.5rem]">
             <div>
               <p className="font-semibold">{thDate(r.created_at, { day: "numeric", month: "short", year: "2-digit" })}</p>
               <p className="flex items-center gap-1 text-xs text-muted"><Clock3 className="size-3.5" />{r.duration_s ? fmtDuration(r.duration_s) : "ยังไม่มีคลิป"} · {r.topics_count} หัวข้อ</p>

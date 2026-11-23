@@ -1,7 +1,7 @@
 /* Shared UX states so a user is never left guessing (owner's rule, 23 Nov 2026):
    1 see what the system is doing, 2 always a clear next step, 3 stop mistakes early,
    4 errors say what happened / why / what to do, 5 jargon has a "?" explanation. */
-import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
@@ -22,15 +22,6 @@ export const PRACTICE_STEPS: Step[] = [
   { label: "ผลออก" },
 ];
 
-/** Full-screen moments (result reveal, recap) set a flag on <body> so floating helpers hide under them. */
-let overlays = 0;
-export function useOverlayFlag(active = true) {
-  useEffect(() => {
-    if (!active) return;
-    overlays++; document.body.dataset.ppOverlay = "1";
-    return () => { overlays = Math.max(0, overlays - 1); if (!overlays) delete document.body.dataset.ppOverlay; };
-  }, [active]);
-}
 
 /** True when a page-wide key shortcut should not fire: the user is typing, or the Ctrl+K palette is open. */
 export function ignoreKey(e: KeyboardEvent) {
@@ -171,6 +162,37 @@ export function ToastHost({ children }: { children: ReactNode }) {
 }
 
 /* ---------- 3. Confirm before anything that cannot be undone ---------- */
+
+/** Keep keyboard focus inside an overlay while it is open: focus moves in, Tab cycles inside, focus that lands
+    outside (e.g. the page-change focus on #main-content) comes back, and the earlier focus returns on close. */
+export function useFocusTrap(ref: RefObject<HTMLElement | null>, active = true) {
+  useEffect(() => {
+    const box = ref.current;
+    if (!active || !box) return;
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const items = () => [...box.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])')]
+      .filter((el) => el.getClientRects().length > 0);
+    const enter = () => { if (!box.contains(document.activeElement)) (items()[0] ?? box).focus({ preventScroll: true }); };
+    const start = window.setTimeout(enter, 0);
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const list = items();
+      if (!list.length) { e.preventDefault(); return; }
+      const first = list[0], last = list[list.length - 1], inside = box.contains(document.activeElement);
+      if (e.shiftKey && (!inside || document.activeElement === first)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (!inside || document.activeElement === last)) { e.preventDefault(); first.focus(); }
+    };
+    const back = (e: FocusEvent) => { if (e.target instanceof Node && !box.contains(e.target)) enter(); };
+    document.addEventListener("keydown", key, true);
+    document.addEventListener("focusin", back);
+    return () => {
+      window.clearTimeout(start);
+      document.removeEventListener("keydown", key, true);
+      document.removeEventListener("focusin", back);
+      if (before?.isConnected) before.focus({ preventScroll: true });
+    };
+  }, [ref, active]);
+}
 
 export function ConfirmDialog({ open, title, children, confirmLabel, onConfirm, onClose, requireText }: {
   open: boolean; title: ReactNode; children?: ReactNode; confirmLabel: string; onConfirm: () => void; onClose: () => void;

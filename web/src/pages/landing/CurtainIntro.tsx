@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { useReducedMotion } from "motion/react";
 import { Logo } from "@/v2/ui";
-import { SkipButton, useOverlayFlag } from "@/v2/states";
+import { SkipButton } from "@/v2/states";
 
 const KEY = "pp-v2-curtain";
 const seen = () => { try { return window.sessionStorage.getItem(KEY) === "1"; } catch { return false; } };
@@ -18,7 +18,6 @@ export function CurtainIntro({ onOpen }: { onOpen: () => void }) {
   const tl = useRef<gsap.core.Timeline | null>(null);
   const opened = useRef(false);
   const open = () => { if (!opened.current) { opened.current = true; onOpen(); } };
-  useOverlayFlag(show);
 
   useEffect(() => { if (!show) open(); }, [show]); // eslint-disable-line react-hooks/exhaustive-deps
 

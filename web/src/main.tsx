@@ -43,6 +43,10 @@ function App() {
   useFocusOnNavigate();
   const atEntry = pathname === "/";
   const landing = atEntry && state?.required === true && !state.user;
+  useEffect(() => {
+    const name = atEntry ? (landing ? "" : "หน้าหลัก") : pageName(pathname);
+    document.title = name ? `${name} · PromptPre's` : "PromptPre's";
+  }, [pathname, atEntry, landing]);
 
   return <div className="min-h-dvh overflow-x-clip bg-surface text-ink">
     <a href="#main-content" className="fixed left-3 top-3 z-[100] -translate-y-24 rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-lift transition-transform focus:translate-y-0">ข้ามไปเนื้อหาหลัก</a>
@@ -69,6 +73,19 @@ function App() {
       </Suspense>
     </PageErrorBoundary>
   </div>;
+}
+
+/** The tab title for each page, so a screen reader announces where the visitor is and open tabs can be told apart. */
+const PAGE_NAMES: Record<string, string> = {
+  "/login": "เข้าสู่ระบบ", "/logout": "ออกจากระบบ", "/new": "ซ้อมรอบใหม่", "/progress": "ความคืบหน้า",
+  "/compare": "เทียบ 2 รอบ", "/recap": "สรุปเดือน", "/settings": "ตั้งค่า", "/help": "ช่วยเหลือ",
+  "/how": "เราวัดผลอย่างไร", "/about": "เกี่ยวกับ PromptPre's", "/privacy": "ความเป็นส่วนตัว",
+};
+
+function pageName(pathname: string): string {
+  if (/^\/sessions\/[^/]+\/video\/?$/.test(pathname)) return "ส่งวิดีโอ";
+  if (/^\/sessions\/[^/]+\/?$/.test(pathname)) return "ผลการซ้อม";
+  return PAGE_NAMES[pathname.replace(/\/$/, "")] ?? "ไม่พบหน้านี้";
 }
 
 /** On a page change: move keyboard focus to the new page's main area (screen readers announce it) and scroll to

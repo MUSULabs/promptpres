@@ -46,7 +46,7 @@ export default function LoginPage() {
       <Link to={PATH.home} aria-label="PromptPre's หน้าแรก"><Logo dark className="h-7" /></Link>
       <Link to={PATH.home} className="flex min-h-11 items-center gap-1.5 text-sm text-white/70 hover:text-white"><ArrowLeft className="size-4" />หน้าแรก</Link>
     </header>
-    <main id="main-content" tabIndex={-1} className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pb-24 pt-2 outline-none sm:px-6 md:grid-cols-2 md:gap-12 md:pt-10">
+    <main id="main-content" tabIndex={-1} className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 pb-24 pt-2 outline-none sm:px-6 md:grid-cols-2 md:gap-12 md:pt-10">
       <div>
         <h1 className="text-4xl font-bold leading-tight sm:text-5xl">ยินดีต้อนรับสู่<br /><span className="mt-2 inline-block -rotate-2 rounded-full bg-lime px-5 py-1 text-navy">เวทีซ้อม</span> ของคุณ</h1>
         <ul className="mt-8 hidden space-y-3 sm:block">{POINTS.map((t) => <li key={t} className="flex items-start gap-3 text-white/80"><CheckCircle2 className="mt-0.5 size-5 shrink-0 text-lime" />{t}</li>)}</ul>

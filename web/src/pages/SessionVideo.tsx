@@ -17,12 +17,12 @@ import { Shell } from "@/v2/Shell";
 import { ConfirmDialog, EmptyState, ErrorPanel, PRACTICE_STEPS, Skeleton, StatusStepper } from "@/v2/states";
 import { useSessions } from "@/v2/sessions";
 import { PATH } from "@/v2/paths";
+import { t1Bands, useCriteriaMeta } from "@/v2/criteriaMeta";
 
 type Mode = "record" | "upload";
 const VIDEO_EXTENSIONS = /\.(mp4|webm|mov)$/i;
 const VIDEO_ACCEPT = ".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime";
 const VIDEO_MAX_MB = 512; // api/app/boundary.py VIDEO_BYTES
-const BAND = 0.05;        // config/thresholds-v0.yaml T1 level 4: deviation_pct 5 (draft rubric v0.9)
 
 export default function SessionVideo() {
   const { id = "" } = useParams();
@@ -77,7 +77,7 @@ function VideoStep({ id }: { id: string }) {
     if (!file || isSending()) return;
     if (!VIDEO_EXTENSIONS.test(file.name)) { setError("รองรับเฉพาะไฟล์ .mp4 .webm .mov แปลงไฟล์เป็น .mp4 แล้วลองใหม่ หรืออัดจากกล้องในหน้านี้"); return; }
     if (!file.size) { setError("ไฟล์ว่างเปล่า กรุณาเลือกไฟล์ใหม่"); return; }
-    if (file.size > VIDEO_MAX_MB * 1024 ** 2) { setError(`ไฟล์นี้ ${(file.size / 1024 ** 3).toFixed(1)} GB แต่รับได้ไม่เกิน ${VIDEO_MAX_MB} MB ลดความละเอียดเป็น 720p หรือ 480p ก่อนอัปโหลด`); return; }
+    if (file.size > VIDEO_MAX_MB * 1024 ** 2) { setError(`ไฟล์นี้ ${Math.ceil(file.size / 1024 ** 2)} MB แต่รับได้ไม่เกิน ${VIDEO_MAX_MB} MB ลดความละเอียดเป็น 720p หรือ 480p ก่อนอัปโหลด`); return; }
     setError(null); setPreviewError(false); setClip({ blob: file, name: file.name });
   }
 
@@ -110,7 +110,7 @@ function VideoStep({ id }: { id: string }) {
 
     {mode === "record" ? <StageRecorder target={info.target_duration_s} disabled={sending} onActivityChange={setRecorderActive}
       onRecordingStart={() => { setClip(null); setError(null); }} onRecorded={(blob, name) => setClip({ blob, name })} />
-      : <section className="grid gap-5 lg:grid-cols-2">
+      : <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <div className="card p-6">
           <h2 className="flex items-center gap-2 text-lg font-bold"><Upload className="size-5 text-brand" />เลือกและตรวจคลิป</h2>
           <label className={cn("mt-4 flex cursor-pointer items-center gap-4 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-5 transition-colors hover:border-brand hover:bg-brand-50 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand-300", sending && "pointer-events-none opacity-60")}>
@@ -193,7 +193,10 @@ function StageRecorder(props: {
     const next = reviewing ? reviewControl.current : active ? stopControl.current : countdownControl.current;
     next?.focus({ preventScroll: true });
   }, [active, recording, reviewing, stream]);
-  const zone = elapsed < target * (1 - BAND) ? "early" : elapsed <= target * (1 + BAND) ? "in" : "over";
+  // the "just right" band is T1 level 4 from config (/api/criteria); without it, only the target time is shown
+  const bands = t1Bands(useCriteriaMeta());
+  const band = bands ? bands.l4 / 100 : 0;
+  const zone = elapsed < target * (1 - band) ? "early" : bands && elapsed <= target * (1 + band) ? "in" : elapsed <= target ? "early" : "over";
 
   return <fieldset disabled={props.disabled} className="min-w-0">
     <legend className="sr-only">เวทีจำลองสำหรับอัดวิดีโอ</legend>
@@ -255,10 +258,10 @@ function StageRecorder(props: {
 
         <aside className="min-w-0 space-y-4">
           <div className="rounded-2xl bg-white/[0.06] p-5 ring-1 ring-inset ring-white/10 backdrop-blur">
-            <TargetRing t={elapsed} target={target} />
+            <TargetRing t={elapsed} target={target} band={bands?.l4 ?? null} />
             <p className={cn("mt-3 text-center text-sm font-semibold", zone === "in" ? "text-lime" : "text-white/80")}>
               {!recording && !reviewing ? "กดเริ่มอัดเมื่อพร้อม"
-                : zone === "early" ? `อีก ${fmtDuration(target * (1 - BAND) - elapsed)} จะถึงช่วงพอดี`
+                : zone === "early" ? (bands ? `อีก ${fmtDuration(target * (1 - band) - elapsed)} จะถึงช่วงพอดี` : `อีก ${fmtDuration(target - elapsed)} ถึงเวลาเป้าหมาย`)
                 : zone === "in" ? "อยู่ในช่วงพอดี ปิดท้ายได้เลย" : `เกินเป้า ${Math.round(((elapsed - target) / target) * 100)}% แล้ว`}
             </p>
             <p className="mt-1 text-center text-[11px] text-white/45">นาฬิกานับเวลาอัด ส่วนระบบวัดช่วงที่พูดจริง ผลอาจต่างกันเล็กน้อย</p>
@@ -288,18 +291,18 @@ function StageRecorder(props: {
   </fieldset>;
 }
 
-function TargetRing({ t, target }: { t: number; target: number }) {
+function TargetRing({ t, target, band }: { t: number; target: number; band: number | null }) {
   const full = target * 1.2, R = 88, C = 2 * Math.PI * R;
   const at = (x: number) => Math.min(1, x / full);
-  const bandFrom = at(target * (1 - BAND)), bandTo = at(target * (1 + BAND));
+  const bandFrom = at(target * (1 - (band ?? 0) / 100)), bandTo = at(target * (1 + (band ?? 0) / 100));
   return <div className="relative mx-auto aspect-square w-full max-w-[220px]">
     <svg viewBox="0 0 200 200" className="size-full -rotate-90" aria-hidden>
       <circle cx="100" cy="100" r={R} fill="none" stroke="white" strokeOpacity="0.1" strokeWidth="12" />
-      <circle cx="100" cy="100" r={R} fill="none" stroke="var(--color-lime)" strokeOpacity="0.35" strokeWidth="12" strokeDasharray={`${(bandTo - bandFrom) * C} ${C}`} strokeDashoffset={-bandFrom * C} />
+      {band != null && <circle cx="100" cy="100" r={R} fill="none" stroke="var(--color-lime)" strokeOpacity="0.35" strokeWidth="12" strokeDasharray={`${(bandTo - bandFrom) * C} ${C}`} strokeDashoffset={-bandFrom * C} />}
       <motion.circle cx="100" cy="100" r={R} fill="none" stroke="var(--color-lime)" strokeWidth="12" strokeLinecap="round" strokeDasharray={C} animate={{ strokeDashoffset: C * (1 - at(t)) }} transition={{ duration: 0.6 }} />
     </svg>
     <div className="absolute inset-0 grid place-items-center text-center">
-      <div><p className="text-4xl font-bold tabular-nums">{fmtDuration(t)}</p><p className="mt-1 text-xs text-white/60">เป้า {fmtDuration(target)} · ช่วงพอดี ±5%</p></div>
+      <div><p className="text-4xl font-bold tabular-nums">{fmtDuration(t)}</p><p className="mt-1 text-xs text-white/60">เป้า {fmtDuration(target)}{band != null && ` · ช่วงพอดี ±${band}%`}</p></div>
     </div>
   </div>;
 }

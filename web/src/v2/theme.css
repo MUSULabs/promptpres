@@ -1,5 +1,4 @@
-/* PromptPre's UX/UI V2 theme: brand blue + lime, dark landing, light app, soft professional cards.
-   Loaded only by V2 screens (today: the dev-only /lab), so the live V1 pages keep their own CSS. */
+/* PromptPre's UX/UI V2 theme: brand blue + lime, dark landing, light app, soft professional cards (D-070). */
 @import "tailwindcss";
 
 @font-face { font-family: Prompt; src: url("../assets/brand/fonts/Prompt-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
@@ -102,8 +101,6 @@
 /* Lenis drives the scroll on the landing page; native smooth scrolling would fight it */
 html.lenis-on { scroll-behavior: auto; }
 
-/* floating lab helpers hide under full-screen moments (states.tsx useOverlayFlag) */
-body[data-pp-overlay] [data-lab-menu] { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

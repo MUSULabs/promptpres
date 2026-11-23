@@ -38,7 +38,7 @@ export function WaitingView({ res, now, reconnecting }: { res: Result; now: numb
             <h2 className="mt-3 text-2xl font-bold leading-snug sm:text-3xl">{queued ? "รอบของคุณอยู่ในคิวแล้ว" : "ระบบกำลังดูคลิปของคุณ"}</h2>
             <p className="mt-2 text-white/70">{queued ? "เครื่องวิเคราะห์จะเริ่มเมื่อถึงคิว ช่วงที่มีคนใช้น้อยมักเริ่มภายในไม่กี่นาที" : `ใช้เวลาราวความยาวคลิป${clip ? ` (คลิปนี้ ${fmtDuration(clip)})` : ""}`}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2 sm:justify-start">
-              <Chip tone="glass"><Clock3 />ส่งมาแล้ว {fmtDuration(since)}</Chip>
+              <Chip tone="glass"><Clock3 />สร้างรอบนี้มาแล้ว {fmtDuration(since)}</Chip>
               {clip != null && <Chip tone="glass">คลิป {fmtDuration(clip)}</Chip>}
             </div>
           </div>

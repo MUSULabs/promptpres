@@ -19,7 +19,7 @@ const NOT_YET = "ยังไม่เปิดในรุ่นนี้ ข�
 export default function Settings() {
   const toast = useToast();
   const { user, name, isGuest } = useAccount();
-  const { rows } = useSessions();
+  const { rows, error } = useSessions();
   const rounds = useMemo(() => rehearsals(rows).filter(countsAsPractice).length, [rows]);
   const [goal, setGoal] = usePref(PREF.weeklyGoal, "1");
   const [sound, setSound] = usePref(PREF.sound, "on");
@@ -67,7 +67,7 @@ export default function Settings() {
       <div className="space-y-5 lg:col-span-5">
         <Block Icon={Database} title="ข้อมูลของฉัน">
           <ul className="space-y-2 text-sm">
-            {[["รอบซ้อมที่ส่งแล้ว", rows ? `${rounds} รอบ` : "…"], ["ระยะเวลาเก็บวิดีโอ", isGuest || !user ? "7 วัน (Guest)" : "30 วัน (สมาชิก)"], ["ความละเอียดที่เก็บ", "ย่อเหลือ ≤480p"]].map(([k, v]) =>
+            {[["รอบซ้อมที่ส่งแล้ว", rows ? `${rounds} รอบ` : error ? "โหลดไม่สำเร็จ" : "…"], ["ระยะเวลาเก็บวิดีโอ", isGuest || !user ? "7 วัน (Guest)" : "30 วัน (สมาชิก)"], ["ความละเอียดที่เก็บ", "ย่อเหลือ ≤480p"]].map(([k, v]) =>
               <li key={k} className="flex justify-between gap-3 rounded-xl bg-surface px-3 py-2.5"><span className="text-muted">{k}</span><b className="text-right">{v}</b></li>)}
           </ul>
           <p className="mt-3 text-xs text-muted">อ่านรายละเอียดว่าเก็บอะไร ส่งอะไรให้ AI ได้ที่ <Link to={PATH.privacy} className="font-semibold text-brand hover:underline">นโยบายความเป็นส่วนตัว</Link></p>

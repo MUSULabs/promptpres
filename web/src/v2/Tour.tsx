@@ -1,13 +1,13 @@
 /* First-visit tour with P'Pre: highlights one part of the page at a time (elements marked data-tour="key").
    Skippable at any step, remembered in browser storage, and can be replayed from Help or Settings. */
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "./ui";
 import { PPre } from "./PPre";
 import { PREF, writePref } from "./prefs";
-import { ignoreKey, SkipButton } from "./states";
+import { ignoreKey, SkipButton, useFocusTrap } from "./states";
 
 export interface TourStep { key: string; title: string; body: string }
 
@@ -57,6 +57,8 @@ export function Tour({ steps, open, onClose }: { steps: TourStep[]; open: boolea
     return () => { window.removeEventListener("resize", measure); window.removeEventListener("scroll", measure, true); window.removeEventListener("keydown", key); };
   }, [open, measure, finish, steps.length]);
 
+  const box = useRef<HTMLDivElement>(null);
+  useFocusTrap(box, open && !!step);
   if (!open || !step) return null;
   const pad = 8;
   const vw = window.innerWidth, vh = window.innerHeight;
@@ -65,7 +67,7 @@ export function Tour({ steps, open, onClose }: { steps: TourStep[]; open: boolea
   const cardTop = rect ? (below ? Math.min(rect.bottom + pad + 14, vh - 210) : Math.max(16, rect.top - pad - 14 - 190)) : vh / 2 - 100;
   const cardLeft = rect ? Math.min(Math.max(16, rect.left + rect.width / 2 - cardW / 2), vw - cardW - 16) : vw / 2 - cardW / 2;
 
-  return createPortal(<div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label={`แนะนำการใช้งาน ขั้นที่ ${i + 1} จาก ${steps.length}`}>
+  return createPortal(<div ref={box} className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label={`แนะนำการใช้งาน ขั้นที่ ${i + 1} จาก ${steps.length}`}>
     {/* dim everything except the highlighted box */}
     {rect ? <motion.div className="pointer-events-none absolute rounded-2xl ring-2 ring-lime"
       animate={{ top: rect.top - pad, left: rect.left - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }}

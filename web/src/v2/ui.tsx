@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx, type ClassValue } from "clsx";
@@ -66,11 +66,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({ className, v
   return <Comp ref={ref} className={cn(buttonVariants({ variant, size }), className)} {...props} />;
 });
 Button.displayName = "Button";
-
-export function Card({ className, variant = "white", ...props }: HTMLAttributes<HTMLDivElement> & { variant?: "white" | "brand" | "navy" }) {
-  const v = { white: "card", brand: "rounded-card bg-brand-gradient text-white shadow-glow", navy: "rounded-card bg-navy text-white" }[variant];
-  return <div className={cn(v, "p-5", className)} {...props} />;
-}
 
 export function Chip({ children, className, tone = "soft" }: { children: ReactNode; className?: string; tone?: "soft" | "brand" | "lime" | "dark" | "glass" | "line" }) {
   const tones = {

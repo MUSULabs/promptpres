@@ -66,8 +66,9 @@ export function AuthCard({ className, initialTab = "login", hideLogo, next = PAT
     </>}
     <SocialButtons soon={soon} onPick={(p) => { setSoon(p); setError(null); }} />
     <div className="my-5 flex items-center gap-3 text-xs text-faint"><span className="h-px flex-1 bg-line" />หรือใช้อีเมล<span className="h-px flex-1 bg-line" /></div>
-    <div className="mb-4 grid grid-cols-2 rounded-full bg-surface p-1" role="tablist" aria-label="โหมดบัญชี">
-      {(["login", "register"] as const).map((t) => <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => { setTab(t); setError(null); setTouched({}); }}
+    {/* a two-way switch for the same form (not tabs with separate panels) */}
+    <div className="mb-4 grid grid-cols-2 rounded-full bg-surface p-1" role="group" aria-label="โหมดบัญชี">
+      {(["login", "register"] as const).map((t) => <button key={t} type="button" aria-pressed={tab === t} onClick={() => { setTab(t); setError(null); setTouched({}); }}
         className={cn("min-h-10 rounded-full text-sm font-semibold transition-colors", tab === t ? "bg-white text-brand shadow-card" : "text-muted")}>{t === "login" ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}</button>)}
     </div>
     {guestNow && tab === "login" && <p role="note" className="mb-4 flex items-start gap-1.5 text-xs text-muted"><Info className="mt-0.5 size-3.5 shrink-0 text-brand" />รอบทดลองใช้ย้ายไปบัญชีใหม่เฉพาะเมื่อสมัครสมาชิก หากเข้าสู่ระบบบัญชีเดิม รอบทดลองใช้ในเบราว์เซอร์นี้จะไม่ย้ายตามไป</p>}

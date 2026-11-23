@@ -97,7 +97,7 @@ export function PPre({ pose = "idle", size = 160, color = "var(--color-brand)", 
       {say && <motion.div key={String(typeof say === "string" ? say : "say")}
         initial={{ opacity: 0, scale: 0.85, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.85 }}
         transition={{ type: "spring", stiffness: 300, damping: 26 }}
-        className={cn("absolute z-10 w-max max-w-[min(15rem,70vw)] rounded-2xl px-3.5 py-2 text-sm font-semibold leading-snug text-ink shadow-lift",
+        className={cn("absolute z-10 w-max max-w-[min(15rem,55vw)] rounded-2xl px-3.5 py-2 text-sm font-semibold leading-snug text-ink shadow-lift",
           saySide === "right" && "bottom-[78%] left-[62%] origin-bottom-left",
           saySide === "left" && "bottom-[78%] right-[62%] origin-bottom-right",
           saySide === "top" && "bottom-[96%] left-1/2 -translate-x-1/2 origin-bottom",

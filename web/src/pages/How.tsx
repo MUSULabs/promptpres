@@ -16,13 +16,13 @@ import { LEVEL_COLOR } from "@/v2/viz";
 const Meta = createContext<CriteriaMeta | null | "error">(null);
 
 const FROM: Record<CriterionCode, { from: string; needs: string }> = {
-  C1: { from: "ลำดับที่แต่ละหัวข้อถูกอธิบายครั้งแรก เทียบกับลำดับในแผนที่คุณยืนยัน", needs: "หัวข้อที่อธิบายชัดอย่างน้อย 3 หัวข้อจึงแสดงค่า และ 4 หัวข้อจึงให้ระดับ" },
-  C2: { from: "AI อ่านข้อความที่ถอดจากเสียงเทียบกับหัวข้อในแผน แล้วระบบตรวจว่าข้อความที่ AI อ้างมีอยู่จริง", needs: "ยืนยันหัวข้ออย่างน้อย 3 หัวข้อ และพูดจริงอย่างน้อย 30 วินาที" },
-  S1: { from: "นับพยางค์จากข้อความที่ถอดเสียง หารด้วยเวลาที่พูดจริง", needs: "ช่วงพูดจริงอย่างน้อย 30 วินาที" },
-  S2: { from: "หาช่วงเงียบจากคลื่นเสียง นับครั้งที่เงียบนานเกินเกณฑ์ต่อนาที", needs: "ช่วงพูดจริงอย่างน้อย 30 วินาที" },
-  S3: { from: "นับเสียงเติม (เอ่อ อ่า อืม) และคำติดปากตามบริบท เช่น แบบว่า ต่อนาที", needs: "ช่วงพูดจริงอย่างน้อย 30 วินาที" },
-  N1: { from: "ตำแหน่งข้อมือในแต่ละช่วงเวลา หาช่วงที่มือนิ่งค้างต่อเนื่องนาน", needs: "เห็นมือในกล้องอย่างน้อย 70% ของเวลา" },
-  N2: { from: "ทิศทางศีรษะทุก 1 วินาที: ก้ม หันข้าง เงยหรืออื่น ๆ หรือหันตรง", needs: "เห็นใบหน้าอย่างน้อย 70% ของเวลา" },
+  C1: { from: "ลำดับที่แต่ละหัวข้อถูกอธิบายครั้งแรก เทียบกับลำดับในแผนที่คุณยืนยัน", needs: "ยืนยันหัวข้อไว้ และอธิบายชัดเจนหลายหัวข้อพอจะเทียบลำดับได้ (หัวข้อน้อยไปจะแสดงค่าแต่ไม่ให้ระดับ หรือวิเคราะห์ไม่ได้)" },
+  C2: { from: "AI อ่านข้อความที่ถอดจากเสียงเทียบกับหัวข้อในแผน แล้วระบบตรวจว่าข้อความที่ AI อ้างมีอยู่จริง", needs: "ยืนยันหัวข้อไว้ครบ และมีช่วงพูดจริงยาวพอ" },
+  S1: { from: "นับพยางค์จากข้อความที่ถอดเสียง หารด้วยเวลาที่พูดจริง", needs: "มีช่วงพูดจริงยาวพอ (คลิปที่พูดสั้นมากวัดไม่ได้)" },
+  S2: { from: "หาช่วงเงียบจากคลื่นเสียง นับครั้งที่เงียบนานเกินเกณฑ์ต่อนาที", needs: "มีช่วงพูดจริงยาวพอ (คลิปที่พูดสั้นมากวัดไม่ได้)" },
+  S3: { from: "นับเสียงเติม (เอ่อ อ่า อืม) และคำติดปากตามบริบท เช่น แบบว่า ต่อนาที", needs: "มีช่วงพูดจริงยาวพอ (คลิปที่พูดสั้นมากวัดไม่ได้)" },
+  N1: { from: "ตำแหน่งข้อมือในแต่ละช่วงเวลา หาช่วงที่มือนิ่งค้างต่อเนื่องนาน", needs: "เห็นมือในกล้องเกือบตลอดคลิป (มือออกนอกเฟรมไม่นับว่านิ่ง)" },
+  N2: { from: "ทิศทางศีรษะทุก 1 วินาที: ก้ม หันข้าง เงยหรืออื่น ๆ หรือหันตรง", needs: "เห็นใบหน้าเกือบตลอดคลิป" },
   T1: { from: "ช่วงตั้งแต่เริ่มพูดถึงพูดจบ เทียบกับเวลาเป้าหมายที่คุณตั้ง", needs: "ต้องตั้งเวลาเป้าหมาย" },
 };
 
@@ -32,7 +32,8 @@ function CriterionCard({ code }: { code: CriterionCode }) {
   return <div id={code} className="scroll-mt-24 rounded-2xl bg-surface p-5">
     <div className="flex flex-wrap items-center gap-2"><span className="rounded-lg bg-brand px-2 py-0.5 text-xs font-bold text-white">{code}</span><b className="text-lg text-ink">{CRITERION_NAME[code]}</b></div>
     {m?.explain && <p className="mt-2">{m.explain}</p>}
-    <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+    {meta === null && <p className="mt-2 animate-pulse text-sm text-faint" role="status">กำลังโหลดคำอธิบายระดับ…</p>}
+    <dl className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
       <div className="rounded-xl bg-white p-3"><dt className="text-xs font-semibold text-brand">วัดจาก</dt><dd className="mt-0.5 text-ink">{FROM[code].from}</dd></div>
       <div className="rounded-xl bg-white p-3"><dt className="text-xs font-semibold text-brand">ต้องมีอะไร (ไม่งั้นวิเคราะห์ไม่ได้)</dt><dd className="mt-0.5 text-ink">{FROM[code].needs}</dd></div>
     </dl>
@@ -75,8 +76,8 @@ export default function How() {
     return () => c.abort();
   }, [attempt]);
   return <Meta.Provider value={meta}><ContentPage eyebrow="เราวัดผลอย่างไร" title={<>ทุกระดับ <span className="text-lime">ตรวจสอบได้</span> ย้อนดูได้ในวิดีโอ</>}
-    intro="8 เกณฑ์ใน 4 ทักษะ วัดจากอะไร ระดับแต่ละขั้นหมายความว่าอะไร และเมื่อไรระบบจะบอกว่าวิเคราะห์ไม่ได้" sections={SECTIONS}>
-    {meta === "error" && <ErrorPanel tone="info" what="โหลดคำอธิบายระดับไม่สำเร็จ" why="วิธีวัดและเงื่อนไขยังแสดงครบ แต่คำอ่านของแต่ละระดับยังไม่ขึ้น"
-      actions={<Button size="sm" variant="soft" onClick={() => setAttempt((n) => n + 1)}><RefreshCw />ลองใหม่</Button>} />}
-  </ContentPage></Meta.Provider>;
+    intro="8 เกณฑ์ใน 4 ทักษะ วัดจากอะไร ระดับแต่ละขั้นหมายความว่าอะไร และเมื่อไรระบบจะบอกว่าวิเคราะห์ไม่ได้" sections={SECTIONS}
+    notice={meta === "error" && <ErrorPanel tone="info" what="โหลดคำอธิบายระดับไม่สำเร็จ" why="วิธีวัดและเงื่อนไขยังแสดงครบ แต่คำอ่านของแต่ละระดับยังไม่ขึ้น"
+      actions={<Button size="sm" variant="soft" onClick={() => setAttempt((n) => n + 1)}><RefreshCw />ลองใหม่</Button>} />} />
+  </Meta.Provider>;
 }

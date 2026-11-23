@@ -45,12 +45,13 @@ export function Shell({ page, title, subtitle, actions, children }: {
     </aside>
 
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b border-line/70 bg-surface/85 px-4 backdrop-blur-md sm:px-6 lg:h-20 lg:border-none lg:px-8">
-      <Link to={PATH.home} className="lg:hidden" aria-label="PromptPre's หน้าหลัก"><Logo className="h-6" /></Link>
+      {/* on a narrow phone the logo gets smaller so the buttons keep their size */}
+      <Link to={PATH.home} className="flex min-w-0 shrink lg:hidden" aria-label="PromptPre's หน้าหลัก"><Logo className="h-6 min-w-0 object-contain object-left" /></Link>
       <div className="hidden min-w-0 lg:block">
         <h1 className="truncate text-2xl font-bold">{title}</h1>
         {subtitle && <p className="truncate text-sm text-muted">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         {actions}
         <button type="button" onClick={openPalette} aria-label="ค้นหาและไปที่ (Ctrl K)" aria-keyshortcuts="Control+K Meta+K"
           className="flex size-10 items-center justify-center gap-2 rounded-full bg-white text-muted shadow-card transition-colors hover:text-brand 2xl:w-56 2xl:justify-start 2xl:px-4">
@@ -115,17 +116,19 @@ function BottomItem({ item, active, tour }: { item: NavItem; active: boolean; to
 function MoreMenu({ page, items }: { page: ShellPage; items: NavItem[] }) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const btn = useRef<HTMLButtonElement>(null);
   const { pathname, hash } = useLocation();
   useEffect(() => setOpen(false), [pathname, hash]);
   useEffect(() => {
     if (!open) return;
     const away = (e: Event) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener("pointerdown", away);
-    return () => document.removeEventListener("pointerdown", away);
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); btn.current?.focus(); } };
+    document.addEventListener("pointerdown", away); document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("pointerdown", away); document.removeEventListener("keydown", esc); };
   }, [open]);
   const active = items.some((n) => n.key === page);
   return <div ref={box} className="relative flex justify-center">
-    <button type="button" data-tour="help" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="menu"
+    <button ref={btn} type="button" data-tour="help" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="menu"
       className={cn("flex flex-col items-center gap-0.5 text-[10px] font-medium", active || open ? "text-brand" : "text-faint")}>
       <Ellipsis className="size-5" />เพิ่มเติม
     </button>

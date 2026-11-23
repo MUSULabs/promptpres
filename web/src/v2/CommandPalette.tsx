@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { CornerDownLeft, Search, type LucideIcon } from "lucide-react";
 import { cn } from "./ui";
 import { PATH } from "./paths";
+import { useFocusTrap } from "./states";
 
 export interface Command { id: string; group: string; label: string; hint?: string; to: string; Icon: LucideIcon; keywords?: string }
 
@@ -20,6 +21,8 @@ export function CommandPalette({ commands }: { commands: Command[] }) {
   const [q, setQ] = useState("");
   const [at, setAt] = useState(0);
   const input = useRef<HTMLInputElement>(null);
+  const box = useRef<HTMLDivElement>(null);
+  useFocusTrap(box, open);
   const list = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -51,8 +54,9 @@ export function CommandPalette({ commands }: { commands: Command[] }) {
   const groups = hits.reduce<Record<string, { c: Command; i: number }[]>>((g, c, i) => { (g[c.group] ??= []).push({ c, i }); return g; }, {});
 
   return createPortal(<AnimatePresence>
-    {open && <motion.div className="fixed inset-0 z-[80] flex items-start justify-center bg-navy-950/55 px-3 pt-[12vh] backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }} role="dialog" aria-modal="true" aria-label="ค้นหาและไปที่">
+    {open && <motion.div ref={box} className="fixed inset-0 z-[80] flex items-start justify-center bg-navy-950/55 px-3 pt-[12vh] backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
+      onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setOpen(false); } }} role="dialog" aria-modal="true" aria-label="ค้นหาและไปที่">
       <motion.div initial={{ y: -12, scale: 0.98 }} animate={{ y: 0, scale: 1 }} exit={{ y: -8, opacity: 0 }} className="w-full max-w-xl overflow-hidden rounded-panel bg-white text-ink shadow-lift">
         <label className="flex items-center gap-3 border-b border-line px-5">
           <Search className="size-5 text-brand" />
@@ -62,7 +66,6 @@ export function CommandPalette({ commands }: { commands: Command[] }) {
               if (e.key === "ArrowDown") { e.preventDefault(); setAt((x) => Math.min(hits.length - 1, x + 1)); }
               else if (e.key === "ArrowUp") { e.preventDefault(); setAt((x) => Math.max(0, x - 1)); }
               else if (e.key === "Enter") { e.preventDefault(); go(hits[at]); }
-              else if (e.key === "Escape") setOpen(false);
             }} className="h-14 w-full bg-transparent text-base outline-none" />
           <kbd className="rounded-md bg-surface px-2 py-1 text-[11px] font-semibold text-muted">Esc</kbd>
         </label>

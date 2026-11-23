@@ -7,7 +7,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { api } from "@/api";
 import { useAuth } from "@/auth";
 import type { Criterion, CriterionCode, SessionRow } from "@/contract";
-import { SKILL_OF } from "./ui";
+import { RefreshCw } from "lucide-react";
+import { Button, SKILL_OF } from "./ui";
+import { ErrorPanel } from "./states";
 import { doneRuns } from "@/trend";
 import type { Note } from "./Notifications";
 import { PATH } from "./paths";
@@ -58,6 +60,13 @@ function Loader({ enabled, children }: { enabled: boolean; children: ReactNode }
   const reload = useCallback(() => setTick((n) => n + 1), []);
   const value = useMemo(() => ({ rows, error, reload }), [rows, error, reload]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+/** The round list could not be loaded at all: say so and offer to try again, never an endless skeleton. */
+export function ListLoadError({ className, dark }: { className?: string; dark?: boolean }) {
+  const { error, reload } = useSessions();
+  return <ErrorPanel className={className} dark={dark} what="โหลดประวัติการซ้อมไม่สำเร็จ" why={error ?? undefined}
+    todo="ตรวจการเชื่อมต่อ แล้วกดลองใหม่" actions={<Button size="sm" onClick={reload}><RefreshCw />ลองใหม่</Button>} />;
 }
 
 /** The user's own rehearsals, newest first (no mock results). */

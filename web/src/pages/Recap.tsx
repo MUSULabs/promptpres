@@ -11,18 +11,20 @@ import { CountUp } from "@/v2/viz";
 import { stageLights } from "@/v2/streak";
 import { badges } from "@/v2/badges";
 import { BadgeMedal } from "@/v2/BadgeGrid";
-import { SkipButton, useOverlayFlag, ignoreKey } from "@/v2/states";
-import { rehearsals, useSessions } from "@/v2/sessions";
+import { SkipButton, ignoreKey } from "@/v2/states";
+import { ListLoadError, rehearsals, useSessions } from "@/v2/sessions";
 import { PATH } from "@/v2/paths";
 import { monthSummary, presentDay } from "@/v2/time";
 
 const MS = 6000;
 
 export default function Recap() {
-  const { rows } = useSessions();
+  const { rows, error } = useSessions();
   const rounds = useMemo(() => monthSummary(rehearsals(rows), new Date()).rounds, [rows]);
   if (rows === null || rounds === 0) return <main id="main-content" tabIndex={-1} className="bg-navy-gradient grid min-h-dvh place-items-center px-6 text-center text-white outline-none">
-    {rows === null ? <p role="status" className="text-white/70">กำลังโหลดสรุปเดือนนี้…</p> : <div>
+    {rows === null ? (error ? <div className="w-full max-w-md text-left"><ListLoadError dark />
+      <Button asChild variant="outlineLight" className="mt-4"><Link to={PATH.progress}>กลับหน้าความคืบหน้า</Link></Button></div>
+      : <p role="status" className="text-white/70">กำลังโหลดสรุปเดือนนี้…</p>) : <div>
       <PPre pose="think" size={130} color="white" className="mx-auto" />
       <h1 className="mt-6 text-3xl font-bold">เดือนนี้ยังไม่มีรอบซ้อม</h1>
       <p className="mt-2 text-white/70">ส่งซ้อมอย่างน้อย 1 รอบ แล้วสรุปประจำเดือนจะเปิดได้</p>
@@ -45,7 +47,6 @@ function RecapSlides() {
   const stage = useMemo(() => stageLights(mine, now), [mine, now]);
   const earned = useMemo(() => badges(mine, now, presentDay() ?? undefined).filter((b) => b.earned), [mine, now]);
   const [i, setI] = useState(0);
-  useOverlayFlag();
   const [paused, setPaused] = useState(false); // pause button / space
   const [held, setHeld] = useState(false);     // finger or mouse held down
   const [k, setK] = useState(0); // restarts the progress bar
@@ -81,11 +82,11 @@ function RecapSlides() {
     { bg: "bg-brand-gradient", body: !s.comparable ? <Center>
       <p className="text-xl text-white/80">เทียบรอบแรกกับรอบล่าสุดของเดือน</p>
       <p className="mt-4 text-3xl font-bold leading-snug">ต้องมีผลอย่างน้อย 2 รอบ<br />ในเดือนนี้จึงจะเทียบได้</p>
-      <p className="mt-6 max-w-sm text-sm text-white/60">ซ้อมอีกรอบ แล้วสรุปเดือนจะบอกว่าเกณฑ์ไหนที่ระบบวัดได้ระดับสูงขึ้น</p>
+      <p className="mt-6 max-w-sm text-sm text-white/60">ซ้อมอีกรอบ แล้วสรุปเดือนจะบอกว่าเกณฑ์ไหนดีขึ้นจากรอบก่อน</p>
     </Center> : <Center>
       <p className="text-xl text-white/80">เทียบรอบแรกกับรอบล่าสุดของเดือน</p>
       <p className="mt-3 text-7xl font-bold text-lime"><CountUp to={s.higher.length} /></p>
-      <p className="text-2xl font-bold">เกณฑ์ที่ระบบวัดได้ระดับสูงขึ้น</p>
+      <p className="text-2xl font-bold">เกณฑ์ที่ดีขึ้นจากรอบแรกของเดือน</p>
       <div className="mt-6 flex max-w-md flex-wrap justify-center gap-2">{s.higher.map((c) => <Chip key={c} tone="lime" className="px-3.5 py-1.5 text-sm">{SHORT_NAME[c]}</Chip>)}</div>
       <p className="mt-8 max-w-sm text-sm text-white/60">ระดับที่ระบบวัดได้ ไม่ใช่หลักฐานว่าทักษะเพิ่มขึ้น หัวข้อ ห้อง และกล้องที่ต่างกันมีผลด้วย</p>
     </Center> },
@@ -136,9 +137,10 @@ function RecapSlides() {
           <span className="block h-full bg-white transition-[width] duration-100 ease-linear" style={{ width: j < i || (j === i && i === last) ? "100%" : j === i ? `${Math.min(100, (elapsed / MS) * 100)}%` : "0%" }} />
         </span>)}
       </div>
-      <div className="mx-auto mt-3 flex max-w-xl items-center justify-between">
-        <Logo dark className="h-5" />
-        <div className="flex items-center gap-1">
+      <div className="mx-auto mt-3 flex max-w-xl items-center justify-between gap-2">
+        {/* on a narrow phone the logo gets smaller so the buttons keep their size */}
+        <Logo dark className="h-5 min-w-0 shrink object-contain object-left" />
+        <div className="flex shrink-0 items-center gap-1">
           {i < last && <SkipButton fixed={false} esc={false} label="ข้ามทั้งหมด" onSkip={() => { setI(last); setK((x) => x + 1); }} className="min-h-9 px-3 text-xs" />}
           <button type="button" onClick={() => setPaused(!paused)} aria-label={paused ? "เล่นต่อ" : "หยุดชั่วคราว"} className="grid size-9 place-items-center rounded-full hover:bg-white/10">{paused ? <Play className="size-4" /> : <Pause className="size-4" />}</button>
           <Link to={PATH.progress} aria-label="ปิดสรุป" className="grid size-11 place-items-center rounded-full hover:bg-white/10"><X className="size-5" /></Link>

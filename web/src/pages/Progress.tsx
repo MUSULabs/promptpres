@@ -14,12 +14,12 @@ import { PPre } from "@/v2/PPre";
 import { useAccount } from "@/auth";
 import { compatibleRubric } from "@/trend";
 import { DashboardSkeleton } from "@/v2/states";
-import { rehearsals, rowCriteria, useSessions } from "@/v2/sessions";
+import { ListLoadError, rehearsals, rowCriteria, useSessions } from "@/v2/sessions";
 import { PATH } from "@/v2/paths";
 import { monthSummary, presentDay, shareDataFor, thDate } from "@/v2/time";
 
 export default function Progress() {
-  const { rows } = useSessions();
+  const { rows, error } = useSessions();
   const { name } = useAccount();
   const mine = useMemo(() => rehearsals(rows), [rows]);
   const now = useMemo(() => new Date(), [rows]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -31,7 +31,7 @@ export default function Progress() {
   const earned = list.filter((x) => x.earned).length;
 
   return <Shell page="progress" title="ความคืบหน้า" subtitle="สรุปเดือนนี้ ตราที่ได้ และการ์ดไว้แชร์">
-    {rows === null ? <DashboardSkeleton /> : <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+    {rows === null ? (error ? <ListLoadError /> : <DashboardSkeleton />) : <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
       <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-panel bg-navy-gradient p-6 text-white shadow-lift sm:p-8 lg:col-span-7">
         <div className="grid-lines absolute inset-0 opacity-60" />
         <div className="relative flex items-start justify-between gap-4">

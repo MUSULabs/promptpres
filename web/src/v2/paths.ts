@@ -29,7 +29,8 @@ export const PATH = {
   criterion: (code: string) => `/how#${code}`,
 } as const;
 
-/** `?next=` after login: only a path on this site (no "//host", no backslash tricks). */
+/** `?next=` after login: only a path on this site (no "//host", no backslash tricks, and no tab or line break,
+ *  which the browser drops, so "/<tab>/host" would become "//host"). */
 export function safeNext(next: string | null): string {
-  return next && next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : "/";
+  return next && next.startsWith("/") && !next.startsWith("//") && !/[\\\u0000-\u001f\u007f]/.test(next) ? next : "/";
 }

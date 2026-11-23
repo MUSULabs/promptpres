@@ -4,7 +4,7 @@
    room (real video, timeline, transcript), coach, the 8 cards and the goals for the next round.
    Badges ↑ = ↓ compare with the previous finished round of a comparable rubric only (trend.ts previousRun). */
 import { createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import confetti from "canvas-confetti";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { api } from "@/api";
 import type { CriteriaMeta, Criterion, CriterionCode, CriterionMeta, Result, SessionRow, Skill, Topic, TranscriptItem } from "@/contract";
-import { CRITERION_NAME, SKILLS, VALUE_LABEL, fmtDuration, fmtTime, splitClocks } from "@/presentation";
+import { COVERAGE_LABEL, CRITERION_NAME, SKILLS, VALUE_LABEL, fmtDuration, fmtTime, splitClocks } from "@/presentation";
 import { MIXED_RUBRIC_NOTE, previousRun } from "@/trend";
 import { useSessionResult } from "@/useSessionResult";
 import { Button, Chip, SectionTitle, SHORT_NAME, SKILL_STYLE, SkillIcon, cn } from "@/v2/ui";
@@ -20,12 +20,13 @@ import { Shell } from "@/v2/Shell";
 import { PPre } from "@/v2/PPre";
 import { CountUp, CoverageDonut, DeltaTag, LevelBadge, LevelMeter, MomentStrip, OrderFlow, Radar, ShareBar, SpeedRuler, TimeGauge } from "@/v2/viz";
 import { StageLights } from "@/v2/StageLights";
-import { EmptyState, ErrorPanel, HelpTip, Skeleton, SkipButton, useOverlayFlag } from "@/v2/states";
+import { EmptyState, ErrorPanel, HelpTip, Skeleton, SkipButton, useFocusTrap } from "@/v2/states";
 import { useMissions } from "@/v2/prefs";
-import { MAX_LIGHTS, firstOfItsWeek, stageLights, type StageState } from "@/v2/streak";
+import { MAX_LIGHTS, firstOfItsWeek, stageLights, weekIndex, type StageState } from "@/v2/streak";
 import { rehearsals, useSessions } from "@/v2/sessions";
 import { PATH } from "@/v2/paths";
 import { thDate } from "@/v2/time";
+import { t1Bands } from "@/v2/criteriaMeta";
 import { FailedView, NotSentView, WaitingView } from "./Waiting";
 
 /** Jump the video to a time. null = no playable video: times are shown as text, not buttons. */
@@ -33,7 +34,7 @@ type Seek = ((s: number) => void) | null;
 type Levels = Partial<Record<CriterionCode, number | null>>;
 
 const TERM: Record<string, string> = {
-  "ดีขึ้นจากรอบก่อน": "ระดับที่ระบบวัดได้ในรอบนี้สูงกว่ารอบก่อน (รูบริกเดียวกัน) ไม่ใช่หลักฐานว่าทักษะเพิ่มขึ้น อาจมาจากหัวข้อ ห้อง หรือกล้องที่ต่างกัน",
+  "ดีขึ้นจากรอบก่อน": "ระดับที่ระบบวัดได้ในรอบนี้สูงกว่ารอบก่อน (เกณฑ์รุ่นที่เทียบกันได้) ไม่ใช่หลักฐานว่าทักษะเพิ่มขึ้น อาจมาจากหัวข้อ ห้อง หรือกล้องที่ต่างกัน",
   "คงที่": "ระดับเท่ากับรอบก่อน (เกณฑ์รุ่นเดียวกัน)",
   "ลดลงจากรอบก่อน": "ระดับที่ระบบวัดได้ต่ำกว่ารอบก่อน ใช้เป็นสัญญาณให้ไปดูหลักฐาน ไม่ใช่คำตัดสิน หัวข้อ ห้อง หรือกล้องที่ต่างกันก็มีผล",
   "เทียบไม่ได้": "รอบก่อนวิเคราะห์เกณฑ์นี้ไม่ได้ หรือยังไม่มีรอบก่อนที่ใช้เกณฑ์รุ่นเดียวกัน",
@@ -92,12 +93,23 @@ const seenReveal = (id: string) => { try { return (window.sessionStorage.getItem
 const rememberReveal = (id: string) => { try { const v = (window.sessionStorage.getItem(SEEN) ?? "").split(",").filter(Boolean); window.sessionStorage.setItem(SEEN, [...v, id].slice(-30).join(",")); } catch { /* storage blocked */ } };
 
 function ResultView({ result, data }: { result: Result; data: ReturnType<typeof useSessionResult> }) {
-  const { rows } = useSessions();
+  const { rows, error: listError, reload } = useSessions();
   const mine = useMemo(() => rehearsals(rows), [rows]);
   const prevRow = useMemo(() => previousRun(mine, result.session_id, result.versions.rubric), [mine, result]);
   const ctx: Ctx = { meta: data.meta, fb: data.fb, metaStatus: data.metaStatus, retryMeta: data.retryMeta, prev: prevRow?.levels ?? undefined, prevRow };
   const stage = useMemo(() => stageLights(mine, new Date()), [mine]);
-  const litThisRound = firstOfItsWeek(mine, result.session_id) && stage.practicedThisWeek;
+  // the stage-light moment belongs to the round that lit this week's light, not to an old round opened later
+  const litThisRound = firstOfItsWeek(mine, result.session_id) && stage.practicedThisWeek
+    && weekIndex(new Date(result.created_at)) === weekIndex(new Date());
+  // The round list refreshes more slowly than this page: a round that has just finished may still be listed as
+  // "processing", so the reveal would miss the previous round and this week's light. Ask once more, and start the
+  // reveal when the list knows this round is done (or cannot be loaded).
+  const listed = !!rows?.some((r) => r.session_id === result.session_id && r.status === "done");
+  const [staleRows, setStaleRows] = useState<SessionRow[] | null | undefined>(undefined);
+  useEffect(() => {
+    if (rows && !listed && staleRows === undefined) { setStaleRows(rows); reload(); }
+  }, [rows, listed, staleRows, reload]);
+  const listReady = listed || listError != null || (rows !== null && staleRows !== undefined && rows !== staleRows);
   const [phase, setPhase] = useState<"reveal" | "stage" | "done">(() => (seenReveal(result.session_id) ? "done" : "reveal"));
   useEffect(() => { if (phase !== "reveal") rememberReveal(result.session_id); }, [phase, result.session_id]);
   const [filter, setFilter] = useState<Skill | "all">("all");
@@ -113,7 +125,7 @@ function ResultView({ result, data }: { result: Result; data: ReturnType<typeof 
 
   return <R.Provider value={ctx}><Shell page="result" title="ผลการซ้อม" subtitle={`รอบวันที่ ${date}`}>
     <AnimatePresence>
-      {phase === "reveal" && <Reveal key="r" result={result} onDone={() => setPhase(litThisRound ? "stage" : "done")} onSkip={() => setPhase("done")} />}
+      {phase === "reveal" && listReady && <Reveal key="r" result={result} onDone={() => setPhase(litThisRound ? "stage" : "done")} onSkip={() => setPhase("done")} />}
       {phase === "stage" && <StageMoment key="s" stage={stage} onDone={() => setPhase("done")} />}
     </AnimatePresence>
 
@@ -191,21 +203,24 @@ function TimeChip({ start, end, seek, note, className }: { start: number; end?: 
 
 function Reveal({ result, onDone, onSkip }: { result: Result; onDone: () => void; onSkip: () => void }) {
   const still = useReducedMotion();
-  useOverlayFlag();
   const ok = result.criteria.filter((c) => c.status === "ok").length;
   const { prev } = useR();
   const improved = result.criteria.filter((c) => c.level != null && prev?.[c.code] != null && c.level > prev[c.code]!);
+  const box = useRef<HTMLDivElement>(null);
+  useFocusTrap(box, useIsPresent());              // keyboard stays on the overlay until it starts to close
+  const finish = useRef(onDone);
+  finish.current = onDone;                       // the timer calls the latest one (the round list may refresh meanwhile)
   useEffect(() => {
-    if (still) { onDone(); return; }
+    if (still) { finish.current(); return; }
     // celebrate finishing a round (practice), never a level going up
     const fire = window.setTimeout(() => {
       confetti({ particleCount: 110, spread: 80, origin: { y: 0.62 }, colors: ["#2823ef", "#d4f53c", "#ffffff", "#9491f7"], scalar: 0.9 });
     }, 1300);
-    const end = window.setTimeout(onDone, 4600);
+    const end = window.setTimeout(() => finish.current(), 4600);
     return () => { window.clearTimeout(fire); window.clearTimeout(end); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <motion.div className="bg-navy-gradient fixed inset-0 z-[60] grid place-items-center overflow-hidden px-6 text-white"
+  return <motion.div ref={box} role="dialog" aria-modal="true" aria-label="ผลการซ้อมรอบนี้" className="bg-navy-gradient fixed inset-0 z-[60] grid place-items-center overflow-hidden px-6 text-white"
     initial={{ opacity: 1 }} exit={{ clipPath: "circle(0% at 50% 50%)", transition: { duration: 0.6, ease: [0.7, 0, 0.3, 1] } }}
     style={{ clipPath: "circle(150% at 50% 50%)" }}>
     <div className="grid-lines pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
@@ -236,11 +251,12 @@ function Reveal({ result, onDone, onSkip }: { result: Result; onDone: () => void
 
 function StageMoment({ stage, onDone }: { stage: StageState; onDone: () => void }) {
   const [ready, setReady] = useState(false);
-  useOverlayFlag();
   const before = stage.weeks.at(-2)?.lights ?? 0;
   const kept = before >= stage.lights; // already full last week: replay the power-up instead of claiming a new light
   const full = stage.lights >= MAX_LIGHTS;
-  return <motion.div className="fixed inset-0 z-[60] grid place-items-center overflow-y-auto bg-navy-950 px-5 py-10 text-white"
+  const box = useRef<HTMLDivElement>(null);
+  useFocusTrap(box, useIsPresent());
+  return <motion.div ref={box} className="fixed inset-0 z-[60] grid place-items-center overflow-y-auto bg-navy-950 px-5 py-10 text-white"
     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.4 } }} role="dialog" aria-modal="true" aria-label="ไฟเวทีสัปดาห์นี้">
     <SkipButton onSkip={onDone} />
     <div className="w-full max-w-xl text-center">
@@ -278,7 +294,7 @@ function Hero({ result, seek }: { result: Result; seek: Seek }) {
         <h2 className="text-3xl font-bold leading-tight sm:text-4xl">สรุปการซ้อมรอบนี้</h2>
         <p className="mt-2 max-w-lg text-sm text-white/70">ไม่มีคะแนนรวม แต่ละเกณฑ์มีระดับของตัวเอง 1–4 พร้อมหลักฐานจากวิดีโอที่กดดูได้ทุกจุด</p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <Chip tone="glass"><Clapperboard />คลิป {fmtDuration(result.duration_s ?? 0)}</Chip>
+          {result.duration_s != null && <Chip tone="glass"><Clapperboard />คลิป {fmtDuration(result.duration_s)}</Chip>}
           {t1?.values.speech_span_s != null && <Chip tone="glass"><Clock3 />พูดจริง {fmtDuration(t1.values.speech_span_s)}</Chip>}
           {result.target_duration_s != null && <Chip tone="glass"><Target />เป้าหมาย {fmtDuration(result.target_duration_s)}</Chip>}
         </div>
@@ -329,7 +345,7 @@ function SkillMap({ result, onPick }: { result: Result; onPick: (c: CriterionCod
           <span className="flex items-center gap-1.5"><span className="size-3 rounded-full border-[1.5px] border-dashed border-faint" />วิเคราะห์ไม่ได้</span>
         </div>
       </motion.div>
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         {SKILLS.map((s, i) => <SkillTile key={s.key} skill={s.key} label={s.label} criteria={s.codes.map(by).filter((c): c is Criterion => !!c)} result={result} delay={i * 0.06} onPick={onPick} />)}
       </div>
     </div>
@@ -355,10 +371,11 @@ function SkillTile({ skill, label, criteria, result, delay, onPick }: { skill: S
 }
 
 function SkillSummaryViz({ skill, result }: { skill: Skill; result: Result }) {
+  const { meta } = useR();
   const c = (code: CriterionCode) => result.criteria.find((x) => x.code === code) ?? EMPTY(code);
-  const d = result.duration_s ?? 600;
+  const d = clipLength(result);
   if (skill === "content") return result.topics.length > 0 && c("C2").status === "ok" ? <CoverageDonut topics={result.topics} size={96} /> : <p className="text-xs text-muted">ข้ามหัวข้อหรือวิเคราะห์เนื้อหาไม่ได้ในรอบนี้</p>;
-  if (skill === "time") { const t = c("T1"); return t.values.speech_span_s != null && result.target_duration_s ? <TimeGauge span={t.values.speech_span_s} target={result.target_duration_s} className="mx-auto max-w-[210px]" /> : null; }
+  if (skill === "time") { const t = c("T1"); return t.values.speech_span_s != null && result.target_duration_s ? <TimeGauge span={t.values.speech_span_s} target={result.target_duration_s} bands={t1Bands(meta)} className="mx-auto max-w-[210px]" /> : null; }
   if (skill === "speech") return <div className="space-y-2">
     <p className="text-xs text-muted">ช่วงหยุดยาว (บน) และเสียงเติม (ล่าง) ตลอดคลิป</p>
     <MomentStrip evidence={c("S2").evidence} duration={d} color="var(--color-brand-300)" />
@@ -382,10 +399,16 @@ function HeadShare({ c }: { c: Criterion }) {
 
 const LANES: CriterionCode[] = ["C2", "S2", "S3", "N1", "N2"];
 
+/** Where evidence sits on a timeline: the clip length, or (if the length is missing) the end of the last evidence,
+    so the marks keep their order and spacing instead of sitting on a made-up 10-minute clip. */
+function clipLength(r: Result): number {
+  return r.duration_s || Math.max(1, ...r.criteria.flatMap((c) => c.evidence.map((e) => e.end_s)));
+}
+
 const EMPTY = (code: CriterionCode): Criterion => ({ code, skill: "content", status: "unanalyzable", level: null, values: {}, evidence: [], feedback_id: null, reason: null });
 
 function EvidenceStudio({ result, player }: { result: Result; player: Player }) {
-  const d = result.duration_s ?? 600;
+  const d = clipLength(result);
   const crit = (code: CriterionCode) => result.criteria.find((c) => c.code === code) ?? EMPTY(code);
   const seek: Seek = player.ready ? player.seek : null;
   const [hover, setHover] = useState<{ x: number; text: string } | null>(null);
@@ -408,7 +431,7 @@ function EvidenceStudio({ result, player }: { result: Result; player: Player }) 
               <p className="mt-1 text-sm text-white/65">ระบบลบวิดีโออัตโนมัติ (Guest 7 วัน สมาชิก 30 วัน) ผล หลักฐาน และคำแนะนำยังอ่านได้ครบ</p></div>
           </div>}
         <div className="relative rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/10" onMouseLeave={() => setHover(null)} aria-label="แถบเวลาหลักฐานทุกเกณฑ์" role="group" data-playing={player.playing ? "true" : "false"}>
-          <div className="mb-2 flex items-center justify-between text-xs text-white/60"><span>ความหนาแน่นของช่วงหยุดและเสียงเติม</span><span className="tabular-nums">{fmtDuration(player.t)} / {fmtDuration(d)}</span></div>
+          <div className="mb-2 flex items-center justify-between text-xs text-white/60"><span>ความหนาแน่นของช่วงหยุดและเสียงเติม</span><span className="tabular-nums">{fmtDuration(player.t)}{result.duration_s != null && <> / {fmtDuration(result.duration_s)}</>}</span></div>
           <div className="flex h-8 items-end gap-[2px]">
             {/* without a video the bars and markers only show where things happened: plain shapes, not buttons */}
             {bins.map((v, i) => { const bar = { className: "flex-1 rounded-t-[2px] bg-lime hover:bg-white", style: { opacity: 0.18 + v * 0.82 },
@@ -445,14 +468,19 @@ function EvidenceStudio({ result, player }: { result: Result; player: Player }) 
           <p className="mb-3 flex items-center gap-2 font-semibold"><Zap className="size-4 text-lime" />จุดที่ควรดู</p>
           {highlights.length === 0 && <p className="text-sm text-white/60">รอบนี้ไม่มีจุดเด่นจากหลักฐานให้ดู</p>}
           <ol className="space-y-1.5">
-            {highlights.map((h, i) => <li key={i}>
-              <button type="button" disabled={!seek} onClick={() => seek?.(h.s)} className="group flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-white/10">
+            {highlights.map((h, i) => {
+              const body = <>
                 <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-lime text-xs font-bold text-navy">{i + 1}</span>
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{h.title}</span><span className="text-xs text-white/55">{SHORT_NAME[h.code]} · {fmtDuration(h.s)}</span></span>
-                <Play className="size-4 text-lime opacity-0 transition-opacity group-hover:opacity-100" />
-              </button>
-            </li>)}
+              </>;
+              // without a playable video the list only names the moments (no buttons that do nothing)
+              return <li key={i}>{seek
+                ? <button type="button" onClick={() => seek(h.s)} className="group flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-white/10">
+                  {body}<Play className="size-4 text-lime opacity-0 transition-opacity group-hover:opacity-100" /></button>
+                : <div className="flex items-center gap-3 p-2">{body}</div>}</li>;
+            })}
           </ol>
+          {highlights.length > 0 && !seek && <p className="mt-2 text-xs text-white/55">{result.video_url ? "กดได้เมื่อวิดีโอโหลดเสร็จ" : "รอบนี้ไม่มีวิดีโอให้เปิด จึงดูได้เฉพาะเวลา"}</p>}
         </div>
         <Transcript id={result.session_id} t={player.t} seek={seek} />
       </div>
@@ -493,7 +521,7 @@ function Transcript({ id, t, seek }: { id: string; t: number; seek: Seek }) {
   }, [activeIdx]);
   return <div className="rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/10" data-transcript>
     <p className="mb-2 font-semibold">บทพูดที่ถอดเสียง</p>
-    <p className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-white/55"><mark className="rounded bg-lime/85 px-1 text-navy">เอ่อ</mark>เสียงเติม <span className="rounded bg-white/15 px-1">⏸ 4.2 วินาที</span>หยุดยาว</p>
+    <p className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-white/55"><mark className="rounded bg-lime/85 px-1 text-navy">เอ่อ</mark>เสียงเติม <span className="rounded bg-white/15 px-1">⏸ เงียบ 4.2 วินาที</span>หยุดยาว</p>
     {items === null ? <div className="space-y-2" role="status" aria-label="กำลังโหลดบทพูด">{[0, 1, 2, 3].map((i) => <Skeleton key={i} dark className="h-4" />)}</div>
       : items === "error" ? <div className="text-sm text-white/70">โหลดบทพูดไม่สำเร็จ <button type="button" onClick={() => setAttempt((n) => n + 1)} className="ml-1 font-semibold text-lime hover:underline">ลองใหม่</button></div>
       : list.length === 0 ? <p className="text-sm text-white/60">รอบนี้ไม่มีบทพูดที่ถอดเสียงได้</p>
@@ -502,7 +530,7 @@ function Transcript({ id, t, seek }: { id: string; t: number; seek: Seek }) {
           return <span key={i} data-i={i}>
             {seek ? <button type="button" onClick={() => seek(x.start_s)} data-playing={i === activeIdx || undefined} className={cn(cls, !x.is_filler && "hover:bg-white/10")}>{x.is_filler ? <mark className="bg-transparent text-inherit">{x.text}</mark> : x.text}</button>
               : <span className={cls}>{x.is_filler ? <mark className="bg-transparent text-inherit">{x.text}</mark> : x.text}</span>}
-            {x.pause_after_s != null && <span className="mx-1 rounded bg-white/15 px-1 text-[11px]">⏸ เงียบ {x.pause_after_s} วินาที</span>}{" "}
+            {x.pause_after_s != null && <span className="mx-1 rounded bg-white/15 px-1 text-[11px]">⏸ เงียบ {x.pause_after_s.toFixed(1)} วินาที</span>}{" "}
           </span>; })}
       </div>}
   </div>;
@@ -536,7 +564,7 @@ function CoachBoard({ result, seek }: { result: Result; seek: Seek }) {
       <span className="flex items-center gap-1.5 text-xs text-muted"><Info className="size-4" />สรุปจากการ์ด ไม่เปลี่ยนระดับ และอ้างเวลาจากหลักฐานเท่านั้น</span>
     </SectionTitle>
     {!result.coach && <p className="mb-3 text-sm text-muted">รอบนี้ไม่มีคำแนะนำจากโค้ช AI (โค้ชตอบไม่ผ่านการตรวจหลักฐาน หรือปิดไว้) ระดับและคำแนะนำรายเกณฑ์ด้านล่างยังครบ</p>}
-    <div className="grid gap-5 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
       {col("strength", "ทำได้ดี", "สิ่งที่ทำได้ดี", ThumbsUp, "bg-lime", "bg-lime text-navy")}
       {col("focus", "ควรปรับ", "สิ่งที่ควรปรับ", Wrench, "bg-brand", "bg-brand-50 text-brand")}
     </div>
@@ -558,7 +586,7 @@ function Cards({ result, active, setActive, seek, filter, setFilter }: {
           className={cn("min-h-9 rounded-full px-3 py-1 text-xs font-semibold transition-colors", filter === s.key ? "bg-brand text-white" : "text-muted hover:text-ink")}>{s.label}</button>)}
       </div>
     </SectionTitle>
-    <motion.div layout className="grid items-start gap-5 md:grid-cols-2">
+    <motion.div layout className="grid grid-cols-1 items-start gap-5 md:grid-cols-2">
       <AnimatePresence>
         {shown.map((c) => <CriterionCard key={c.code} c={c} result={result} open={active === c.code} toggle={() => setActive(active === c.code ? null : c.code)} seek={seek} />)}
       </AnimatePresence>
@@ -591,7 +619,7 @@ const CriterionCard = forwardRef<HTMLElement, { c: Criterion; result: Result; op
       : <div className="px-5 pb-5"><CardViz c={c} result={result} seek={seek} /></div>}
     <AnimatePresence initial={false}>
       {open && !na && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-        <div className="grid gap-5 border-t border-line bg-surface/60 p-5 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 border-t border-line bg-surface/60 p-5 md:grid-cols-3">
           <div>
             <p className="mb-2 text-xs font-semibold text-muted">ค่าที่วัดได้</p>
             {!meta ? <>{/* without the criteria metadata the page cannot tell which value set the level: say so, never call them all "supporting" */}
@@ -619,7 +647,6 @@ const CriterionCard = forwardRef<HTMLElement, { c: Criterion; result: Result; op
   </motion.article>;
 });
 
-const COVERAGE: Record<Topic["coverage"], string> = { clear: "อธิบายชัดเจน", brief: "พูดถึงสั้น ๆ", not_mentioned: "ไม่พูดถึง" };
 
 /** C2 in detail: each planned topic, how it was covered, the quote checked against the transcript and when it was
     first explained. Shown only when C2 was analysed, so a partial round never shows stored coverage labels. */
@@ -632,7 +659,7 @@ function TopicTable({ topics, seek }: { topics: Topic[]; seek: Seek }) {
       <tbody>{rows.map((t) => <tr key={t.id} className="border-t border-line align-top">
         <th scope="row" className="px-4 py-2.5 font-medium">{t.order}. {t.title}
           {t.evidence_quote && <span className="mt-0.5 block text-xs font-normal text-muted">“{t.evidence_quote}”</span>}</th>
-        <td className="whitespace-nowrap px-2 py-2.5"><span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", t.coverage === "clear" ? "bg-brand-50 text-brand" : t.coverage === "brief" ? "bg-surface text-ink" : "text-muted ring-1 ring-inset ring-line")}>{COVERAGE[t.coverage]}</span></td>
+        <td className="whitespace-nowrap px-2 py-2.5"><span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", t.coverage === "clear" ? "bg-brand-50 text-brand" : t.coverage === "brief" ? "bg-surface text-ink" : "text-muted ring-1 ring-inset ring-line")}>{COVERAGE_LABEL[t.coverage]}</span></td>
         <td className="px-4 py-2.5">{t.first_mention_s != null ? <TimeChip start={t.first_mention_s} seek={seek} /> : <span className="text-xs text-faint">–</span>}</td>
       </tr>)}</tbody>
     </table>
@@ -645,19 +672,22 @@ function Val({ k, v, strong }: { k: string; v: number; strong?: boolean }) {
     <dd className={cn("whitespace-nowrap tabular-nums", strong && "text-lg font-bold")}>{strong ? <CountUp to={v} decimals={Number.isInteger(v) ? 0 : 1} /> : v} <span className="text-xs font-normal text-muted">{unit}</span></dd></div>;
 }
 
+/** A measured value for a sentence: a dash when it is missing, never "null". */
+const num = (v: number | null | undefined) => (v == null ? "–" : String(v));
+
 function CardViz({ c, result, seek }: { c: Criterion; result: Result; seek: Seek }): ReactNode {
   const { meta } = useR();
-  const d = result.duration_s ?? 600;
+  const d = clipLength(result);
   switch (c.code) {
     case "C1": return result.topics.length ? <OrderFlow topics={result.topics} /> : null;
     case "C2": return result.topics.length ? <CoverageDonut topics={result.topics} size={104} /> : null;
     case "S1": { const band = meta.S1?.levels?.["4"]?.syllables_per_s as [number, number] | undefined; return band ? <SpeedRuler value={c.values.syllables_per_s ?? 0} band={band} /> : null; }
     case "S2": case "S3": return <div><MomentStrip evidence={c.evidence} duration={d} onSeek={seek ?? undefined} />
-      <p className="mt-1.5 text-xs text-muted">{c.code === "S2" ? `${c.values.long_pauses_per_min} ครั้ง/นาที · นานสุด ${c.values.max_pause_s} วินาที` : `${c.values.fillers_per_min} ครั้ง/นาที`}{seek ? " · กดแถบเพื่อดูช่วงนั้น" : ""}</p></div>;
+      <p className="mt-1.5 text-xs text-muted">{c.code === "S2" ? `${num(c.values.long_pauses_per_min)} ครั้ง/นาที · นานสุด ${num(c.values.max_pause_s)} วินาที` : `${num(c.values.fillers_per_min)} ครั้ง/นาที`}{seek ? " · กดแถบเพื่อดูช่วงนั้น" : ""}</p></div>;
     case "N1": return <div><MomentStrip evidence={c.evidence} duration={d} onSeek={seek ?? undefined} />
-      <p className="mt-1.5 text-xs text-muted">ช่วงมือนิ่งต่อเนื่อง {c.values.long_still_per_min} ครั้ง/นาที · นานสุด {c.values.max_still_s} วินาที</p></div>;
+      <p className="mt-1.5 text-xs text-muted">ช่วงมือนิ่งต่อเนื่อง {num(c.values.long_still_per_min)} ครั้ง/นาที · นานสุด {num(c.values.max_still_s)} วินาที</p></div>;
     case "N2": return <HeadShare c={c} />;
-    case "T1": return c.values.speech_span_s != null && result.target_duration_s ? <TimeGauge span={c.values.speech_span_s} target={result.target_duration_s} className="max-w-[230px]" /> : null;
+    case "T1": return c.values.speech_span_s != null && result.target_duration_s ? <TimeGauge span={c.values.speech_span_s} target={result.target_duration_s} bands={t1Bands(meta)} className="max-w-[230px]" /> : null;
   }
 }
 
@@ -670,7 +700,7 @@ function Mission({ result, seek }: { result: Result; seek: Seek }) {
   return <section aria-label="เป้าหมายรอบถัดไป" className="relative overflow-hidden rounded-panel bg-navy p-6 text-white sm:p-10">
     <div className="grid-lines absolute inset-0 [mask-image:linear-gradient(to_right,transparent,black)]" />
     <div aria-hidden className="absolute -right-24 -top-24 size-80 rounded-full bg-brand/50 blur-3xl" />
-    <div className="relative grid items-center gap-8 md:grid-cols-[1fr_auto]">
+    <div className="relative grid grid-cols-1 items-center gap-8 md:grid-cols-[1fr_auto]">
       <div>
         <Chip tone="lime"><Flag />เป้าหมายรอบถัดไป</Chip>
         <h2 className="mt-4 text-3xl font-bold sm:text-4xl">ซ้อมอีกรอบ โฟกัสทีละเรื่อง</h2>

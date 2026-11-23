@@ -12,7 +12,6 @@ import { Asterisk, Camera, CheckCircle2, Cookie, FileText, Gauge, Mic, PlayCircl
 import { StageLights } from "@/v2/StageLights";
 import { AuthCard } from "@/v2/AuthCard";
 import { SITE_LINKS } from "@/v2/ContentPage";
-import { useOverlayFlag } from "@/v2/states";
 import { PREF, readPref, writePref } from "@/v2/prefs";
 import type { CriterionCode } from "@/contract";
 import { CRITERION_NAME, fmtDuration, SKILLS } from "@/presentation";
@@ -99,9 +98,11 @@ function Marquee() {
   const row = (x: typeof a, cls: string) => <motion.div style={{ x: useTransform(x, (v) => `${v}%`) }} className={cn("flex w-max gap-8 whitespace-nowrap text-lg font-bold", cls)}>
     {[...items, ...items].map((t, i) => <span key={i} className="flex items-center gap-8">{t}<Asterisk className="size-5" /></span>)}
   </motion.div>;
-  return <div className="relative z-10 -mt-10 h-36 overflow-hidden sm:h-40" aria-label="8 เกณฑ์">
-    <div className="absolute inset-x-[-5%] top-8 rotate-[2deg] bg-brand py-3">{row(b, "text-white/45")}</div>
-    <div className="absolute inset-x-[-5%] top-14 -rotate-[2deg] bg-lime py-3.5 shadow-[0_20px_40px_-20px_rgb(0_0_0/0.6)]">{row(a, "text-navy")}</div>
+  // The strips repeat each name to loop, so screen readers get the list once from the hidden line instead.
+  return <div className="relative z-10 -mt-10 h-36 overflow-hidden sm:h-40">
+    <p className="sr-only">8 เกณฑ์: {items.join(" · ")}</p>
+    <div aria-hidden className="absolute inset-x-[-5%] top-8 rotate-[2deg] bg-brand py-3">{row(b, "text-white/45")}</div>
+    <div aria-hidden className="absolute inset-x-[-5%] top-14 -rotate-[2deg] bg-lime py-3.5 shadow-[0_20px_40px_-20px_rgb(0_0_0/0.6)]">{row(a, "text-navy")}</div>
   </div>;
 }
 
@@ -150,7 +151,7 @@ function Story() {
     <FlowLight />
     <div className="grid-lines absolute inset-0 opacity-70" />
     <div className="absolute inset-0 bg-navy-950/25" />
-    <div className="relative mx-auto grid min-h-dvh max-w-6xl items-center gap-10 px-4 py-16 md:grid-cols-2">
+    <div className="relative mx-auto grid grid-cols-1 min-h-dvh max-w-6xl items-center gap-10 px-4 py-16 md:grid-cols-2">
       <div>
         <p className="font-semibold text-lime">ใช้งาน 3 ขั้น</p>
         <h2 className="mt-1 text-4xl font-bold leading-tight sm:text-5xl">
@@ -222,7 +223,7 @@ function TryIt() {
         </div>
         <p className="max-w-sm text-white/60">กดจุดบนกราฟเพื่อดูว่าแต่ละเกณฑ์บอกอะไร (ข้อมูลตัวอย่าง)</p>
       </div>
-      <div className="mt-10 grid items-center gap-6 md:grid-cols-2">
+      <div className="mt-10 grid grid-cols-1 items-center gap-6 md:grid-cols-2">
         <div className="rounded-panel bg-navy/70 p-4 ring-1 ring-white/10 backdrop-blur-sm"><Radar criteria={RESULT.criteria} size={440} active={pick} onPick={setPick} className="mx-auto" dark /></div>
         <motion.div key={pick} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="rounded-panel bg-white p-6 text-ink shadow-lift">
           <div className="flex items-start gap-4">
@@ -256,7 +257,7 @@ function StageTeaser() {
   const set = (n: number) => { setTouched(true); setLights(n); };
   return <section ref={ref} className="relative overflow-hidden bg-navy-950 pb-24 pt-32">
     <StageBeams lights={lights} spread={90} lampSize={30} strength={0.4} className="opacity-80" />
-    <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 md:grid-cols-2">
+    <div className="relative mx-auto grid grid-cols-1 max-w-6xl items-center gap-12 px-4 md:grid-cols-2">
       <div>
         <Chip tone="lime">ไฟเวที</Chip>
         <h2 className="mt-4 text-4xl font-bold leading-tight sm:text-5xl">ซ้อมทุกสัปดาห์<br />เวทีของคุณ<span className="text-lime">ยิ่งสว่าง</span></h2>
@@ -280,7 +281,7 @@ function Skills() {
     <p className="font-semibold text-brand">8 เกณฑ์ ใน 4 ทักษะ</p>
     <h2 className="mt-1 max-w-2xl text-4xl font-bold leading-tight sm:text-5xl">ไม่มีคะแนนรวม ไม่มีเกรด<br />
       <span className="relative inline-block text-brand">มีแต่สิ่งที่วัดได้จริง<Squiggle shape="underline" className="absolute -bottom-3 left-0 h-4 w-full" width={6} /></span></h2>
-    <div className="mt-12 grid gap-5 md:grid-cols-3">
+    <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
       {SKILLS.map((s, i) => { const lead = i === 1;
         return <motion.div key={s.key} className={cn("rounded-panel p-6 transition-[box-shadow,transform] duration-300 hover:-translate-y-1", lead ? "bg-brand-gradient text-white shadow-glow md:col-span-2" : "bg-white shadow-card hover:shadow-lift", i === 2 && "md:col-span-2")}
           initial={{ opacity: 0, y: 40, rotate: i % 2 ? 1.5 : -1.5 }} whileInView={{ opacity: 1, y: 0, rotate: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ type: "spring", stiffness: 120, damping: 16, delay: i * 0.08 }}>
@@ -300,7 +301,7 @@ function Promise3() {
     { Icon: ShieldCheck, title: "วิดีโอลบเองอัตโนมัติ", text: "Guest 7 วัน สมาชิก 30 วัน" },
   ];
   return <section className="mx-auto max-w-6xl px-4 pb-24">
-    <div className="grid gap-4 md:grid-cols-3">{items.map((x, i) => <motion.div key={x.title} className="flex gap-4 rounded-card bg-white p-5 shadow-card"
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">{items.map((x, i) => <motion.div key={x.title} className="flex gap-4 rounded-card bg-white p-5 shadow-card"
       initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
       <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-lime text-navy"><x.Icon className="size-5" /></span>
       <div><b>{x.title}</b><p className="mt-0.5 text-sm text-muted">{x.text}</p></div></motion.div>)}</div>
@@ -319,7 +320,7 @@ function Start() {
   useEffect(() => { if (near && use3D && !still) setLoad(true); }, [near, use3D, still]);
   return <section id="start" ref={ref} className="bg-navy-gradient relative overflow-hidden py-24">
     <div className="grid-lines absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
-    <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 md:grid-cols-2">
+    <div className="relative mx-auto grid grid-cols-1 max-w-6xl items-center gap-12 px-4 md:grid-cols-2">
       <div>
         <h2 className="text-4xl font-bold leading-tight sm:text-6xl">พร้อมซ้อมแล้ว<br /><span className="text-lime">เริ่มได้ใน 1 คลิก</span></h2>
         <p className="mt-4 max-w-md text-white/70">ทดลองใช้ได้ทันทีโดยไม่ต้องสมัคร ถ้าสมัครภายหลัง ประวัติการซ้อมจะย้ายไปอยู่ในบัญชีให้</p>
@@ -370,7 +371,6 @@ function Footer() {
 
 function CookieNotice() {
   const [seen, setSeen] = useState(() => readPref(PREF.cookieSeen) === "1");
-  useOverlayFlag(!seen); // the floating Lab button hides so the two never overlap on a phone
   if (seen) return null;
   return <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 2.4 }} role="region" aria-label="การใช้คุกกี้"
     className="fixed inset-x-3 bottom-4 z-50 mx-auto flex max-w-2xl flex-wrap items-center gap-3 rounded-2xl bg-white p-4 text-sm text-ink shadow-lift sm:flex-nowrap">

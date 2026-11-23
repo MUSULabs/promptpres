@@ -84,7 +84,7 @@ export default function NewSession() {
             </button>
             {templatesOpen && <div role="group" aria-label="เลือกแม่แบบโครงสร้างการนำเสนอ" className="mt-2">
               <p className="text-xs text-muted">แม่แบบตั้งเวลาและร่างหัวข้อให้ แก้ต่อได้ทุกข้อ</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {TEMPLATES.map((t) => <button key={t.id} type="button" aria-pressed={template?.id === t.id} disabled={!!busy} onClick={() => applyTemplate(t.id)}
                   className={cn("rounded-2xl p-3 text-left transition-colors", template?.id === t.id ? "bg-brand text-white" : "bg-surface hover:bg-brand-50")}>
                   <b className="block text-sm">{t.label}</b>
@@ -148,7 +148,7 @@ export default function NewSession() {
           <p className="flex items-center gap-2 font-bold"><Lightbulb className="size-5 text-brand" />ก่อนอัด เช็ก 4 ข้อนี้</p>
           <p className="mt-1 text-sm text-muted">ถ้าระบบมองไม่เห็นหรือไม่ได้ยิน เกณฑ์นั้นจะขึ้น "วิเคราะห์ไม่ได้"</p>
           <ul className="mt-4 space-y-2.5 text-sm">
-            {([[ScanFace, "เห็นใบหน้าอย่างน้อย 70% ของเวลา"], [Hand, "เห็นมือในกล้องอย่างน้อย 70% ของเวลา"], [Sun, "ห้องสว่าง ไม่ย้อนแสง"], [Volume2, "เงียบพอ ปิดพัดลมหรือแอร์ที่ดัง"]] as const).map(([I, t]) =>
+            {([[ScanFace, "เห็นใบหน้าเกือบตลอดคลิป"], [Hand, "เห็นมือในกล้องเกือบตลอดคลิป"], [Sun, "ห้องสว่าง ไม่ย้อนแสง"], [Volume2, "เงียบพอ ปิดพัดลมหรือแอร์ที่ดัง"]] as const).map(([I, t]) =>
               <li key={t} className="flex items-center gap-3 rounded-xl bg-surface px-3 py-2.5"><span className="grid size-8 place-items-center rounded-lg bg-brand-50 text-brand"><I className="size-4" /></span>{t}</li>)}
           </ul>
           <Link to={PATH.film} className="mt-3 inline-block text-sm font-semibold text-brand hover:underline">วิธีตั้งกล้องแบบละเอียด →</Link>

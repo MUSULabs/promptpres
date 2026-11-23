@@ -20,7 +20,7 @@ const SECTIONS: Section[] = [
     <li>เราใช้คุกกี้เพียงตัวเดียว คือคุกกี้เข้าสู่ระบบ ไม่มีคุกกี้ติดตามหรือโฆษณา</li>
     <li>ระบบไม่วัดและไม่อนุมานอารมณ์ ความมั่นใจ บุคลิกภาพ การสบตา หรือความหมายของท่ามือ</li>
   </ul> },
-  { id: "collect", title: "เราเก็บข้อมูลอะไร", body: <div className="grid gap-3 sm:grid-cols-2">
+  { id: "collect", title: "เราเก็บข้อมูลอะไร", body: <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
     {COLLECT.map(({ Icon, t, d }) => <div key={t} className="rounded-2xl bg-surface p-4">
       <span className="grid size-9 place-items-center rounded-xl bg-brand-50 text-brand"><Icon className="size-[18px]" /></span>
       <b className="mt-3 block">{t}</b><p className="mt-1 text-sm">{d}</p>
@@ -37,7 +37,7 @@ const SECTIONS: Section[] = [
     <p>ระดับ 1–4 ทุกเกณฑ์มาจากเกณฑ์ตัวเลขที่เขียนไว้ในระบบ ไม่มี AI ตัวใดเป็นผู้ตัดสินระดับ</p>
   </> },
   { id: "where", title: "เก็บไว้ที่ไหน และนานเท่าไร", body: <>
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       {[[Server, "หน้าเว็บ", "Vercel"], [Database, "ฐานข้อมูล", "Supabase (สหรัฐอเมริกา)"], [Video, "วิดีโอและการวิเคราะห์", "Modal (สหรัฐอเมริกา)"]].map(([I, k, v]) => { const Icon = I as typeof Server;
         return <div key={k as string} className="rounded-2xl bg-surface p-4"><Icon className="size-5 text-brand" /><p className="mt-2 text-xs">{k as string}</p><b className="text-ink">{v as string}</b></div>; })}
     </div>
