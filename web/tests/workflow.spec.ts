@@ -436,3 +436,24 @@ test("a recorded round goes from the video step to its result in one tab", async
   expect((await page.request.post(`/browser-test/${id}/partial`)).ok()).toBeTruthy();
   await expect(page.locator("[data-criterion]")).toHaveCount(8, { timeout: 10_000 });
 });
+
+test("T1 'just right' bands come from the config, and are left out when it cannot be loaded", async ({ page, request }) => {
+  const config = await (await request.get("/api/criteria")).json() as { T1: { levels: Record<string, { deviation_pct: number }> } };
+  const l4 = config.T1.levels["4"].deviation_pct;
+  const id = await finishedRound(request);
+  await openResult(page, id);
+  const t1 = await openCard(page, "T1");
+  await expect(t1.locator('[data-band="4"]')).toHaveCount(1);
+  await expect(t1.locator('[data-band="3"]')).toHaveCount(1);
+
+  const round = await newRound(request);
+  await page.goto(`/sessions/${round}/video`);
+  await expect(page.getByText(`ช่วงพอดี ±${l4}%`)).toBeVisible();
+
+  const other = await page.context().newPage();                  // a fresh page load: the shared request starts over
+  await other.route("**/api/criteria", (route) => route.fulfill({ status: 503, body: "" }));
+  await other.goto(`/sessions/${round}/video`);
+  await expect(other.getByText(/^เป้า \d+:\d{2}$/)).toBeVisible();
+  await expect(other.getByText(/ช่วงพอดี ±/)).toHaveCount(0);
+  await other.close();
+});

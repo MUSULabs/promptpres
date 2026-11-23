@@ -125,6 +125,34 @@ test("a dashboard refresh slower than the timer is not cut off by the next tick"
   await expect(row).toHaveAttribute("data-status", "done");
 });
 
+test("a failed round list says so on every page that needs it, never an endless skeleton", async ({ page, request }) => {
+  await finishedRound(request); await finishedRound(request);
+  await page.route("**/api/sessions", (route) => route.request().method() === "GET"
+    ? route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ detail: "ปิดปรับปรุง" }) }) : route.continue());
+  for (const path of ["/progress", "/compare", "/recap"]) {
+    await page.goto(path);
+    await expect(page.getByText("โหลดประวัติการซ้อมไม่สำเร็จ"), path).toBeVisible();
+    await expect(page.getByRole("button", { name: "ลองใหม่" }), path).toBeVisible();
+  }
+  await page.unroute("**/api/sessions");
+  await page.getByRole("button", { name: "ลองใหม่" }).click();         // on /recap
+  await expect(page.getByText("โหลดประวัติการซ้อมไม่สำเร็จ")).toHaveCount(0);
+});
+
+test("with rounds sent but no result yet the dashboard does not say there are no rounds", async ({ page }) => {
+  await page.route("**/api/sessions", async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    const response = await route.fetch();
+    const rows = (await response.json()) as { session_id: string; status: string; source: string }[];
+    const mine = rows.filter((r) => r.source === "session").slice(0, 1).map((r) => ({ ...r, status: "processing", levels: null }));
+    await route.fulfill({ response, json: [...rows.filter((r) => r.source !== "session"), ...mine] });
+  });
+  await page.request.post("/api/sessions", { data: { target_duration_s: 900 } });   // so at least one round exists
+  await page.goto("/");
+  await expect(page.getByText("ยังไม่มีผลที่ออกแล้ว")).toBeVisible();
+  await expect(page.getByText("ยังไม่มีรอบซ้อม")).toHaveCount(0);
+});
+
 test("a page file that fails to load offers a reload instead of an empty screen", async ({ page }) => {
   await page.route(/\/assets\/Dashboard-[^/]+\.js$/, (route) => route.abort("internetdisconnected"));
   await page.goto("/");

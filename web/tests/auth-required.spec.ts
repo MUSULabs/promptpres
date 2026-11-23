@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "./helpers";
-import { GUEST, PASSWORD, finishedRound, openResult, recordingClock, seenReveal, startRecording } from "./helpers";
+import { GUEST, PASSWORD, finishedRound, noSideScroll, openResult, recordingClock, seenReveal, startRecording } from "./helpers";
 
 // Runs against the second test API (port 18371) started with PROMPTPRES_REQUIRE_LOGIN=1.
 
@@ -42,6 +42,17 @@ test("the landing is public but rehearsal routes and API still require an accoun
     await expect(page).toHaveURL((url) => url.pathname === "/login" && url.searchParams.get("next") === path);
     await expect(page.getByRole("button", { name: GUEST })).toBeVisible();
   }
+});
+
+test("the landing and login pages fit every width and have their own tab titles", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page).toHaveTitle("PromptPre's");
+  await noSideScroll(page, [320, 390, 768, 1440]);
+  await page.goto("/login");
+  await expect(page.getByRole("button", { name: GUEST })).toBeVisible();
+  await expect(page).toHaveTitle("เข้าสู่ระบบ · PromptPre's");
+  await noSideScroll(page, [320, 390, 768, 1440]);
 });
 
 test.describe("with motion", () => {
@@ -181,9 +192,9 @@ test("registering from Guest moves the rehearsal to the new account and other ac
   await guestAccount.press("Enter");
   await registerLink.click();
   // D-066: only registering moves Guest rounds, so the login tab says so before a Guest signs in elsewhere.
-  await page.getByRole("tab", { name: "เข้าสู่ระบบ" }).click();
+  await page.getByRole("group", { name: "โหมดบัญชี" }).getByRole("button", { name: "เข้าสู่ระบบ" }).click();
   await expect(page.getByRole("note")).toContainText("จะไม่ย้ายตามไป");
-  await page.getByRole("tab", { name: "สมัครสมาชิก" }).click();
+  await page.getByRole("group", { name: "โหมดบัญชี" }).getByRole("button", { name: "สมัครสมาชิก" }).click();
   await expect(page.getByRole("note")).toHaveCount(0);
   await register(page, "เจ้าของรอบซ้อม", email);
   await openResult(page, id);

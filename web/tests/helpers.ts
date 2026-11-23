@@ -91,8 +91,32 @@ export async function videoClock(page: Page) {
 export async function noSideScroll(page: Page, widths = [360, 1440]) {
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
+    // vw-based sizes settle on the next frame after the viewport changes
+    await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
     expect(await page.evaluate(() => document.documentElement.scrollWidth), `viewport ${width}px`).toBeLessThanOrEqual(width);
+    expect(await cutOff(page), `content cut off at the edge at ${width}px`).toEqual([]);
   }
+}
+
+/** Visible content that runs past the screen edge. The page itself clips sideways overflow, so this would show
+    as a cut-off card rather than a scroll bar. Content inside its own scroller or clipping box is fine. */
+export function cutOff(page: Page) {
+  return page.evaluate(() => {
+    const vw = document.documentElement.clientWidth;
+    // A scroller is meant to hold wide content; a clipping box counts only if it is narrower than the screen
+    // (the page wrappers clip at full width, which is exactly what hides a cut-off card).
+    const holds = (up: Element) => {
+      const x = getComputedStyle(up).overflowX, box = up.getBoundingClientRect();
+      return x === "auto" || x === "scroll" || (["hidden", "clip"].includes(x) && box.width < vw - 2);
+    };
+    return [...document.querySelectorAll("body *")].filter((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0 || (r.right <= vw + 1 && r.left >= -1)) return false;
+      if (el.closest("[aria-hidden=true], .sr-only") || getComputedStyle(el).position === "fixed") return false;
+      for (let up = el.parentElement; up && up !== document.body; up = up.parentElement) if (holds(up)) return false;
+      return true;
+    }).slice(0, 5).map((el) => `${el.tagName.toLowerCase()}.${String(el.getAttribute("class") ?? "").slice(0, 60)}`);
+  });
 }
 
 /** Keep the camera tracks reachable from the test, to check they are turned off. */
