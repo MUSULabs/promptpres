@@ -15,9 +15,15 @@ const NewSession = lazy(() => import("./pages/NewSession"));
 const SessionVideo = lazy(() => import("./pages/SessionVideo"));
 const ResultPage = lazy(() => import("./pages/ResultPage"));
 
+// UX/UI V2 design lab: dev server only. In a build import.meta.env.DEV is false, so the route and its chunk are dropped.
+const LabApp = import.meta.env.DEV ? lazy(() => import("./lab/LabApp")) : null;
+
 // A data router (one splat route around the existing <Routes>) so pages can use useBlocker,
 // e.g. to ask before leaving an unsent recording (useLeaveGuard.ts).
-const router = createBrowserRouter([{ path: "*", element: <AuthProvider><AppShell /></AuthProvider> }]);
+const router = createBrowserRouter([
+  ...(LabApp ? [{ path: "/lab/*", element: <Suspense fallback={null}><LabApp /></Suspense> }] : []),
+  { path: "*", element: <AuthProvider><AppShell /></AuthProvider> },
+]);
 
 function AppShell() {
   const { pathname } = useLocation();
