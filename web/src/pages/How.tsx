@@ -1,13 +1,19 @@
-/* /lab/how: how each of the 8 criteria is measured. Plain-language readings and level texts come from the criteria
-   metadata (fixtures META, copied from config/feedback-v0.yaml); "needs" lines from config/thresholds-v0.yaml
+/* /how: how each of the 8 criteria is measured. Plain-language readings and level texts come from the API
+   (GET /api/criteria = config/feedback-v0.yaml interpret); "needs" lines from config/thresholds-v0.yaml
    unanalyzable blocks. No new numbers are invented here. */
-import { CircleHelp, Ban } from "lucide-react";
-import type { CriterionCode } from "@/contract";
+import { createContext, useContext, useEffect, useState } from "react";
+import { CircleHelp, Ban, RefreshCw } from "lucide-react";
+import { api } from "@/api";
+import type { CriteriaMeta, CriterionCode } from "@/contract";
+import { ErrorPanel } from "@/v2/states";
+import { Button } from "@/v2/ui";
 import { CRITERION_NAME, SKILLS } from "@/presentation";
 import { SKILL_STYLE, SkillIcon, cn } from "@/v2/ui";
 import { ContentPage, type Section } from "@/v2/ContentPage";
 import { LEVEL_COLOR } from "@/v2/viz";
-import { META } from "./fixtures";
+
+/** null = loading, "error" = failed (the measuring facts still show; only the level wording is missing) */
+const Meta = createContext<CriteriaMeta | null | "error">(null);
 
 const FROM: Record<CriterionCode, { from: string; needs: string }> = {
   C1: { from: "ลำดับที่แต่ละหัวข้อถูกอธิบายครั้งแรก เทียบกับลำดับในแผนที่คุณยืนยัน", needs: "หัวข้อที่อธิบายชัดอย่างน้อย 3 หัวข้อจึงแสดงค่า และ 4 หัวข้อจึงให้ระดับ" },
@@ -21,7 +27,8 @@ const FROM: Record<CriterionCode, { from: string; needs: string }> = {
 };
 
 function CriterionCard({ code }: { code: CriterionCode }) {
-  const m = META[code]?.interpret;
+  const meta = useContext(Meta);
+  const m = meta && meta !== "error" ? meta[code]?.interpret : undefined;
   return <div id={code} className="scroll-mt-24 rounded-2xl bg-surface p-5">
     <div className="flex flex-wrap items-center gap-2"><span className="rounded-lg bg-brand px-2 py-0.5 text-xs font-bold text-white">{code}</span><b className="text-lg text-ink">{CRITERION_NAME[code]}</b></div>
     {m?.explain && <p className="mt-2">{m.explain}</p>}
@@ -58,7 +65,18 @@ const SECTIONS: Section[] = [
   </ul> },
 ];
 
-export default function HowLab() {
-  return <ContentPage eyebrow="เราวัดผลอย่างไร" title={<>ทุกระดับ <span className="text-lime">ตรวจสอบได้</span> ย้อนดูได้ในวิดีโอ</>}
-    intro="8 เกณฑ์ใน 4 ทักษะ วัดจากอะไร ระดับแต่ละขั้นหมายความว่าอะไร และเมื่อไรระบบจะบอกว่าวิเคราะห์ไม่ได้" sections={SECTIONS} />;
+export default function How() {
+  const [meta, setMeta] = useState<CriteriaMeta | null | "error">(null);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const c = new AbortController();
+    setMeta(null);
+    api.criteria(c.signal).then(setMeta).catch(() => { if (!c.signal.aborted) setMeta("error"); });
+    return () => c.abort();
+  }, [attempt]);
+  return <Meta.Provider value={meta}><ContentPage eyebrow="เราวัดผลอย่างไร" title={<>ทุกระดับ <span className="text-lime">ตรวจสอบได้</span> ย้อนดูได้ในวิดีโอ</>}
+    intro="8 เกณฑ์ใน 4 ทักษะ วัดจากอะไร ระดับแต่ละขั้นหมายความว่าอะไร และเมื่อไรระบบจะบอกว่าวิเคราะห์ไม่ได้" sections={SECTIONS}>
+    {meta === "error" && <ErrorPanel tone="info" what="โหลดคำอธิบายระดับไม่สำเร็จ" why="วิธีวัดและเงื่อนไขยังแสดงครบ แต่คำอ่านของแต่ละระดับยังไม่ขึ้น"
+      actions={<Button size="sm" variant="soft" onClick={() => setAttempt((n) => n + 1)}><RefreshCw />ลองใหม่</Button>} />}
+  </ContentPage></Meta.Provider>;
 }

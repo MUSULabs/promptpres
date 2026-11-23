@@ -10,9 +10,9 @@ type Task = "start" | "pdf" | "confirm";
 /** Longest target the user may set (minutes) = longest clip the pipeline accepts (pipeline-v0.yaml prep.max_duration_s, API MAX_TARGET_S). */
 export const MAX_TARGET_MIN = 30;
 
-export function useNewSession() {
+export function useNewSession(initialMinutes = 15) {
   const navigate = useNavigate();
-  const [minutes, setMinutes] = useState(15);
+  const [minutes, setMinutes] = useState(initialMinutes);
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [topics, setTopics] = useState<DraftTopic[] | null>(null);
   const [draft, setDraft] = useState<{ pdfName: string; note: string | null } | null>(null);
@@ -84,14 +84,15 @@ export function useNewSession() {
     setError(null);
   }
 
-  function goToVideo(topicsToConfirm: DraftTopic[] | null) {
+  /** `via`: "camera" or "file" when the user already chose how to send the clip (opens that mode). */
+  function goToVideo(topicsToConfirm: DraftTopic[] | null, via?: string | null) {
     if (!session || !validTarget || pending.current) return;
     const id = session.session_id;
     return run("confirm", async (signal) => {
       await api.setTarget(id, minutes, signal);
       if (signal.aborted) return;
       if (topicsToConfirm) await api.confirmTopics(id, topicsToConfirm, signal);
-      if (!signal.aborted) navigate(`/sessions/${id}/video`);
+      if (!signal.aborted) navigate(`/sessions/${encodeURIComponent(id)}/video${via ? `?via=${via}` : ""}`);
     });
   }
 

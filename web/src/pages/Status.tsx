@@ -1,9 +1,10 @@
-/* /lab/oops/:kind: 404, offline and maintenance pages. Each says what happened and offers a way back. */
-import { Link, useParams } from "react-router-dom";
+/* 404 (any unknown address), offline and maintenance pages. Each says what happened and offers a way back. */
+import { Link } from "react-router-dom";
 import { ArrowLeft, Home, RotateCcw } from "lucide-react";
 import { Button, Logo } from "@/v2/ui";
 import { PPre, type Pose } from "@/v2/PPre";
 import { useHome } from "@/v2/ContentPage";
+import { PATH } from "@/v2/paths";
 
 const KINDS: Record<string, { code: string; title: string; body: string; pose: Pose; retry?: boolean }> = {
   "404": { code: "404", title: "ไม่พบหน้านี้", body: "ลิงก์อาจพิมพ์ผิด หรือหน้านี้ถูกย้ายไปแล้ว รอบซ้อมของคุณยังอยู่ครบ", pose: "think" },
@@ -11,11 +12,10 @@ const KINDS: Record<string, { code: string; title: string; body: string; pose: P
   maintenance: { code: "ปรับปรุง", title: "ระบบกำลังปรับปรุงชั่วคราว", body: "ทีมกำลังอัปเดตระบบ ใช้เวลาไม่นาน รอบซ้อมและผลที่มีอยู่ไม่หายไปไหน ลองกลับมาใหม่อีกสักครู่", pose: "nod", retry: true },
 };
 
-export default function StatusLab() {
-  const { kind = "404" } = useParams();
+export default function StatusPage({ kind = "404" }: { kind?: keyof typeof KINDS }) {
   const k = KINDS[kind] ?? KINDS["404"];
   const home = useHome();
-  return <main className="bg-navy-gradient relative grid min-h-dvh place-items-center overflow-hidden px-4 py-16 text-white">
+  return <main id="main-content" tabIndex={-1} className="bg-navy-gradient relative grid min-h-dvh place-items-center overflow-hidden px-4 py-16 text-white">
     <p aria-hidden className="text-outline pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 select-none whitespace-nowrap text-center text-[28vw] font-bold leading-none opacity-60 sm:text-[22vw]">{k.code}</p>
     <div className="relative max-w-lg text-center">
       <Link to={home.to} aria-label="PromptPre's หน้าแรก"><Logo dark className="mx-auto h-8" /></Link>
@@ -27,7 +27,7 @@ export default function StatusLab() {
         <Button asChild variant={k.retry ? "outlineLight" : "lime"} size="lg"><Link to={home.to}><Home />{home.back}</Link></Button>
         {!k.retry && <Button variant="outlineLight" size="lg" onClick={() => window.history.back()}><ArrowLeft />ย้อนกลับ</Button>}
       </div>
-      <p className="mt-8 text-sm text-white/50">ยังติดอยู่? <Link to="/lab/help#contact" className="font-semibold text-lime hover:underline">แจ้งปัญหาให้ทีม</Link></p>
+      <p className="mt-8 text-sm text-white/50">ยังติดอยู่? <Link to={PATH.contact} className="font-semibold text-lime hover:underline">แจ้งปัญหาให้ทีม</Link></p>
     </div>
   </main>;
 }

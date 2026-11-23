@@ -10,7 +10,7 @@ import type { CriterionCode } from "@/contract";
 import { CRITERION_NAME } from "@/presentation";
 import { Chip, Logo, SHORT_NAME, SKILL_OF, SkillIcon, cn } from "@/v2/ui";
 import { LevelMeter } from "@/v2/viz";
-import { RESULT } from "../fixtures";
+import { RESULT } from "@/v2/sample";
 
 gsap.registerPlugin(ScrollTrigger, DrawSVGPlugin);
 

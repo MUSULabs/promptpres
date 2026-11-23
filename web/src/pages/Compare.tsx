@@ -1,4 +1,4 @@
-/* /lab/compare?a=&b=: two rounds side by side. Both videos play and seek together (same second), and the
+/* /compare?a=&b=: two rounds side by side. Both videos play and seek together (same second), and the
    8 criteria are laid out level against level. Only rounds with a comparable rubric are compared (trend.ts). */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -12,15 +12,28 @@ import { Shell } from "@/v2/Shell";
 import { DeltaTag, LEVEL_COLOR } from "@/v2/viz";
 import { ErrorPanel, HelpTip } from "@/v2/states";
 import { PPre } from "@/v2/PPre";
-import { HISTORY } from "./fixtures";
-import { thDate, useLabShell } from "./demo";
+import { api } from "@/api";
+import { DashboardSkeleton, EmptyState } from "@/v2/states";
+import { rehearsals, useSessions } from "@/v2/sessions";
+import { PATH } from "@/v2/paths";
+import { thDate } from "@/v2/time";
 
 const label = (r: SessionRow) => `${thDate(r.created_at, { day: "numeric", month: "short", year: "2-digit" })} · ${fmtDuration(r.duration_s ?? 0)}`;
 
-export default function CompareLab() {
-  const shell = useLabShell();
-  const runs = useMemo(() => [...doneRuns(HISTORY)].reverse(), []); // newest first
+export default function Compare() {
+  const { rows } = useSessions();
+  const runs = useMemo(() => [...doneRuns(rehearsals(rows))].reverse(), [rows]); // newest first
   const [params, setParams] = useSearchParams();
+  if (rows === null) return <Shell page="history" title="เทียบ 2 รอบ"><DashboardSkeleton /></Shell>;
+  if (runs.length < 2) return <Shell page="history" title="เทียบ 2 รอบ">
+    <EmptyState pose="think" title="ต้องมีผลอย่างน้อย 2 รอบ" action={<Button asChild variant="lime"><Link to={PATH.new}>ซ้อมรอบใหม่ <ArrowRight /></Link></Button>}>
+      ตอนนี้มีผล {runs.length} รอบ ซ้อมอีกรอบแล้วกลับมาเทียบวิดีโอคู่กันได้ที่นี่
+    </EmptyState>
+  </Shell>;
+  return <CompareRuns runs={runs} params={params} setParams={setParams} />;
+}
+
+function CompareRuns({ runs, params, setParams }: { runs: SessionRow[]; params: URLSearchParams; setParams: ReturnType<typeof useSearchParams>[1] }) {
   const a = runs.find((r) => r.session_id === params.get("a")) ?? runs[1];
   const b = runs.find((r) => r.session_id === params.get("b")) ?? runs[0];
   const [older, newer] = new Date(a.created_at) <= new Date(b.created_at) ? [a, b] : [b, a];
@@ -32,7 +45,7 @@ export default function CompareLab() {
   const count = { up: 0, same: 0, down: 0, na: 0 };
   codes.forEach((c) => { const x = older.levels?.[c], y = newer.levels?.[c]; if (x == null || y == null) count.na++; else if (y > x) count.up++; else if (y < x) count.down++; else count.same++; });
 
-  return <Shell page="history" title="เทียบ 2 รอบ" subtitle="ดูวิดีโอคู่กัน และระดับแต่ละเกณฑ์วางเทียบกัน" {...shell}>
+  return <Shell page="history" title="เทียบ 2 รอบ" subtitle="ดูวิดีโอคู่กัน และระดับแต่ละเกณฑ์วางเทียบกัน">
     <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-[1fr_auto_1fr]">
       <Picker title="รอบ A" value={a.session_id} runs={runs} onChange={(id) => set("a", id)} />
       <Button variant="white" size="icon" className="mx-auto" aria-label="สลับรอบ A และ B" onClick={() => setParams({ a: b.session_id, b: a.session_id }, { replace: true })}><ArrowLeftRight /></Button>
@@ -64,12 +77,12 @@ export default function CompareLab() {
             </div>)}
           </div>
           <p className="mt-4 flex items-center gap-1 text-xs text-faint">ระดับที่ระบบวัดได้ในแต่ละรอบ ไม่ใช่หลักฐานว่าทักษะเพิ่มขึ้น หัวข้อ ห้อง หรือกล้องที่ต่างกันก็ทำให้ระดับต่างได้
-            <HelpTip href="/lab/help#faq">ใช้ความต่างเป็นสัญญาณให้ไปดูหลักฐานในวิดีโอต่อ ไม่ใช่คำตัดสิน</HelpTip></p>
+            <HelpTip href={PATH.faq}>ใช้ความต่างเป็นสัญญาณให้ไปดูหลักฐานในวิดีโอต่อ ไม่ใช่คำตัดสิน</HelpTip></p>
         </section>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-panel bg-navy p-6 text-white">
           <div className="flex items-center gap-4"><PPre pose="point" size={64} color="white" /><p><b className="block">อยากรู้ว่าต่างตรงไหน?</b><span className="text-sm text-white/70">เปิดผลรอบล่าสุดแล้วกดเวลาหลักฐานเพื่อดูช่วงนั้นในวิดีโอ</span></p></div>
-          <Button asChild variant="lime"><Link to={`/lab/result?id=${newer.session_id}`}>ดูผลรอบ {thDate(newer.created_at)} <ArrowRight /></Link></Button>
+          <Button asChild variant="lime"><Link to={PATH.result(newer.session_id)}>ดูผลรอบ {thDate(newer.created_at)} <ArrowRight /></Link></Button>
         </div>
       </>}
   </Shell>;
@@ -98,37 +111,49 @@ function Row({ code, a, b, i }: { code: CriterionCode; a: number | null; b: numb
   </motion.li>;
 }
 
-/* Two demo players driven by one clock: play, pause and seek move both. */
+/* Both real videos driven together: play, pause and the slider move both to the same second. A round whose
+   video was deleted (Guest 7 days, member 30 days) shows a note instead. */
 function SyncedVideos({ older, newer }: { older: SessionRow; newer: SessionRow }) {
+  const [urls, setUrls] = useState<(string | null | undefined)[]>([undefined, undefined]);
+  useEffect(() => {
+    const c = new AbortController();
+    [older, newer].forEach((r, i) => api.result(r.session_id, c.signal)
+      .then((res) => setUrls((u) => { const n = [...u]; n[i] = res.video_url; return n; }))
+      .catch(() => { if (!c.signal.aborted) setUrls((u) => { const n = [...u]; n[i] = null; return n; }); }));
+    return () => c.abort();
+  }, [older, newer]);
+  const vids = useRef<(HTMLVideoElement | null)[]>([null, null]);
   const max = Math.max(older.duration_s ?? 0, newer.duration_s ?? 0);
   const [t, setT] = useState(0), [playing, setPlaying] = useState(false);
-  const last = useRef<number | null>(null);
-  useEffect(() => {
-    if (!playing) { last.current = null; return; }
-    let raf = 0;
-    const tick = (now: number) => { if (last.current != null) setT((x) => { const n = x + ((now - last.current!) / 1000) * 8; if (n >= max) { setPlaying(false); return max; } return n; }); last.current = now; raf = requestAnimationFrame(tick); };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [playing, max]);
+  const each = (f: (v: HTMLVideoElement) => void) => vids.current.forEach((v) => { if (v) f(v); });
+  const seekAll = (x: number) => { setT(x); each((v) => { v.currentTime = Math.min(x, v.duration || x); }); };
+  const toggle = () => {
+    if (playing) { each((v) => v.pause()); setPlaying(false); return; }
+    if (t >= max) seekAll(0);
+    each((v) => { if (v.currentTime < (v.duration || Infinity)) void v.play().catch(() => {}); });
+    setPlaying(true);
+  };
+  const anyVideo = urls.some((u) => !!u);
 
   return <section className="mt-5 rounded-panel bg-navy p-4 text-white sm:p-6">
     <div className="grid gap-4 md:grid-cols-2">
-      {[["A", older], ["B", newer]].map(([k, r]) => { const row = r as SessionRow, d = row.duration_s ?? 0, ended = t >= d;
-        return <div key={k as string}>
-          <div className="relative aspect-video overflow-hidden rounded-2xl bg-brand-gradient">
-            <div className="grid-lines absolute inset-0" />
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 opacity-90"><PPre pose={playing && !ended ? "point" : "idle"} size={120} color="white" /></div>
-            <span className="absolute left-3 top-3 rounded-full bg-navy/60 px-3 py-1 text-xs font-semibold backdrop-blur">{k === "A" ? "ก่อน" : "หลัง"} · {thDate(row.created_at)}</span>
-            {ended && <span className="absolute inset-0 grid place-items-center bg-navy/60 text-sm font-semibold">คลิปนี้จบที่ {fmtDuration(d)}</span>}
-            <span className="absolute bottom-3 right-3 rounded-full bg-navy/60 px-2.5 py-0.5 text-xs tabular-nums backdrop-blur">{fmtDuration(Math.min(t, d))} / {fmtDuration(d)}</span>
+      {([["A", older], ["B", newer]] as const).map(([k, row], i) => { const d = row.duration_s ?? 0, ended = t >= d && d > 0, url = urls[i];
+        return <div key={k}>
+          <div className="relative aspect-video overflow-hidden rounded-2xl bg-black">
+            {url ? <video ref={(el) => { vids.current[i] = el; }} src={url} playsInline preload="metadata" muted={i === 0} aria-label={`วิดีโอรอบ ${k}`} className="size-full object-contain"
+              onTimeUpdate={(e) => { if (row.duration_s === max) setT(e.currentTarget.currentTime); }} onEnded={() => { if (row.duration_s === max) setPlaying(false); }} />
+              : <div className="grid size-full place-items-center bg-white/[0.06] p-4 text-center text-sm text-white/70">{url === undefined ? "กำลังโหลดวิดีโอ…" : "รอบนี้ไม่มีวิดีโอให้ดู (ลบอัตโนมัติแล้ว หรือโหลดไม่สำเร็จ)"}</div>}
+            <span className="absolute left-3 top-3 rounded-full bg-navy/70 px-3 py-1 text-xs font-semibold backdrop-blur">{k === "A" ? "ก่อน" : "หลัง"} · {thDate(row.created_at)}</span>
+            {ended && url && <span className="absolute inset-0 grid place-items-center bg-navy/60 text-sm font-semibold">คลิปนี้จบที่ {fmtDuration(d)}</span>}
+            <span className="absolute bottom-3 right-3 rounded-full bg-navy/70 px-2.5 py-0.5 text-xs tabular-nums backdrop-blur">{fmtDuration(Math.min(t, d))} / {fmtDuration(d)}</span>
           </div>
         </div>; })}
     </div>
     <div className="mt-4 flex items-center gap-3">
-      <Button size="icon" variant="lime" aria-label={playing ? "หยุดทั้งสองคลิป" : "เล่นทั้งสองคลิป"} onClick={() => { if (t >= max) setT(0); setPlaying(!playing); }}>{playing ? <Pause /> : <Play className="fill-current" />}</Button>
-      <input type="range" min={0} max={max} step={1} value={t} onChange={(e) => setT(Number(e.target.value))} aria-label="เลื่อนเวลาทั้งสองคลิป" className="h-2 flex-1 cursor-pointer accent-lime" />
-      <Button size="icon" variant="outlineLight" aria-label="กลับไปเริ่มต้น" onClick={() => { setT(0); setPlaying(false); }}><RotateCcw /></Button>
+      <Button size="icon" variant="lime" disabled={!anyVideo} aria-label={playing ? "หยุดทั้งสองคลิป" : "เล่นทั้งสองคลิป"} onClick={toggle}>{playing ? <Pause /> : <Play className="fill-current" />}</Button>
+      <input type="range" min={0} max={max || 1} step={1} value={t} disabled={!anyVideo} onChange={(e) => seekAll(Number(e.target.value))} aria-label="เลื่อนเวลาทั้งสองคลิป" className="h-2 flex-1 cursor-pointer accent-lime" />
+      <Button size="icon" variant="outlineLight" disabled={!anyVideo} aria-label="กลับไปเริ่มต้น" onClick={() => { each((v) => v.pause()); setPlaying(false); seekAll(0); }}><RotateCcw /></Button>
     </div>
-    <p className="mt-2 text-xs text-white/50">ทั้งสองคลิปเล่นและเลื่อนพร้อมกันที่วินาทีเดียวกัน (วิดีโอจำลอง)</p>
+    <p className="mt-2 text-xs text-white/50">ทั้งสองคลิปเล่นและเลื่อนพร้อมกันที่วินาทีเดียวกัน (เสียงจากรอบ B)</p>
   </section>;
 }

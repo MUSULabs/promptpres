@@ -40,7 +40,7 @@ export function DeltaTag({ before, now, className }: { before: number | null | u
     same: { Icon: Equal, text: "คงที่", cls: "bg-brand-50 text-brand" },
     down: { Icon: ArrowDown, text: "ลดลงจากรอบก่อน", cls: "bg-surface text-muted ring-1 ring-inset ring-line" },
   }[d];
-  return <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold", cfg.cls, className)}>
+  return <span data-delta={d} title={`ระดับรอบก่อน ${before} · รอบนี้ ${now}`} className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold", cfg.cls, className)}>
     <cfg.Icon className="size-3" />{cfg.text}
   </span>;
 }
@@ -94,7 +94,7 @@ export function Radar({ criteria, previous, size = 320, showLabels = true, class
       fill={l === 4 ? (dark ? "rgb(255 255 255 / 0.06)" : "var(--color-brand-50)") : "none"} stroke={grid} strokeOpacity={l === 4 ? 0.25 : 0.12} strokeWidth={1.2} />)}
     {ORDER.map((code, i) => { const [x, y] = pt(i, R); return <line key={code} x1={c} y1={c} x2={x} y2={y} stroke={grid} strokeOpacity={0.12} strokeWidth={1.2} />; })}
     {prev && <polygon points={prev} fill="none" stroke={dark ? "white" : "var(--color-faint)"} strokeOpacity={dark ? 0.55 : 1} strokeWidth={1.8} strokeDasharray="5 5" />}
-    <motion.polygon points={now} fill={shape} fillOpacity={dark ? 0.3 : 0.16} stroke={shape} strokeWidth={2.5} strokeLinejoin="round"
+    <motion.polygon data-shape="now" points={now} fill={shape} fillOpacity={dark ? 0.3 : 0.16} stroke={shape} strokeWidth={2.5} strokeLinejoin="round"
       initial={still ? false : { scale: 0, opacity: 0 }} animate={inView ? { scale: 1, opacity: 1 } : undefined}
       transition={{ type: "spring", stiffness: 110, damping: 18, delay: 0.15 }} style={{ transformOrigin: "160px 160px", transformBox: "view-box" }} />
     {ORDER.map((code, i) => {
@@ -103,7 +103,7 @@ export function Radar({ criteria, previous, size = 320, showLabels = true, class
       const [lx, ly] = pt(i, R + 38);
       const isActive = active === code;
       const dotFill = lv == null ? (dark ? "transparent" : "white") : isActive ? (dark ? "white" : "var(--color-navy)") : shape;
-      return <g key={code} className={onPick ? "cursor-pointer" : undefined} onClick={onPick ? () => onPick(code) : undefined}>
+      return <g key={code} data-axis={code} data-level={lv ?? "unanalyzable"} className={onPick ? "cursor-pointer" : undefined} onClick={onPick ? () => onPick(code) : undefined}>
         {isActive && <circle cx={x} cy={y} r={15} fill={shape} fillOpacity={0.2} />}
         <motion.circle cx={x} cy={y} r={isActive ? 8 : 5.5} fill={dotFill}
           stroke={lv == null ? (dark ? "white" : "var(--color-faint)") : dark ? "var(--color-brand)" : "white"} strokeWidth={lv == null ? 1.8 : 2}

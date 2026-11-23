@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffe
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { AlertTriangle, CheckCircle2, CircleHelp, Info, Loader2, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronsRight, CircleHelp, Info, Loader2, X } from "lucide-react";
 import { Button, cn } from "./ui";
 import { PPre, type Pose } from "./PPre";
 
@@ -37,6 +37,26 @@ export function ignoreKey(e: KeyboardEvent) {
   const t = e.target;
   const typing = t instanceof HTMLElement && (t.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(t.tagName));
   return typing || document.body.dataset.ppPalette === "1";
+}
+
+/** "ข้าม" for every animated moment (result reveal, stage lights, curtain, recap, tour): always visible from the
+    first second, at least 44 px to tap, and Esc does the same unless `esc` is off. `fixed` pins it top-right. */
+export function SkipButton({ onSkip, label = "ข้าม", dark = true, fixed = true, esc = true, className }: {
+  onSkip: () => void; label?: string; dark?: boolean; fixed?: boolean; esc?: boolean; className?: string;
+}) {
+  const cb = useRef(onSkip); cb.current = onSkip;
+  useEffect(() => {
+    if (!esc) return;
+    const key = (e: KeyboardEvent) => { if (e.key === "Escape" && document.body.dataset.ppPalette !== "1") cb.current(); };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [esc]);
+  return <button type="button" data-skip onClick={(e) => { e.stopPropagation(); onSkip(); }} aria-keyshortcuts={esc ? "Escape" : undefined}
+    className={cn("inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors",
+      dark ? "bg-white/10 text-white ring-1 ring-inset ring-white/25 backdrop-blur hover:bg-white/20" : "bg-surface text-muted hover:bg-brand-50 hover:text-brand",
+      fixed && "fixed right-4 top-4 z-[95] sm:right-6 sm:top-6", className)}>
+    {label}<ChevronsRight className="size-4" />
+  </button>;
 }
 
 /** Horizontal steps: done (blue check), current (lime, spinning when busy), waiting (faint). `failedAt` marks a step red-free: dashed + "!". */

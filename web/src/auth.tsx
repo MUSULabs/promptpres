@@ -1,92 +1,80 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+/* Who is signed in (GET /api/auth/me), shared by the whole app.
+   - AuthGate sends a visitor to /login?next=… when the site requires an account (cloud mode);
+   - /logout signs out, then reloads at /login (a fresh page drops everything the old account had loaded).
+     Links reach /logout through the router, so a page that holds unsent work (useLeaveGuard) asks first
+     and nothing is signed out if the person stays. */
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
+import { RefreshCw } from "lucide-react";
 import { api, type AuthState } from "./api";
-import { Icon, Message } from "./components/ui";
+import { Button, Logo } from "./v2/ui";
+import { ErrorPanel, PageSkeleton } from "./v2/states";
+import { PATH } from "./v2/paths";
 
 const Context = createContext<{ state: AuthState | null; refresh: () => Promise<void> }>({ state: null, refresh: async () => {} });
 export const useAuth = () => useContext(Context);
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState | null>(null);
   const [error, setError] = useState(false);
-  async function refresh() {
-    try { setState(await api.me()); setError(false); } catch { setError(true); }
-  }
-  useEffect(() => { void refresh(); const update = () => void refresh(); window.addEventListener("pt-auth-expired", update);
-    return () => window.removeEventListener("pt-auth-expired", update); }, []);
-  return <Context.Provider value={{ state, refresh }}>
-    {error ? <div className="app-shell"><main id="main-content">
-      <Message kind="error">ติดต่อระบบบัญชีไม่ได้</Message>
-      <button className="ghost" onClick={() => void refresh()}><Icon name="refresh" /> ลองใหม่</button>
-    </main></div> : children}
-  </Context.Provider>;
+  const [busy, setBusy] = useState(false);
+  const refresh = useCallback(async () => {
+    setBusy(true);
+    try { setState(await api.me()); setError(false); } catch { setError(true); } finally { setBusy(false); }
+  }, []);
+  useEffect(() => {
+    void refresh();
+    const update = () => void refresh();
+    window.addEventListener("pt-auth-expired", update);
+    return () => window.removeEventListener("pt-auth-expired", update);
+  }, [refresh]);
+  if (error && !state) return <main id="main-content" className="grid min-h-dvh place-items-center bg-surface px-4">
+    <div className="w-full max-w-md">
+      <Logo className="mx-auto mb-6 h-7" />
+      <ErrorPanel what="ติดต่อระบบบัญชีไม่ได้" why="เครือข่ายขาดหาย หรือเซิร์ฟเวอร์กำลังเริ่มทำงาน (อาจใช้เวลาราว 30 วินาที)" todo="ตรวจการเชื่อมต่อ แล้วกดลองใหม่"
+        actions={<Button size="sm" onClick={() => void refresh()} disabled={busy}><RefreshCw className={busy ? "animate-spin" : undefined} />ลองใหม่</Button>} />
+    </div>
+  </main>;
+  return <Context.Provider value={{ state, refresh }}>{children}</Context.Provider>;
 }
+
+/** The name and kind of account shown in the app frame, greeting, settings and share card. */
+export function useAccount() {
+  const user = useAuth().state?.user ?? null;
+  return {
+    user,
+    name: user?.display_name?.trim() || (user?.is_guest ? "Guest" : "ผู้ใช้ทดลอง"),
+    isGuest: !!user?.is_guest,
+  };
+}
+
 export function AuthGate({ children }: { children: ReactNode }) {
   const { state } = useAuth();
-  const location = useLocation();
-  if (!state) return <p role="status">กำลังตรวจสอบบัญชี…</p>;
-  if (state.required && !state.user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
+  const { pathname, search } = useLocation();
+  if (!state) return <PageSkeleton />;
+  if (state.required && !state.user) return <Navigate to={`${PATH.login}?next=${encodeURIComponent(pathname + search)}`} replace />;
   return <>{children}</>;
 }
-/**
- * /logout signs out, then reloads at /login (a fresh page drops everything the old account had loaded).
- * The menu gets here through the router, so a page that holds unsent work (useLeaveGuard) asks first
- * and nothing is signed out if the person stays.
- */
+
 export function LogoutPage() {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let live = true;
     setFailed(false);
-    api.logout().then(() => { if (live) window.location.replace("/login"); })
+    api.logout().then(() => { if (live) window.location.replace(PATH.login); })
       .catch(() => { if (live) setFailed(true); });
     return () => { live = false; };
   }, [attempt]);
-  if (!failed) return <p role="status" className="muted">กำลังออกจากระบบ…</p>;
-  return <section className="panel empty-state">
-    <Message kind="error">ออกจากระบบไม่สำเร็จ กรุณาตรวจการเชื่อมต่อแล้วลองใหม่</Message>
-    <div className="row">
-      <button className="ghost" onClick={() => setAttempt((n) => n + 1)}><Icon name="refresh" /> ลองใหม่</button>
-      <Link className="button secondary" to="/"><Icon name="history" /> กลับหน้าประวัติ</Link>
+  return <main id="main-content" className="grid min-h-dvh place-items-center bg-surface px-4">
+    <div className="w-full max-w-md text-center">
+      <Logo className="mx-auto mb-6 h-7" />
+      {!failed ? <p role="status" className="text-muted">กำลังออกจากระบบ…</p>
+        : <ErrorPanel className="text-left" what="ออกจากระบบไม่สำเร็จ" why="ติดต่อเซิร์ฟเวอร์ไม่ได้" todo="ตรวจการเชื่อมต่อแล้วลองใหม่"
+            actions={<>
+              <Button size="sm" onClick={() => setAttempt((n) => n + 1)}><RefreshCw />ลองใหม่</Button>
+              <Button size="sm" variant="soft" asChild><Link to={PATH.home}>กลับหน้าหลัก</Link></Button>
+            </>} />}
     </div>
-  </section>;
-}
-
-export function AccountMenu() {
-  const { state } = useAuth();
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const menu = useRef<HTMLDetailsElement>(null);
-  const summary = useRef<HTMLElement>(null);
-  useEffect(() => {
-    function dismiss(event: PointerEvent) {
-      const details = menu.current;
-      if (details?.open && event.target instanceof Node && !details.contains(event.target)) details.open = false;
-    }
-    document.addEventListener("pointerdown", dismiss);
-    return () => document.removeEventListener("pointerdown", dismiss);
-  }, []);
-  function logout() {
-    if (menu.current) menu.current.open = false;
-    navigate("/logout");
-  }
-  if (!state?.user && pathname === "/login") return null;
-  if (!state) return null;
-  if (!state.user) return <div className="account-menu"><Link to="/login">เข้าสู่ระบบ</Link></div>;
-  return <details className="account-menu" ref={menu} onBlur={(event) => {
-    if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
-  }} onKeyDown={(event) => {
-    if (event.key === "Escape" && event.currentTarget.open) {
-      event.currentTarget.open = false;
-      summary.current?.focus();
-    }
-  }}>
-    <summary ref={summary} aria-label={`บัญชี ${state.user.display_name}`}>
-      <Icon name="user" /><span>{state.user.display_name}</span><Icon name="chevronDown" />
-    </summary>
-    <div className="account-options">
-      {state.user.is_guest && <Link to="/login?mode=register">สมัครสมาชิกเพื่อเก็บประวัติ</Link>}
-      <button className="quiet" onClick={logout}>ออกจากระบบ</button>
-    </div>
-  </details>;
+  </main>;
 }

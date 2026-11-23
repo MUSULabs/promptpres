@@ -1,4 +1,4 @@
-/* /lab/recap: "this month on stage", full-screen story slides (auto-advance, tap left/right, arrows, hold to pause).
+/* /recap: "this month on stage", full-screen story slides (auto-advance, tap left/right, arrows, hold to pause).
    Shows practice effort first; the one slide about levels says plainly they are measured levels, not proof of skill. */
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -11,18 +11,39 @@ import { CountUp } from "@/v2/viz";
 import { stageLights } from "@/v2/streak";
 import { badges } from "@/v2/badges";
 import { BadgeMedal } from "@/v2/BadgeGrid";
-import { useOverlayFlag, ignoreKey } from "@/v2/states";
-import { HISTORY } from "./fixtures";
-import { LAB_NOW, monthSummary, presentDay } from "./demo";
+import { SkipButton, useOverlayFlag, ignoreKey } from "@/v2/states";
+import { rehearsals, useSessions } from "@/v2/sessions";
+import { PATH } from "@/v2/paths";
+import { monthSummary, presentDay } from "@/v2/time";
 
 const MS = 6000;
 
-export default function RecapLab() {
+export default function Recap() {
+  const { rows } = useSessions();
+  const rounds = useMemo(() => monthSummary(rehearsals(rows), new Date()).rounds, [rows]);
+  if (rows === null || rounds === 0) return <main id="main-content" tabIndex={-1} className="bg-navy-gradient grid min-h-dvh place-items-center px-6 text-center text-white outline-none">
+    {rows === null ? <p role="status" className="text-white/70">กำลังโหลดสรุปเดือนนี้…</p> : <div>
+      <PPre pose="think" size={130} color="white" className="mx-auto" />
+      <h1 className="mt-6 text-3xl font-bold">เดือนนี้ยังไม่มีรอบซ้อม</h1>
+      <p className="mt-2 text-white/70">ส่งซ้อมอย่างน้อย 1 รอบ แล้วสรุปประจำเดือนจะเปิดได้</p>
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <Button asChild variant="lime" size="lg"><Link to={PATH.new}>ซ้อมรอบใหม่ <ArrowRight /></Link></Button>
+        <Button asChild variant="outlineLight" size="lg"><Link to={PATH.progress}>กลับหน้าความคืบหน้า</Link></Button>
+      </div>
+    </div>}
+  </main>;
+  return <RecapSlides />;
+}
+
+function RecapSlides() {
   const nav = useNavigate();
   const still = useReducedMotion();
-  const s = useMemo(() => monthSummary(HISTORY), []);
-  const stage = useMemo(() => stageLights(HISTORY, LAB_NOW), []);
-  const earned = useMemo(() => badges(HISTORY, LAB_NOW, presentDay()).filter((b) => b.earned), []);
+  const { rows } = useSessions();
+  const mine = useMemo(() => rehearsals(rows), [rows]);
+  const now = useMemo(() => new Date(), []);
+  const s = useMemo(() => monthSummary(mine, now), [mine, now]);
+  const stage = useMemo(() => stageLights(mine, now), [mine, now]);
+  const earned = useMemo(() => badges(mine, now, presentDay() ?? undefined).filter((b) => b.earned), [mine, now]);
   const [i, setI] = useState(0);
   useOverlayFlag();
   const [paused, setPaused] = useState(false); // pause button / space
@@ -57,7 +78,11 @@ export default function RecapLab() {
       <p className="mt-6 text-4xl font-bold">{stage.lights}/5 ดวง</p>
       <p className="mt-2 text-white/70">ซ้อมติดต่อกัน <b className="text-lime">{stage.streak}</b> สัปดาห์ · สถิติสูงสุด {stage.best}</p>
     </Center> },
-    { bg: "bg-brand-gradient", body: <Center>
+    { bg: "bg-brand-gradient", body: !s.comparable ? <Center>
+      <p className="text-xl text-white/80">เทียบรอบแรกกับรอบล่าสุดของเดือน</p>
+      <p className="mt-4 text-3xl font-bold leading-snug">ต้องมีผลอย่างน้อย 2 รอบ<br />ในเดือนนี้จึงจะเทียบได้</p>
+      <p className="mt-6 max-w-sm text-sm text-white/60">ซ้อมอีกรอบ แล้วสรุปเดือนจะบอกว่าเกณฑ์ไหนที่ระบบวัดได้ระดับสูงขึ้น</p>
+    </Center> : <Center>
       <p className="text-xl text-white/80">เทียบรอบแรกกับรอบล่าสุดของเดือน</p>
       <p className="mt-3 text-7xl font-bold text-lime"><CountUp to={s.higher.length} /></p>
       <p className="text-2xl font-bold">เกณฑ์ที่ระบบวัดได้ระดับสูงขึ้น</p>
@@ -77,8 +102,8 @@ export default function RecapLab() {
       <PPre pose="celebrate" size={150} color="white" />
       <h2 className="mt-6 text-4xl font-bold leading-tight">เดือนหน้า<br />ขึ้นเวทีด้วยกันอีกนะ!</h2>
       <div className="mt-8 flex flex-wrap justify-center gap-3" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-        <Button asChild variant="lime" size="lg"><Link to="/lab/progress#share"><Share2 />ทำการ์ดแชร์</Link></Button>
-        <Button asChild variant="outlineLight" size="lg"><Link to="/lab/new">ซ้อมรอบใหม่ <ArrowRight /></Link></Button>
+        <Button asChild variant="lime" size="lg"><Link to={PATH.share}><Share2 />ทำการ์ดแชร์</Link></Button>
+        <Button asChild variant="outlineLight" size="lg"><Link to={PATH.new}>ซ้อมรอบใหม่ <ArrowRight /></Link></Button>
       </div>
     </Center> },
   ];
@@ -97,13 +122,13 @@ export default function RecapLab() {
     const key = (e: KeyboardEvent) => {
       if (ignoreKey(e)) return; // typing, or the Ctrl+K palette is open
       if (e.key === "ArrowRight") go(1); else if (e.key === "ArrowLeft") go(-1);
-      else if (e.key === " ") { e.preventDefault(); setPaused((p) => !p); } else if (e.key === "Escape") nav("/lab/progress");
+      else if (e.key === " ") { e.preventDefault(); setPaused((p) => !p); } else if (e.key === "Escape") nav(PATH.progress);
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [go, nav]);
 
-  return <div className={cn("fixed inset-0 z-50 select-none overflow-hidden text-white transition-colors duration-500", slides[i].bg)}>
+  return <div id="main-content" tabIndex={-1} className={cn("fixed inset-0 z-50 select-none overflow-hidden text-white outline-none transition-colors duration-500", slides[i].bg)}>
     <div className="grid-lines pointer-events-none absolute inset-0 opacity-60" />
     <div className="absolute inset-x-0 top-0 z-10 px-4 pt-4 sm:px-8">
       <div className="mx-auto flex max-w-xl gap-1.5">
@@ -113,9 +138,10 @@ export default function RecapLab() {
       </div>
       <div className="mx-auto mt-3 flex max-w-xl items-center justify-between">
         <Logo dark className="h-5" />
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1">
+          {i < last && <SkipButton fixed={false} esc={false} label="ข้ามทั้งหมด" onSkip={() => { setI(last); setK((x) => x + 1); }} className="min-h-9 px-3 text-xs" />}
           <button type="button" onClick={() => setPaused(!paused)} aria-label={paused ? "เล่นต่อ" : "หยุดชั่วคราว"} className="grid size-9 place-items-center rounded-full hover:bg-white/10">{paused ? <Play className="size-4" /> : <Pause className="size-4" />}</button>
-          <Link to="/lab/progress" aria-label="ปิดสรุป" className="grid size-9 place-items-center rounded-full hover:bg-white/10"><X className="size-5" /></Link>
+          <Link to={PATH.progress} aria-label="ปิดสรุป" className="grid size-11 place-items-center rounded-full hover:bg-white/10"><X className="size-5" /></Link>
         </div>
       </div>
     </div>

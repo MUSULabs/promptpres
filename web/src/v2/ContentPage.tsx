@@ -4,19 +4,21 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { ArrowLeft, Menu, X } from "lucide-react";
 import { Button, cn, Logo } from "./ui";
-import { PREF, usePref } from "./prefs";
+import { useAuth } from "@/auth";
+import { PATH } from "./paths";
 
-/** Where "home" is for this visitor: the dashboard once they are inside the app (demo flag), else the landing page. */
+/** Where "home" is for this visitor: "/" is the dashboard once they can use the app, else the landing page. */
 export function useHome() {
-  const [signedIn] = usePref(PREF.signedIn, "");
-  return signedIn === "1" ? { to: "/lab/dashboard", back: "กลับหน้าหลัก", cta: "ไปหน้าหลัก", ctaTo: "/lab/dashboard" } : { to: "/lab/landing", back: "กลับหน้าแรก", cta: "เริ่มใช้งานฟรี", ctaTo: "/lab/login" };
+  const { state } = useAuth();
+  const inside = !!state && (!!state.user || !state.required);
+  return inside ? { to: PATH.home, back: "กลับหน้าหลัก", cta: "ไปหน้าหลัก", ctaTo: PATH.home } : { to: PATH.home, back: "กลับหน้าแรก", cta: "เริ่มใช้งานฟรี", ctaTo: PATH.login };
 }
 
 export const SITE_LINKS = [
-  { to: "/lab/about", label: "เกี่ยวกับ" },
-  { to: "/lab/how", label: "เราวัดผลอย่างไร" },
-  { to: "/lab/help", label: "ช่วยเหลือ" },
-  { to: "/lab/privacy", label: "ความเป็นส่วนตัว" },
+  { to: PATH.about, label: "เกี่ยวกับ" },
+  { to: PATH.how, label: "เราวัดผลอย่างไร" },
+  { to: PATH.help, label: "ช่วยเหลือ" },
+  { to: PATH.privacy, label: "ความเป็นส่วนตัว" },
 ];
 
 export interface Section { id: string; title: string; body: ReactNode }
@@ -56,9 +58,9 @@ export function SiteFooter() {
       <div>
         <p className="text-sm font-semibold text-lime">ใช้งาน</p>
         <ul className="mt-3 space-y-2 text-sm text-white/75">
-          <li><Link to="/lab/login" className="hover:text-white">เข้าสู่ระบบ / สมัคร</Link></li>
-          <li><Link to="/lab/new" className="hover:text-white">ซ้อมรอบใหม่</Link></li>
-          <li><Link to="/lab/help#contact" className="hover:text-white">แจ้งปัญหา</Link></li>
+          <li><Link to={PATH.login} className="hover:text-white">เข้าสู่ระบบ / สมัคร</Link></li>
+          <li><Link to={PATH.new} className="hover:text-white">ซ้อมรอบใหม่</Link></li>
+          <li><Link to={PATH.contact} className="hover:text-white">แจ้งปัญหา</Link></li>
         </ul>
       </div>
     </div>
@@ -80,8 +82,10 @@ export function ContentPage({ eyebrow, title, intro, updated, sections, aside, c
 
   return <div className="min-h-dvh bg-surface">
     <SiteHeader />
-    <section className="bg-navy-gradient grid-lines text-white">
-      <div className="mx-auto max-w-6xl px-4 pb-14 pt-10 sm:px-6 sm:pb-20 sm:pt-14">
+    <main id="main-content" tabIndex={-1} className="outline-none">
+    <section className="relative overflow-hidden bg-navy-gradient text-white">
+      <div aria-hidden className="grid-lines pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+      <div className="relative mx-auto max-w-6xl px-4 pb-14 pt-10 sm:px-6 sm:pb-20 sm:pt-14">
         <Link to={home.to} className="inline-flex items-center gap-1.5 text-sm text-white/65 hover:text-white"><ArrowLeft className="size-4" />{home.back}</Link>
         <p className="mt-6 text-sm font-semibold text-lime">{eyebrow}</p>
         <h1 className="mt-2 max-w-3xl text-3xl font-bold leading-tight sm:text-5xl">{title}</h1>
@@ -105,6 +109,7 @@ export function ContentPage({ eyebrow, title, intro, updated, sections, aside, c
         {children}
       </div>
     </div>
+    </main>
     <SiteFooter />
   </div>;
 }

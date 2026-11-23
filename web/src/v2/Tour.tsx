@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "./ui";
 import { PPre } from "./PPre";
 import { PREF, writePref } from "./prefs";
-import { ignoreKey } from "./states";
+import { ignoreKey, SkipButton } from "./states";
 
 export interface TourStep { key: string; title: string; body: string }
 
@@ -82,7 +82,7 @@ export function Tour({ steps, open, onClose }: { steps: TourStep[]; open: boolea
             <p className="text-xs font-semibold text-brand">{i + 1} / {steps.length}</p>
             <h3 className="font-bold leading-snug">{step.title}</h3>
           </div>
-          <button type="button" onClick={finish} aria-label="ข้ามการแนะนำ" className="grid size-8 place-items-center rounded-full text-faint hover:bg-surface hover:text-ink"><X className="size-4" /></button>
+          <SkipButton onSkip={finish} dark={false} fixed={false} esc={false} className="-mr-2 -mt-2 min-h-9 px-3 text-xs" />
         </div>
         <p className="mt-2 text-sm leading-relaxed text-muted">{step.body}</p>
         <div className="mt-4 flex items-center justify-between gap-2">

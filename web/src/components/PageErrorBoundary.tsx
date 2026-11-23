@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from "react";
-import { Icon, Message } from "./ui";
+import { ErrorPanel } from "@/v2/states";
+import { Logo } from "@/v2/ui";
 
 /**
  * App pages load as separate files on first use (main.tsx `lazy`). If that file cannot be fetched
@@ -19,14 +20,17 @@ export class PageErrorBoundary extends Component<{ pathname: string; children: R
 
   render() {
     if (!this.state.failed) return this.props.children;
-    return <section className="panel empty-state page-error">
-      <span className="state-icon"><Icon name="alert" /></span>
-      <h1>เปิดหน้านี้ไม่สำเร็จ</h1>
-      <Message kind="error">อาจเกิดจากการเชื่อมต่อขาดหายหรือเว็บเพิ่งอัปเดต โหลดหน้าใหม่เพื่อลองอีกครั้ง</Message>
-      <div className="row">
-        <button type="button" onClick={() => window.location.reload()}><Icon name="refresh" /> โหลดหน้าใหม่</button>
-        <a className="button secondary" href="/"><Icon name="history" /> กลับหน้าประวัติ</a>
+    const btn = "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold";
+    return <div className="grid min-h-dvh place-items-center bg-surface px-4" data-page-error>
+      <div className="w-full max-w-md">
+        <Logo className="mx-auto mb-6 h-7" />
+        <h1 className="mb-3 text-center text-2xl font-bold">เปิดหน้านี้ไม่สำเร็จ</h1>
+        <ErrorPanel what="โหลดส่วนของหน้านี้ไม่ได้" why="การเชื่อมต่อขาดหาย หรือเว็บเพิ่งอัปเดตเป็นรุ่นใหม่" todo="โหลดหน้าใหม่เพื่อลองอีกครั้ง"
+          actions={<>
+            <button type="button" className={`${btn} bg-brand text-white`} onClick={() => window.location.reload()}>โหลดหน้าใหม่</button>
+            <a className={`${btn} bg-brand-50 text-brand`} href="/">กลับหน้าหลัก</a>
+          </>} />
       </div>
-    </section>;
+    </div>;
   }
 }

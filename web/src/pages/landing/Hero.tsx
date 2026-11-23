@@ -85,7 +85,7 @@ export function Hero({ open }: { open: boolean }) {
   const mask = "radial-gradient(circle min(28vw, 260px) at var(--mx, 50%) var(--my, 50%), #000 15%, transparent 72%)";
 
   return <section ref={root} className="relative flex min-h-[100svh] flex-col overflow-hidden bg-navy-950 text-white">
-    <PixelGrid fadeBottom />
+    <PixelGrid fade="bottom" />
     <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_45%_40%_at_50%_55%,color-mix(in_srgb,var(--color-brand)_38%,transparent),transparent_75%)]" />
     <StageBeams lights={lights} onToggle={played ? toggle : undefined} spread={170} className="z-[1]" lampSize={40} />
 

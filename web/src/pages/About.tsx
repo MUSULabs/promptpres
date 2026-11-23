@@ -1,10 +1,11 @@
-/* /lab/about: what PromptPre's is, why it exists, the 8 criteria, honest limits, the team (placeholder names). */
+/* /about: what PromptPre's is, why it exists, the 8 criteria, honest limits, the team (placeholder names). */
 import { Link } from "react-router-dom";
 import { GraduationCap, Microscope, Users } from "lucide-react";
 import { CRITERION_NAME, SKILLS } from "@/presentation";
 import { Button, SKILL_STYLE, SkillIcon } from "@/v2/ui";
 import { ContentPage, type Section } from "@/v2/ContentPage";
 import { PPre } from "@/v2/PPre";
+import { PATH } from "@/v2/paths";
 
 const SECTIONS: Section[] = [
   { id: "what", title: "PromptPre's คืออะไร", body: <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto]">
@@ -20,7 +21,7 @@ const SECTIONS: Section[] = [
       <div className="flex items-center gap-3"><SkillIcon skill={s.key} /><div><b className="block text-ink">{s.label}</b><span className="text-xs">{SKILL_STYLE[s.key].tagline}</span></div></div>
       <ul className="mt-3 !space-y-1 text-sm">{s.codes.map((c) => <li key={c}><b>{c}</b> {CRITERION_NAME[c]}</li>)}</ul>
     </div>)}
-    <p className="sm:col-span-2"><Link to="/lab/how">อ่านว่าแต่ละเกณฑ์วัดอย่างไร →</Link></p>
+    <p className="sm:col-span-2"><Link to={PATH.how}>อ่านว่าแต่ละเกณฑ์วัดอย่างไร →</Link></p>
   </div> },
   { id: "limits", title: "สิ่งที่ระบบทำไม่ได้ (บอกตรง ๆ)", body: <ul>
     <li>ไม่วัดอารมณ์ ความมั่นใจ ความตื่นเต้น หรือบุคลิกภาพ</li>
@@ -38,13 +39,13 @@ const SECTIONS: Section[] = [
   </> },
 ];
 
-export default function AboutLab() {
+export default function About() {
   return <ContentPage eyebrow="เกี่ยวกับ" title={<>เวทีซ้อมที่บอกว่า<span className="text-lime">เกิดอะไรขึ้นจริง</span>ในคลิปของคุณ</>}
     intro="โครงงานวิทยาการคอมพิวเตอร์ มหาวิทยาลัยพะเยา ปีการศึกษา 2569" sections={SECTIONS}>
     <div className="rounded-panel bg-brand-gradient p-8 text-center text-white shadow-glow">
       <p className="text-2xl font-bold">ลองซ้อมรอบแรกดูไหม?</p>
       <p className="mt-1 text-white/75">ไม่ต้องสมัคร ใช้แบบ Guest ได้ทันที</p>
-      <Button asChild variant="lime" size="lg" className="mt-5"><Link to="/lab/login">เริ่มใช้งานฟรี</Link></Button>
+      <Button asChild variant="lime" size="lg" className="mt-5"><Link to={PATH.login}>เริ่มใช้งานฟรี</Link></Button>
     </div>
   </ContentPage>;
 }

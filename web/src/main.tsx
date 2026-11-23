@@ -1,86 +1,103 @@
-import React, { Suspense, lazy, useEffect, useRef } from "react";
+import React, { Suspense, lazy, useEffect, useMemo, useRef } from "react";
 import ReactDOM from "react-dom/client";
-import { NavLink, Route, RouterProvider, Routes, createBrowserRouter, matchPath, useLocation } from "react-router-dom";
-import "./brand.css";
-import "./styles.css";
-import { AuthProvider, AuthGate, AccountMenu, LogoutPage, useAuth } from "./auth";
-import LandingPage, { LandingHeader } from "./pages/LandingPage";
-import { Brand, Icon, NotFound } from "./components/ui";
+import { Route, RouterProvider, Routes, createBrowserRouter, useLocation } from "react-router-dom";
+import { MotionConfig } from "motion/react";
+import "./v2/theme.css";
+import { AuthProvider, AuthGate, LogoutPage, useAuth } from "./auth";
 import { PageErrorBoundary } from "./components/PageErrorBoundary";
+import { CommandPalette } from "./v2/CommandPalette";
+import { buildCommands } from "./v2/commands";
+import { SessionsProvider, rehearsals, useSessions } from "./v2/sessions";
+import { PageSkeleton, ToastHost } from "./v2/states";
 
-// The landing ships alone; app pages load on first use (a visitor on a phone downloads less before the first paint).
+// Every page loads on first use, so a visitor downloads only the page they open
+// (the landing page's 3D, scroll and animation libraries stay out of the app pages).
+const Landing = lazy(() => import("./pages/Landing"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
-const Home = lazy(() => import("./pages/Home"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NewSession = lazy(() => import("./pages/NewSession"));
 const SessionVideo = lazy(() => import("./pages/SessionVideo"));
 const ResultPage = lazy(() => import("./pages/ResultPage"));
+const Progress = lazy(() => import("./pages/Progress"));
+const Compare = lazy(() => import("./pages/Compare"));
+const Recap = lazy(() => import("./pages/Recap"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Help = lazy(() => import("./pages/Help"));
+const How = lazy(() => import("./pages/How"));
+const About = lazy(() => import("./pages/About"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const StatusPage = lazy(() => import("./pages/Status"));
 
-// UX/UI V2 design lab: dev server only. In a build import.meta.env.DEV is false, so the route and its chunk are dropped.
-const LabApp = import.meta.env.DEV ? lazy(() => import("./lab/LabApp")) : null;
-
-// A data router (one splat route around the existing <Routes>) so pages can use useBlocker,
+// A data router (one splat route around <Routes>) so pages can use useBlocker,
 // e.g. to ask before leaving an unsent recording (useLeaveGuard.ts).
 const router = createBrowserRouter([
-  ...(LabApp ? [{ path: "/lab/*", element: <Suspense fallback={null}><LabApp /></Suspense> }] : []),
-  { path: "*", element: <AuthProvider><AppShell /></AuthProvider> },
+  { path: "*", element: <AuthProvider><SessionsProvider><MotionConfig reducedMotion="user"><ToastHost><App /></ToastHost></MotionConfig></SessionsProvider></AuthProvider> },
 ]);
 
-function AppShell() {
+function App() {
   const { pathname } = useLocation();
   const { state } = useAuth();
+  const { rows } = useSessions();
+  const inside = !!state && (!!state.user || !state.required);
+  const commands = useMemo(() => buildCommands(rehearsals(rows), !!state?.user), [rows, state?.user]);
+  useFocusOnNavigate();
   const atEntry = pathname === "/";
   const landing = atEntry && state?.required === true && !state.user;
-  const checkingEntry = atEntry && !state;
 
-  return (
-    <div className={landing ? "pp-v1" : checkingEntry ? undefined : "app-shell"} data-entry-pending={checkingEntry ? "" : undefined}>
-      <a className="skip-link" href="#main-content">ข้ามไปเนื้อหาหลัก</a>
-      {landing ? <LandingHeader /> : <SiteHeader checkingEntry={checkingEntry} />}
-      <AppRoutes landing={landing} />
-    </div>
-  );
+  return <div className="min-h-dvh overflow-x-clip bg-surface text-ink">
+    <a href="#main-content" className="fixed left-3 top-3 z-[100] -translate-y-24 rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-lift transition-transform focus:translate-y-0">ข้ามไปเนื้อหาหลัก</a>
+    {inside && <CommandPalette commands={commands} />}
+    <PageErrorBoundary pathname={pathname}>
+      <Suspense fallback={atEntry && !state ? <div data-entry-pending className="min-h-dvh" /> : <PageSkeleton />}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/logout" element={<LogoutPage />} />
+          <Route path="/" element={!state ? <div data-entry-pending className="min-h-dvh" /> : landing ? <Landing /> : <AuthGate><Dashboard /></AuthGate>} />
+          <Route path="/new" element={<AuthGate><NewSession /></AuthGate>} />
+          <Route path="/sessions/:id/video" element={<AuthGate><SessionVideo /></AuthGate>} />
+          <Route path="/sessions/:id" element={<AuthGate><ResultPage /></AuthGate>} />
+          <Route path="/progress" element={<AuthGate><Progress /></AuthGate>} />
+          <Route path="/compare" element={<AuthGate><Compare /></AuthGate>} />
+          <Route path="/recap" element={<AuthGate><Recap /></AuthGate>} />
+          <Route path="/settings" element={<AuthGate><Settings /></AuthGate>} />
+          <Route path="/help" element={<Help />} />
+          <Route path="/how" element={<How />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="*" element={<StatusPage />} />
+        </Routes>
+      </Suspense>
+    </PageErrorBoundary>
+  </div>;
 }
 
-function SiteHeader({ checkingEntry }: { checkingEntry: boolean }) {
-  const { pathname } = useLocation();
-  const loginPage = pathname === "/login";
-  const { state } = useAuth();
-  return <header className="site-header">
-    <div className="topbar">
-      <Brand label={state?.user ? undefined : "PromptPre's — หน้าแรก"} />
-      {!loginPage && !checkingEntry && <nav aria-label="เมนูหลัก">
-        <NavLink to="/" end>ประวัติ</NavLink>
-        <NavLink to="/new"><Icon name="plus" /> ซ้อมใหม่</NavLink>
-      </nav>}
-      <AccountMenu key={pathname} />
-    </div>
-  </header>;
-}
-
-function AppRoutes({ landing }: { landing: boolean }) {
-  const { pathname } = useLocation();
-  const resultRoute = matchPath("/sessions/:id", pathname);
-  const previousPath = useRef(pathname);
-  const main = useRef<HTMLElement>(null);
-
+/** On a page change: move keyboard focus to the new page's main area (screen readers announce it) and scroll to
+    the top, or to #id when the link has one. The target may appear late (lazy page, data), so keep looking for
+    up to 2 seconds. */
+function useFocusOnNavigate() {
+  const { pathname, hash } = useLocation();
+  const previous = useRef(pathname);
   useEffect(() => {
-    if (previousPath.current === pathname) return;
-    previousPath.current = pathname;
-    main.current?.focus({ preventScroll: true });
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
-  return <main id="main-content" className={landing ? "landing-main" : resultRoute ? "result-main" : undefined} tabIndex={-1} ref={main}>
-    <PageErrorBoundary pathname={pathname}><Suspense fallback={<p role="status" className="muted">กำลังโหลดหน้า…</p>}><Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/logout" element={<LogoutPage />} />
-      <Route path="/" element={landing ? <LandingPage /> : <AuthGate><Home /></AuthGate>} />
-      <Route path="/new" element={<AuthGate><NewSession /></AuthGate>} />
-      <Route path="/sessions/:id/video" element={<AuthGate><SessionVideo /></AuthGate>} />
-      <Route path="/sessions/:id" element={<AuthGate><ResultPage /></AuthGate>} />
-      <Route path="*" element={<NotFound />} />
-    </Routes></Suspense></PageErrorBoundary>
-  </main>;
+    const moved = previous.current !== pathname;
+    previous.current = pathname;
+    let tries = 0, id = 0;
+    if (moved) {
+      const focusMain = () => {
+        const main = document.getElementById("main-content");
+        if (main) main.focus({ preventScroll: true }); else if (++tries < 20) id = window.setTimeout(focusMain, 100);
+      };
+      focusMain();
+    }
+    if (!hash) { if (moved) window.scrollTo({ top: 0, behavior: "instant" }); return () => window.clearTimeout(id); }
+    let look = 0, lid = 0;
+    const find = () => {
+      const el = document.getElementById(decodeURIComponent(hash.slice(1)));
+      if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+      if (++look < 20) lid = window.setTimeout(find, 100);
+    };
+    lid = window.setTimeout(find, 50);
+    return () => { window.clearTimeout(id); window.clearTimeout(lid); };
+  }, [pathname, hash]);
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

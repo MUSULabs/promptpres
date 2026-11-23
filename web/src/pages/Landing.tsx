@@ -28,17 +28,19 @@ import { useSmoothScroll } from "@/v2/fx/useSmoothScroll";
 import { CurtainIntro } from "./landing/CurtainIntro";
 import { Hero } from "./landing/Hero";
 import { CardSplit } from "./landing/CardSplit";
-import { META, RESULT } from "./fixtures";
+import { META, RESULT } from "@/v2/sample";
+import { PATH } from "@/v2/paths";
 
 const Stage3D = lazy(() => import("./landing/Stage3D"));
 gsap.registerPlugin(ScrollTrigger);
 
-export default function LandingLab() {
+export default function Landing() {
   useSmoothScroll();
   const [open, setOpen] = useState(false);
   return <div id="top" className="bg-navy text-white">
     <CurtainIntro onOpen={() => setOpen(true)} />
     <Header />
+    <main id="main-content" tabIndex={-1} className="outline-none">
     <Hero open={open} />
     <Marquee />
     <CardSplit />
@@ -51,6 +53,7 @@ export default function LandingLab() {
       <Promise3 />
     </div>
     <Start />
+    </main>
     <Footer />
     <CookieNotice />
   </div>;
@@ -70,7 +73,7 @@ function Header() {
         <a href="#story" className="hover:text-white">วิธีใช้</a><a href="#try" className="hover:text-white">ตัวอย่างผล</a><a href="#skills" className="hover:text-white">8 เกณฑ์</a>
       </nav>
       <div className="flex gap-2">
-        <Button size="sm" variant="outlineLight" className="hidden sm:inline-flex" asChild><Link to="/lab/login">เข้าสู่ระบบ</Link></Button>
+        <Button size="sm" variant="outlineLight" className="hidden sm:inline-flex" asChild><Link to={PATH.login}>เข้าสู่ระบบ</Link></Button>
         <Button size="sm" variant="lime" asChild><a href="#start">เริ่มใช้งานฟรี</a></Button>
       </div>
     </div>
@@ -210,7 +213,7 @@ function TryIt() {
   const [pick, setPick] = useState<CriterionCode>("S3");
   const c = RESULT.criteria.find((x) => x.code === pick)!;
   return <section id="try" className="relative overflow-hidden bg-navy-950 py-24">
-    <PixelGrid intensity="quiet" className="opacity-80 [mask-image:radial-gradient(ellipse_at_center,transparent_25%,black_75%)]" />
+    <PixelGrid intensity="quiet" fade="edges" className="opacity-80 [mask-image:radial-gradient(ellipse_at_center,transparent_25%,black_75%)]" />
     <div className="relative mx-auto max-w-6xl px-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -252,7 +255,7 @@ function StageTeaser() {
   }, [seen, touched, still]);
   const set = (n: number) => { setTouched(true); setLights(n); };
   return <section ref={ref} className="relative overflow-hidden bg-navy-950 pb-24 pt-32">
-    <StageBeams lights={lights} spread={110} lampSize={30} className="opacity-70" />
+    <StageBeams lights={lights} spread={90} lampSize={30} strength={0.4} className="opacity-80" />
     <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 md:grid-cols-2">
       <div>
         <Chip tone="lime">ไฟเวที</Chip>
@@ -326,7 +329,7 @@ function Start() {
         </div>
       </div>
       <motion.div initial={{ y: 30, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-        <AuthCard className="mx-auto" />
+        <AuthCard className="mx-auto" next={PATH.new} />
       </motion.div>
     </div>
   </section>;
@@ -372,7 +375,7 @@ function CookieNotice() {
   return <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 2.4 }} role="region" aria-label="การใช้คุกกี้"
     className="fixed inset-x-3 bottom-4 z-50 mx-auto flex max-w-2xl flex-wrap items-center gap-3 rounded-2xl bg-white p-4 text-sm text-ink shadow-lift sm:flex-nowrap">
     <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-lime text-navy"><Cookie className="size-5" /></span>
-    <p className="min-w-0 flex-1 text-muted">เราใช้คุกกี้เพียงตัวเดียวเพื่อจำการเข้าสู่ระบบ ไม่มีคุกกี้ติดตามหรือโฆษณา <Link to="/lab/privacy#cookie" className="font-semibold text-brand hover:underline">อ่านเพิ่ม</Link></p>
+    <p className="min-w-0 flex-1 text-muted">เราใช้คุกกี้เพียงตัวเดียวเพื่อจำการเข้าสู่ระบบ ไม่มีคุกกี้ติดตามหรือโฆษณา <Link to={`${PATH.privacy}#cookie`} className="font-semibold text-brand hover:underline">อ่านเพิ่ม</Link></p>
     <Button size="sm" onClick={() => { writePref(PREF.cookieSeen, "1"); setSeen(true); }}>เข้าใจแล้ว</Button>
   </motion.div>;
 }

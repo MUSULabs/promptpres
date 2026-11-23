@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { CornerDownLeft, Search, type LucideIcon } from "lucide-react";
 import { cn } from "./ui";
+import { PATH } from "./paths";
 
 export interface Command { id: string; group: string; label: string; hint?: string; to: string; Icon: LucideIcon; keywords?: string }
 
@@ -67,7 +68,7 @@ export function CommandPalette({ commands }: { commands: Command[] }) {
         </label>
         <ul ref={list} id="pp-palette-list" role="listbox" className="max-h-[min(60vh,28rem)] overflow-y-auto p-2">
           {hits.length === 0 && <li className="px-4 py-8 text-center text-sm text-muted">ไม่พบ "{q}" ลองคำอื่น เช่น ผล, ไฟเวที, เสียงเติม<br />
-            <button type="button" className="mt-2 font-semibold text-brand hover:underline" onClick={() => go({ id: "help", group: "", label: "", to: "/lab/help", Icon: Search })}>ไปหน้าช่วยเหลือ</button></li>}
+            <button type="button" className="mt-2 font-semibold text-brand hover:underline" onClick={() => go({ id: "help", group: "", label: "", to: PATH.help, Icon: Search })}>ไปหน้าช่วยเหลือ</button></li>}
           {Object.entries(groups).map(([g, xs]) => <li key={g} role="presentation">
             <p className="px-3 pb-1 pt-3 text-[11px] font-semibold text-faint">{g}</p>
             <ul role="presentation">{xs.map(({ c, i }) => <li key={c.id} id={`pp-cmd-${c.id}`} role="option" aria-selected={i === at} data-i={i}

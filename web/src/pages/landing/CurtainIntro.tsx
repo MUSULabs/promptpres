@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { useReducedMotion } from "motion/react";
 import { Logo } from "@/v2/ui";
-import { useOverlayFlag } from "@/v2/states";
+import { SkipButton, useOverlayFlag } from "@/v2/states";
 
 const KEY = "pp-v2-curtain";
 const seen = () => { try { return window.sessionStorage.getItem(KEY) === "1"; } catch { return false; } };
@@ -57,5 +57,6 @@ export function CurtainIntro({ onOpen }: { onOpen: () => void }) {
         <p className="mt-4 text-sm text-white/60">กดที่ไหนก็ได้เพื่อข้าม</p>
       </div>
     </div>
+    <SkipButton onSkip={() => tl.current?.progress(1)} esc={false} />
   </div>;
 }

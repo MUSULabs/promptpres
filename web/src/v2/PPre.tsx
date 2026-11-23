@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition, type Transition } from "motion/react";
 import { cn } from "./ui";
 
@@ -17,7 +17,9 @@ const SMILE = "M180 195c14 2 31 1 46-2 5-1 7 2 6 7-3 21-15 37-30 37-15 0-26-13-3
 /** Raw shapes for drawing P'Pre outside React (the share-card canvas). */
 export const PPRE_SHAPES = { TORSO, FEET, LEFT_ARM, POINT_ARM, FEET_GAP, SMILE, EYES: [[169.5, 157, 16.5, 27], [230, 154, 15.5, 26.5]] as const };
 
-export type Pose = "idle" | "wave" | "celebrate" | "think" | "nod" | "point";
+export type Pose = "idle" | "wave" | "celebrate" | "think" | "nod" | "point" | "cover";
+
+const EYES = PPRE_SHAPES.EYES;
 
 const LOOP = { repeat: Infinity, ease: "easeInOut" } as const;
 
@@ -34,12 +36,17 @@ function motionFor(pose: Pose, still: boolean) {
     case "think": return { ...none, body: { rotate: [-2, 2, -2], transition: { duration: 4, ...LOOP } }, figure: { y: [0, -3, 0], transition: { duration: 4, ...LOOP } } };
     case "nod": return { ...none, body: { rotate: [0, 3, 0, 3, 0], transition: { duration: 1.8, ...LOOP, repeatDelay: 1.4 } } };
     case "point": return { ...none, right: { x: [0, 6, 0], transition: { duration: 1.6, ...LOOP } }, figure: { y: [0, -3, 0], transition: { duration: 3.6, ...LOOP } } };
+    case "cover": return none;
     default: return { ...none, figure: { y: [0, -5, 0], transition: { duration: 4.2, ...LOOP } } };
   }
 }
 
-export function PPre({ pose = "idle", size = 160, color = "var(--color-brand)", say, sayTone = "white", saySide = "right", className, label }: {
+export function PPre({ pose = "idle", size = 160, color = "var(--color-brand)", say, sayTone = "white", saySide = "right", className, label, lookAt, peek }: {
   pose?: Pose; size?: number; color?: string; say?: ReactNode; sayTone?: "white" | "lime"; saySide?: "right" | "left" | "top"; className?: string; label?: string;
+  /** a point on screen (client px) the eyes turn towards, e.g. the mouse or the field being typed in */
+  lookAt?: { x: number; y: number } | null;
+  /** with pose "cover": hands slide down a little so P'Pre peeks (the password is shown) */
+  peek?: boolean;
 }) {
   const id = useId().replace(/:/g, "");
   const still = useReducedMotion() ?? false;
@@ -50,8 +57,11 @@ export function PPre({ pose = "idle", size = 160, color = "var(--color-brand)", 
   const eyeScale = blink ? 0.12 : 1;
   const eyeT: Transition = { duration: 0.09 };
   const lookUp = pose === "think";
+  const cover = pose === "cover";
+  const box = useRef<HTMLDivElement>(null);
+  const pupil = usePupil(box, lookAt, size);
 
-  return <div className={cn("relative inline-block", className)} style={{ width: size, height: size * 400 / 408 }}>
+  return <div ref={box} className={cn("relative inline-block", className)} style={{ width: size, height: size * 400 / 408 }}>
     <motion.svg viewBox="0 0 408 400" width={size} height={size * 400 / 408} role={label ? "img" : undefined}
       aria-label={label} aria-hidden={label ? undefined : true} className="overflow-visible">
       <defs>
@@ -60,6 +70,8 @@ export function PPre({ pose = "idle", size = 160, color = "var(--color-brand)", 
           <path d={FEET_GAP} fill="black" />
           <motion.ellipse cx="169.5" cy="157" rx="16.5" ry="27" fill="black" animate={{ scaleY: eyeScale }} transition={eyeT} style={{ transformBox: "fill-box", transformOrigin: "center" }} />
           <motion.ellipse cx="230" cy="154" rx="15.5" ry="26.5" fill="black" animate={{ scaleY: eyeScale }} transition={eyeT} style={{ transformBox: "fill-box", transformOrigin: "center" }} />
+          {pupil && !lookUp && !blink && EYES.map(([cx, cy], k) => <motion.ellipse key={k} rx="8.5" ry="12.5" fill="white"
+            initial={false} animate={{ cx: cx + pupil.x, cy: cy + pupil.y }} transition={still ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 22 }} />)}
           {lookUp && !blink && <>
             <ellipse cx="178" cy="146" rx="8" ry="12" fill="white" />
             <ellipse cx="238" cy="143" rx="8" ry="12" fill="white" />
@@ -68,14 +80,15 @@ export function PPre({ pose = "idle", size = 160, color = "var(--color-brand)", 
         </mask>
       </defs>
       <motion.g animate={m.figure} style={pivot(204, 390)}>
-        <motion.g animate={m.left} style={pivot(112, 200)}><path d={LEFT_ARM} fill={color} /></motion.g>
-        <motion.g animate={m.right} style={pivot(272, 196)}><path d={rightArm} fill={color} /></motion.g>
+        <motion.g animate={{ ...m.left, opacity: cover ? 0 : 1 }} style={pivot(112, 200)}><path d={LEFT_ARM} fill={color} /></motion.g>
+        <motion.g animate={{ ...m.right, opacity: cover ? 0 : 1 }} style={pivot(272, 196)}><path d={rightArm} fill={color} /></motion.g>
         <motion.g animate={m.body} style={pivot(204, 330)}>
           <g mask={`url(#ppre-${id})`} fill={color}>
             <path d={TORSO} />
             <path d={FEET} />
           </g>
         </motion.g>
+        <AnimatePresence>{cover && <Hands key="hands" color={color} peek={!!peek} still={still} />}</AnimatePresence>
         {pose === "celebrate" && !still && <Sparkles />}
         {pose === "think" && !still && <ThinkDots />}
       </motion.g>
@@ -96,6 +109,35 @@ export function PPre({ pose = "idle", size = 160, color = "var(--color-brand)", 
       </motion.div>}
     </AnimatePresence>
   </div>;
+}
+
+/** Where the pupils sit inside the eyes (SVG units), turned towards `lookAt`. null = no pupils (the classic look). */
+function usePupil(box: RefObject<HTMLDivElement | null>, lookAt: { x: number; y: number } | null | undefined, size: number) {
+  const [p, setP] = useState<{ x: number; y: number } | null>(null);
+  useLayoutEffect(() => {
+    if (lookAt === undefined) { setP(null); return; }
+    const r = box.current?.getBoundingClientRect();
+    if (!lookAt || !r) { setP({ x: 0, y: 4 }); return; }
+    // eyes are about 39% down the figure; the further the point, the closer to the edge of the eye
+    const dx = lookAt.x - (r.left + r.width / 2), dy = lookAt.y - (r.top + r.height * 0.39);
+    const d = Math.hypot(dx, dy) || 1, k = d / (d + size * 0.6);
+    setP({ x: (dx / d) * k * 7, y: (dy / d) * k * 11 });
+  }, [lookAt?.x, lookAt?.y, lookAt === null, lookAt === undefined, size]); // eslint-disable-line react-hooks/exhaustive-deps
+  return p;
+}
+
+/** Both hands over the eyes (pose "cover"): arms from the shoulders, mittens on the eyes, a soft outline so they
+    read against a body of the same colour. `peek` slides them down so the top of the eyes shows. */
+function Hands({ color, peek, still }: { color: string; peek: boolean; still: boolean }) {
+  const line = "rgb(8 7 43 / 0.22)";
+  const t: Transition = still ? { duration: 0 } : { type: "spring", stiffness: 320, damping: 24 };
+  return <motion.g initial={{ y: 90, opacity: 0 }} animate={{ y: peek ? 26 : 0, opacity: 1 }} exit={{ y: 90, opacity: 0 }} transition={t}>
+    {[["M110 236 Q120 200 160 172", 168, 158, -12], ["M290 232 Q282 196 240 168", 234, 155, 12]].map(([d, cx, cy, rot], k) => <g key={k}>
+      <path d={d as string} fill="none" stroke={line} strokeWidth="40" strokeLinecap="round" />
+      <path d={d as string} fill="none" stroke={color} strokeWidth="32" strokeLinecap="round" />
+      <ellipse cx={cx as number} cy={cy as number} rx="31" ry="35" fill={color} stroke={line} strokeWidth="4" transform={`rotate(${rot} ${cx} ${cy})`} />
+    </g>)}
+  </motion.g>;
 }
 
 function useBlink(still: boolean) {

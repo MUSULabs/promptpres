@@ -1,8 +1,9 @@
-/* /lab/privacy: privacy notice + terms in plain Thai, written from what the system really does
+/* /privacy: privacy notice + terms in plain Thai, written from what the system really does
    (CLAUDE.md D-050/D-062, config/storage-v0.yaml, worker/llm/*). DRAFT: the owner and advisor review it before real use. */
 import { Link } from "react-router-dom";
 import { Bot, Clock3, Cookie, Database, Eye, FileText, Mic, Server, ShieldCheck, Video } from "lucide-react";
 import { ContentPage, type Section } from "@/v2/ContentPage";
+import { PATH } from "@/v2/paths";
 
 const COLLECT = [
   { Icon: Video, t: "วิดีโอซ้อม", d: "ใช้วัดการพูด มือ ทิศทางศีรษะ และเวลา หลังวิเคราะห์ระบบเก็บไว้แค่ฉบับย่อ (ไม่เกิน 480p) เพื่อให้คุณกดดูหลักฐาน" },
@@ -52,7 +53,7 @@ const SECTIONS: Section[] = [
   </div> },
   { id: "rights", title: "สิทธิ์ของคุณ (PDPA)", body: <>
     <p>ตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 คุณมีสิทธิ์ขอดู ขอสำเนา ขอแก้ไข ขอลบ หรือขอให้หยุดใช้ข้อมูลของคุณ และถอนความยินยอมเมื่อใดก็ได้</p>
-    <p>ตอนนี้ยื่นคำขอได้ผ่าน <Link to="/lab/help#contact">หน้าแจ้งปัญหา</Link> ทีมจะติดต่อกลับทางอีเมล (ปุ่มลบและดาวน์โหลดข้อมูลในหน้าตั้งค่ากำลังพัฒนา)</p>
+    <p>ตอนนี้ยื่นคำขอได้ผ่าน <Link to={PATH.contact}>หน้าแจ้งปัญหา</Link> ทีมจะติดต่อกลับทางอีเมล (ปุ่มลบและดาวน์โหลดข้อมูลในหน้าตั้งค่ากำลังพัฒนา)</p>
   </> },
   { id: "terms", title: "ข้อตกลงการใช้งาน", body: <ul>
     <li>PromptPre's เป็นโครงงานของนักศึกษา ใช้เพื่อ <b>ฝึกซ้อม</b> ไม่ใช่การประเมินผลการเรียนหรือคะแนนสอบ</li>
@@ -62,7 +63,7 @@ const SECTIONS: Section[] = [
   </ul> },
 ];
 
-export default function PrivacyLab() {
+export default function Privacy() {
   return <ContentPage eyebrow="ความเป็นส่วนตัวและข้อตกลง" title="ข้อมูลของคุณ ใช้เพื่อการซ้อมของคุณเท่านั้น" updated="23 พฤศจิกายน 2569 (ร่าง รอตรวจโดยอาจารย์ที่ปรึกษา)"
     intro={<p className="flex items-start gap-2"><ShieldCheck className="mt-1 size-5 shrink-0 text-lime" />อ่านจบใน 3 นาที เราเขียนให้ตรงกับที่ระบบทำจริง ไม่มีศัพท์กฎหมายเกินจำเป็น</p>}
     sections={SECTIONS}

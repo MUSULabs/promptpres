@@ -10,8 +10,11 @@ import { isLowPower, useCanvasLoop, usePointer, type Draw } from "./useFx";
 const STEPS = 10; // brightness steps per colour
 const COLORS = [[212, 245, 60], [90, 86, 242], [148, 145, 247]] as const; // lime, blue, soft blue
 
-export function PixelGrid({ intensity = "hero", fadeBottom = false, className }: {
-  intensity?: "hero" | "quiet"; fadeBottom?: boolean; className?: string;
+export function PixelGrid({ intensity = "hero", fade = "none", className }: {
+  intensity?: "hero" | "quiet";
+  /** "bottom": fade out over the lower half (hero); "edges": fade in at the top and out at the bottom, so the
+      grid never ends in a hard line against the next section */
+  fade?: "none" | "bottom" | "edges"; className?: string;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const pointer = usePointer(canvas);
@@ -42,13 +45,14 @@ export function PixelGrid({ intensity = "hero", fadeBottom = false, className }:
     const B = buckets.current; for (const b of B) b.length = 0;
     const taps = p.taps.filter((tap) => now - tap.t < 2000);
     const reach = hero ? 190 : 150, flipAt = hero ? 0.78 : 0.86;
-    const fadeFrom = h * 0.5, fadeLen = h * 0.42;
+    const fadeFrom = fade === "edges" ? h * 0.7 : h * 0.5, fadeLen = fade === "edges" ? h * 0.28 : h * 0.42, topLen = h * 0.25;
     const phaseB = t * 0.55 + Math.sin(t * 0.2) * 2;
 
     for (let j = 0; j < rows; j++) {
       const y = j * cell, cy = y + cell / 2;
-      const fade = fadeBottom && cy > fadeFrom ? Math.max(0, 1 - (cy - fadeFrom) / fadeLen) : 1;
-      if (fade <= 0) break;
+      let fadeK = fade !== "none" && cy > fadeFrom ? Math.max(0, 1 - (cy - fadeFrom) / fadeLen) : 1;
+      if (fade === "edges" && cy < topLen) fadeK *= cy / topLen;
+      if (fadeK <= 0 && cy > fadeFrom) break;
       const nearRow = p.active && Math.abs(cy - g.y) < reach;
       for (let i = 0; i < cols; i++) {
         const x = ox + i * cell, cx = x + cell / 2;
@@ -65,8 +69,8 @@ export function PixelGrid({ intensity = "hero", fadeBottom = false, className }:
         }
         // lime "pixel flips": only the very top of the wave, in blocky clusters
         const flip = v > flipAt && c.rnd[j * cols + i] > 0.55 ? (v - flipAt) * (hero ? 4.5 : 3) : 0;
-        const lime = Math.min(1, flip + ring * 0.9) * (hero ? 0.85 : 0.5) * fade;
-        const blue = Math.min(1, v * (hero ? 0.22 : 0.12) + near * (hero ? 0.55 : 0.35)) * fade;
+        const lime = Math.min(1, flip + ring * 0.9) * (hero ? 0.85 : 0.5) * fadeK;
+        const blue = Math.min(1, v * (hero ? 0.22 : 0.12) + near * (hero ? 0.55 : 0.35)) * fadeK;
         let k: number, a: number;
         if (lime > 0.02) { k = 0; a = lime; } else if (blue > 0.02) { k = near > 0.3 ? 2 : 1; a = blue; } else continue;
         B[k * STEPS + Math.min(STEPS - 1, Math.floor(a * STEPS))].push(x + gap / 2, y + gap / 2);
@@ -85,7 +89,7 @@ export function PixelGrid({ intensity = "hero", fadeBottom = false, className }:
       }
     }
     ctx.globalAlpha = 1;
-  }, [hero, pointer, low, fadeBottom]);
+  }, [hero, pointer, low, fade]);
 
   useCanvasLoop(canvas, draw, 40);
   return <canvas ref={canvas} aria-hidden className={cn("pointer-events-none absolute inset-0 size-full", className)} />;

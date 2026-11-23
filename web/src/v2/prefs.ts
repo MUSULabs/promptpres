@@ -1,7 +1,7 @@
-/* Small per-browser preferences (tour seen, sound, cookie notice, presentation day, display name).
+/* Small per-browser preferences (tour seen, sound, cookie notice, presentation day, weekly goal).
    Browser storage can be missing or throw (private mode, blocked site data), so every access is guarded
    and the page must work without it. Every write tells the other components on the page (event "pp:pref"),
-   so a name saved in Settings shows in the header at once. */
+   so a presentation day saved in Settings shows in the bell at once. */
 import { useCallback, useEffect, useState } from "react";
 
 const EVENT = "pp:pref";
@@ -38,20 +38,16 @@ export const PREF = {
   presentDay: "pp-v2-present-day", // yyyy-mm-dd
   weeklyGoal: "pp-v2-weekly-goal", // "1" | "2" | "3"
   readNotes: "pp-v2-read-notes",   // comma-separated ids
-  name: "pp-v2-name",              // display name (demo: the real one comes from the account)
-  signedIn: "pp-v2-signed-in",     // "1" while the demo user is inside the app
   missions: "pp-v2-missions",      // ticked "next round" goals, comma-separated indexes
 } as const;
 
-/** One name for the user everywhere (header, greeting, settings, share card). */
-export const DEFAULT_NAME = "Guest";
-export const useDisplayName = () => usePref(PREF.name, DEFAULT_NAME);
-
-/** The "next round" checklist, shared by the dashboard and the result page. */
-export function useMissions(): [number[], (i: number) => void] {
+/** The "next round" checklist (the coach's plan of one round), shared by the dashboard and the result page.
+    Ticks belong to that round: a newer round starts with none. Stored as "<session id>:0,2". */
+export function useMissions(sessionId: string | null | undefined): [number[], (i: number) => void] {
   const [raw, setRaw] = usePref(PREF.missions, "");
-  const done = raw ? raw.split(",").map(Number).filter((n) => Number.isInteger(n)) : [];
-  const toggle = (i: number) => setRaw((done.includes(i) ? done.filter((x) => x !== i) : [...done, i]).join(","));
+  const [sid, list = ""] = raw.split(":");
+  const done = sessionId && sid === sessionId && list ? list.split(",").map(Number).filter((n) => Number.isInteger(n)) : [];
+  const toggle = (i: number) => { if (sessionId) setRaw(`${sessionId}:${(done.includes(i) ? done.filter((x) => x !== i) : [...done, i]).join(",")}`); };
   return [done, toggle];
 }
 
