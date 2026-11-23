@@ -1,6 +1,7 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, GUEST, finishedRound } from "./helpers";
 
-// Regressions from the UX audit (Nov 2026): layout and keyboard details of the practice setup and login.
+// Regressions from the UX audits (Nov 2026): layout and keyboard details of the practice setup and login,
+// and the round-5 additions (skip buttons on every animation, social login buttons that are honest).
 
 test("setup: the topic panel sits right under the time panel on desktop", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -8,7 +9,7 @@ test("setup: the topic panel sits right under the time panel on desktop", async 
   await page.getByRole("button", { name: "ไปตั้งหัวข้อ" }).click();
   const topics = page.getByRole("region", { name: "หัวข้อที่จะนำเสนอ" });
   await expect(topics).toBeVisible();
-  const form = await page.locator(".setup-panel").boundingBox();
+  const form = await page.getByRole("main").locator("form").first().boundingBox();
   const panel = await topics.boundingBox();
   expect(panel!.y - (form!.y + form!.height)).toBeLessThan(40);
 });
@@ -39,5 +40,45 @@ test("a signed-in member who opens the login page goes straight on", async ({ pa
   expect(registered.ok()).toBeTruthy();
   await page.goto("/login?next=/new");
   await expect(page).toHaveURL("/new");
-  await expect(page.getByRole("heading", { name: "ตั้งค่ารอบซ้อม" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "ซ้อมรอบใหม่" })).toBeVisible();
+});
+
+test("social login buttons say they are coming soon and send no request", async ({ page }) => {
+  const calls: string[] = [];
+  page.on("request", (r) => { if (new URL(r.url()).pathname.startsWith("/api/")) calls.push(r.url()); });
+  await page.goto("/login");
+  await expect(page.getByRole("button", { name: GUEST })).toBeVisible();
+  const before = calls.length;
+  for (const provider of ["Google", "LINE", "GitHub"]) {
+    await page.getByRole("button", { name: `ดำเนินการต่อด้วย ${provider} (เร็ว ๆ นี้)` }).click();
+    await expect(page.locator("[data-social] [role=status], [data-social] + [role=status]").first()).toContainText(`เข้าสู่ระบบด้วย ${provider} จะเปิดเร็ว ๆ นี้`);
+  }
+  expect(calls.slice(before)).toEqual([]);
+  await expect(page).toHaveURL("/login");
+});
+
+test.describe("with motion", () => {
+  test.use({ reducedMotion: "no-preference" });
+
+  test("the result reveal has a skip button and does not play twice", async ({ page, request }) => {
+    const id = await finishedRound(request);
+    await page.goto(`/sessions/${id}`);
+    const skip = page.getByRole("button", { name: "ข้ามไปดูผล" });
+    await expect(skip).toBeVisible();
+    expect((await skip.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await skip.click();
+    await expect(page.locator("[data-skip]")).toHaveCount(0);
+    await expect(page.locator("[data-criterion]")).toHaveCount(8);
+    await page.reload();
+    await expect(page.locator("[data-criterion]")).toHaveCount(8);
+    await expect(page.getByRole("button", { name: "ข้ามไปดูผล" })).toHaveCount(0);   // once per round in this tab
+  });
+
+  test("Escape skips the reveal too", async ({ page, request }) => {
+    const id = await finishedRound(request);
+    await page.goto(`/sessions/${id}`);
+    await expect(page.getByRole("button", { name: "ข้ามไปดูผล" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator("[data-skip]")).toHaveCount(0);
+  });
 });

@@ -1,95 +1,66 @@
-import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
+import { test, expect, card, finishedRound, openCard, openResult, videoClock } from "./helpers";
 
-// Prototype (Nov 2026): on a phone each criterion card shows its level, band, reading, reason and feedback,
-// and folds measured values and evidence behind one disclosure (handoff 03: "summarize first").
-
-async function finishedRound(request: APIRequestContext, outcome: "done" | "partial" = "done") {
-  const created = await request.post("/api/sessions", { data: { target_duration_s: 900 } });
-  expect(created.ok()).toBeTruthy();
-  const id = (await created.json()).session_id as string;
-  const clip = await request.get("/browser-test/clip");
-  const video = { name: "test.webm", mimeType: "video/webm", buffer: await clip.body() };
-  // Dev mode has one identity and the credit guard allows 2 waiting rounds per account, so a test running
-  // in parallel can hold both places for a moment (429): wait for it to finish, as a user would.
-  let status = 0;
-  await expect.poll(async () => (status = (await request.post(`/api/sessions/${id}/video`, { multipart: { video } })).status()),
-    { intervals: [250, 500, 1000], timeout: 15_000 }).not.toBe(429);
-  expect(status).toBe(200);
-  expect((await request.post(`/browser-test/${id}/processing`)).ok()).toBeTruthy();
-  expect((await request.post(`/browser-test/${id}/${outcome}`)).ok()).toBeTruthy();
-  return id;
-}
-
-async function videoTime(page: Page) {
-  const video = page.getByLabel("วิดีโอการซ้อม", { exact: true });
-  await expect.poll(() => video.evaluate((el: HTMLVideoElement) => el.readyState)).toBeGreaterThanOrEqual(1);
-  await video.evaluate((el: HTMLVideoElement) => { el.pause(); el.currentTime = 0; });
-  return () => video.evaluate((el: HTMLVideoElement) => el.currentTime);
-}
+// Result cards (V2): each card shows its level, 4-step band and plain-language reading at a glance, and opens
+// for measured values, feedback and evidence (handoff 03: "summarize first"). Same on a phone and a desktop.
 
 test.use({ viewport: { width: 390, height: 844 } });
 
-test("a phone card keeps level, band and feedback in view and folds values and evidence", async ({ page, request }) => {
+test("a phone card shows level, band and reading, and opens for values, feedback and evidence", async ({ page, request }) => {
   const id = await finishedRound(request);
-  await page.goto(`/sessions/${id}`);
-  await expect(page.locator(".card")).toHaveCount(8);
-  for (const card of await page.locator(".card").all()) {
-    await expect(card.locator(".level")).toBeVisible();
-    await expect(card.getByRole("img", { name: /ระดับ \d จาก 4|วิเคราะห์ไม่ได้/ })).toBeVisible();
-    await expect(card.locator(".template")).toBeVisible();
-    await expect(card.locator(".card-more")).not.toHaveAttribute("open");
+  await openResult(page, id);
+  for (const c of await page.locator("[data-criterion]").all()) {
+    await expect(c.getByRole("img", { name: /^ระดับ \d จาก 4$/ })).toBeVisible();
+    await expect(c.locator("[data-reading]")).not.toBeEmpty();
+    await expect(c.locator("button[aria-expanded]").first()).toHaveAttribute("aria-expanded", "false");
   }
-  await expect(page.locator(".evidence").first()).toBeHidden();
+  await expect(page.locator("[data-criterion] [data-evidence]")).toHaveCount(0);
 
-  const c2 = page.locator('.card[data-criterion="C2"]');
-  const fold = c2.locator(".card-more");
-  await expect(c2.locator(".card-more > summary")).toContainText("หัวข้อตามแผน 5 หัวข้อ");
-  await c2.getByText("ดูค่าที่วัดและหลักฐาน").click();
-  await expect(fold).toHaveAttribute("open", "");
-  await expect(c2.locator(".coverage-table")).toBeVisible();
-  const now = await videoTime(page);
-  await c2.locator(".coverage-table button").first().click();
+  const c2 = await openCard(page, "C2");
+  await expect(c2.getByRole("table", { name: "หัวข้อตามแผน" })).toBeVisible();
+  await expect(c2.getByRole("table", { name: "หัวข้อตามแผน" })).toContainText("หัวข้อตามแผน 5 หัวข้อ");
+  await expect(c2.locator("[data-feedback]")).toBeVisible();
+  const now = await videoClock(page);
+  await c2.getByRole("table", { name: "หัวข้อตามแผน" }).getByRole("button", { name: /^ไปยังเวลา/ }).first().click();
   await expect.poll(now).toBeGreaterThanOrEqual(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
-test("seeking to a criterion from the timeline opens its fold, also after it was closed", async ({ page, request }) => {
+test("picking a criterion on the skill map opens its card, also after it was closed", async ({ page, request }) => {
   const id = await finishedRound(request);
-  await page.goto(`/sessions/${id}`);
-  const s3 = page.locator('.card[data-criterion="S3"]');
-  const fold = s3.locator(".card-more");
-  const timeline = page.getByLabel("แถบเวลาหลักฐานทุกเกณฑ์");
-  const now = await videoTime(page);
-  await expect(fold).not.toHaveAttribute("open");
-  await timeline.getByRole("button", { name: /ไปยังเวลา 0:02\.0 \(S3/ }).last().click();
-  await expect.poll(now).toBeGreaterThanOrEqual(2);
-  await expect(fold).toHaveAttribute("open", "");
-  await expect(s3.locator(".evidence")).toBeVisible();
-  await expect(page.locator(".notebook-criteria [aria-live=polite]")).toHaveText(/เปิดรายละเอียดเกณฑ์ S3/);
-
-  await fold.locator("summary").click();
-  await expect(fold).not.toHaveAttribute("open");
-  await timeline.getByRole("button", { name: /ไปยังเวลา 0:02\.0 \(S3/ }).last().click();
-  await expect(fold).toHaveAttribute("open", "");
+  await openResult(page, id);
+  const s3 = card(page, "S3");
+  const toggle = s3.locator("button[aria-expanded]").first();
+  const pick = page.getByRole("button", { name: /^เสียงเติม/ }).first();
+  await pick.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(s3.locator("[data-evidence]")).toBeVisible();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await pick.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
 });
 
-test("a criterion that could not be analysed never shows a level when folded", async ({ page, request }) => {
+test("a criterion that could not be analysed never shows a level", async ({ page, request }) => {
   const id = await finishedRound(request, "partial");
-  await page.goto(`/sessions/${id}`);
-  const c2 = page.locator('.card[data-criterion="C2"]');
-  await expect(c2.locator(".level")).toHaveText("วิเคราะห์ไม่ได้");
-  await expect(c2.locator(".reason")).toContainText("หลักฐานไม่พอ");
-  await expect(c2).not.toContainText(/ระดับ \d\/4/);
-  await expect(c2.locator(".coverage-table")).toHaveCount(0);
+  await openResult(page, id);
+  const c2 = card(page, "C2");
+  await expect(c2).toHaveAttribute("data-level", "na");
+  await expect(c2.locator("[data-reading]")).toHaveText("วิเคราะห์ไม่ได้ในรอบนี้");
+  await expect(c2).toContainText("หลักฐานไม่พอ");
+  await expect(c2.getByRole("img", { name: /ระดับ \d จาก 4/ })).toHaveCount(0);
+  await expect(c2).not.toContainText(/ระดับ \d/);
+  await c2.locator("button[aria-expanded]").first().click();
+  await expect(page.getByRole("table", { name: "หัวข้อตามแผน" })).toHaveCount(0);
 });
 
 test.describe("desktop", () => {
   test.use({ viewport: { width: 1280, height: 900 } });
-  test("cards are not folded on a wide screen", async ({ page, request }) => {
+  test("an opened card spans the row and shows its topic table", async ({ page, request }) => {
     const id = await finishedRound(request);
-    await page.goto(`/sessions/${id}`);
-    await expect(page.locator(".card")).toHaveCount(8);
-    await expect(page.locator(".card-more")).toHaveCount(0);
-    await expect(page.locator('.card[data-criterion="C2"] .coverage-table')).toBeVisible();
+    await openResult(page, id);
+    const c2 = await openCard(page, "C2");
+    await expect(c2.getByRole("table", { name: "หัวข้อตามแผน" })).toBeVisible();
+    const box = (await c2.boundingBox())!, s1 = (await card(page, "S1").boundingBox())!;
+    expect(box.width).toBeGreaterThan(s1.width * 1.5);
   });
 });

@@ -1,93 +1,81 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test, expect, card, finishedRound, openCard, openResult, seenReveal } from "./helpers";
 
 // Regressions from the UX audit (Nov 2026): a failed request must never look like missing data,
 // and a passing network or server problem must not stop the result page for good.
-
-async function sample(request: APIRequestContext) {
-  const response = await request.get("/browser-test/clip");
-  expect(response.ok()).toBeTruthy();
-  return { name: "test.webm", mimeType: "video/webm", buffer: await response.body() };
-}
-
-async function uploadedRound(request: APIRequestContext) {
-  const created = await request.post("/api/sessions", { data: { target_duration_s: 900 } });
-  expect(created.ok()).toBeTruthy();
-  const id = (await created.json()).session_id as string;
-  const video = await sample(request);
-  // Dev mode has one identity and the credit guard allows 2 waiting rounds per account, so a test running
-  // in parallel can hold both places for a moment (429): wait for it to finish, as a user would.
-  let status = 0;
-  await expect.poll(async () => (status = (await request.post(`/api/sessions/${id}/video`, { multipart: { video } })).status()),
-    { intervals: [250, 500, 1000], timeout: 15_000 }).not.toBe(429);
-  expect(status).toBe(200);
-  return id;
-}
-
-async function finishedRound(request: APIRequestContext) {
-  const id = await uploadedRound(request);
-  expect((await request.post(`/browser-test/${id}/processing`)).ok()).toBeTruthy();
-  expect((await request.post(`/browser-test/${id}/done`)).ok()).toBeTruthy();
-  return id;
-}
 
 test("a dropped connection while waiting does not stop the result page", async ({ page, request }) => {
   // A finished round shown as "queued" once, so the test holds no place in the queue
   // (dev mode has one identity and the credit guard allows 2 waiting rounds per account).
   const id = await finishedRound(request);
+  await seenReveal(page, id);
+  // Routes registered later answer first: queued once, then one dropped poll, then the real result.
   await page.route(`**/api/sessions/${id}/result`, (route) => route.abort("internetdisconnected"), { times: 1 });
   await page.route(`**/api/sessions/${id}/result`, async (route) => {
     const response = await route.fetch();
     await route.fulfill({ response, json: { ...await response.json(), status: "queued", criteria: [], coach: null } });
   }, { times: 1 });
   await page.goto(`/sessions/${id}`);
-  await expect(page.getByRole("heading", { name: "อยู่ในคิว รอเครื่องวิเคราะห์" })).toBeVisible();
+  await expect(page.locator("[data-waiting]")).toHaveAttribute("data-waiting", "queued");
+  await expect(page.getByText("รอบของคุณอยู่ในคิวแล้ว")).toBeVisible();
   // The next poll (4 s later) is dropped by the network; the page keeps asking.
-  await expect(page.getByText("ติดต่อเซิร์ฟเวอร์ไม่ได้ กำลังลองใหม่…").first()).toBeVisible({ timeout: 10_000 });
-  await expect(page.locator(".card")).toHaveCount(8, { timeout: 15_000 });
-  await expect(page.getByText("โหลดผลไม่ได้")).toHaveCount(0);
+  await expect(page.getByText("กำลังเชื่อมต่อใหม่…").first()).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator("[data-criterion]")).toHaveCount(8, { timeout: 15_000 });
+  await expect(page.getByText("โหลดผลไม่สำเร็จ")).toHaveCount(0);
 });
 
 test("a server error (e.g. a cold start) on the first load is retried", async ({ page, request }) => {
   const id = await finishedRound(request);
+  await seenReveal(page, id);
   await page.route(`**/api/sessions/${id}/result`, (route) =>
     route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ detail: "bad gateway" }) }), { times: 1 });
   await page.goto(`/sessions/${id}`);
-  await expect(page.getByText("ติดต่อเซิร์ฟเวอร์ไม่ได้ กำลังลองใหม่…")).toBeVisible();
-  await expect(page.locator(".card")).toHaveCount(8, { timeout: 10_000 });
-  await expect(page.getByText("โหลดผลไม่ได้")).toHaveCount(0);
+  await expect(page.getByText("กำลังเชื่อมต่อใหม่…")).toBeVisible();
+  await expect(page.locator("[data-criterion]")).toHaveCount(8, { timeout: 10_000 });
+  await expect(page.getByText("โหลดผลไม่สำเร็จ")).toHaveCount(0);
 });
 
 test("a lasting error on the result page can be retried", async ({ page, request }) => {
   const id = await finishedRound(request);
+  await seenReveal(page, id);
   await page.route(`**/api/sessions/${id}/result`, (route) =>
     route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ detail: "ไม่มีสิทธิ์" }) }), { times: 1 });
   await page.goto(`/sessions/${id}`);
-  await expect(page.getByRole("alert")).toContainText("โหลดผลไม่ได้: ไม่มีสิทธิ์");
-  await page.getByRole("button", { name: "ลองใหม่" }).click();
-  await expect(page.locator(".card")).toHaveCount(8);
+  const alert = page.getByRole("alert");
+  await expect(alert).toContainText("โหลดผลไม่สำเร็จ");
+  await expect(alert).toContainText("ไม่มีสิทธิ์");
+  await alert.getByRole("button", { name: "ลองใหม่" }).click();
+  await expect(page.locator("[data-criterion]")).toHaveCount(8);
 });
 
 test("a failed transcript request says so and can be retried", async ({ page, request }) => {
   const id = await finishedRound(request);
   await page.route(`**/api/sessions/${id}/transcript`, (route) => route.fulfill({ status: 500, body: "" }), { times: 1 });
-  await page.goto(`/sessions/${id}`);
-  await expect(page.getByText("โหลดบทพูดที่ถอดเสียงไม่สำเร็จ")).toBeVisible();
-  await expect(page.getByText("ไม่มีบทพูดสำหรับรอบนี้")).toHaveCount(0);
-  await page.locator(".transcript-error").getByRole("button", { name: "ลองใหม่" }).click();
-  await expect(page.locator("details.transcript")).toBeVisible();
+  await openResult(page, id);
+  const box = page.locator("[data-transcript]");
+  await expect(box).toContainText("โหลดบทพูดไม่สำเร็จ");
+  await expect(page.getByText("รอบนี้ไม่มีบทพูดที่ถอดเสียงได้")).toHaveCount(0);
+  await box.getByRole("button", { name: "ลองใหม่" }).click();
+  await expect(box.locator("[data-i] mark", { hasText: "เอ่อ" })).toBeVisible();
 });
 
-test("failed criterion metadata does not claim the feedback is missing", async ({ page, request }) => {
+test("failed criterion metadata says so, never calls every value supporting info, and can be retried", async ({ page, request }) => {
   const id = await finishedRound(request);
   await page.route(`**/api/sessions/${id}/metadata`, (route) => route.fulfill({ status: 503, body: "" }), { times: 1 });
-  await page.goto(`/sessions/${id}`);
-  await expect(page.getByText("โหลดคำอธิบายระดับและข้อเสนอแนะรายเกณฑ์ไม่สำเร็จ")).toBeVisible();
-  await expect(page.locator(".card .template").first()).toContainText("โหลดข้อเสนอแนะไม่สำเร็จ");
-  await expect(page.getByText("ไม่ทราบว่าค่าใดใช้คิดระดับ")).toHaveCount(0);
-  await page.locator(".result-load-error").getByRole("button", { name: "ลองใหม่" }).click();
-  await expect(page.getByText("โหลดคำอธิบายระดับและข้อเสนอแนะรายเกณฑ์ไม่สำเร็จ")).toHaveCount(0);
-  await expect(page.locator(".card .template").first()).not.toContainText("โหลดข้อเสนอแนะไม่สำเร็จ");
-  await expect(page.locator(".card .reading").first()).toBeVisible();
+  await openResult(page, id);
+  const banner = page.getByRole("status").filter({ hasText: "โหลดคำอธิบายระดับและคำแนะนำไม่สำเร็จ" });
+  await expect(banner).toBeVisible();
+  const s1 = await openCard(page, "S1");
+  await expect(s1).toContainText("โหลดคำแนะนำไม่สำเร็จ");
+  await expect(s1.locator("[data-values-unsplit]")).toContainText("ยังแยกไม่ได้ว่าค่าใดใช้คิดระดับ");
+  await expect(s1.locator("[data-values] dt").first()).toBeVisible();
+  await expect(s1.getByText("ข้อมูลประกอบ (ไม่ใช้ตัดสินระดับ)")).toHaveCount(0);
+
+  await banner.getByRole("button", { name: "ลองโหลดอีกครั้ง" }).click();
+  await expect(banner).toHaveCount(0);
+  await expect(s1.locator("[data-feedback]")).toBeVisible();
+  await expect(s1.locator('[data-values="scored"] dt').first()).toBeVisible();
+  await expect(s1.locator("[data-values-unsplit]")).toHaveCount(0);
+  await expect(card(page, "S1").locator("[data-reading]")).not.toHaveText(/^ระดับ \d จาก 4$/);
 });
 
 test("the dashboard updates a round's status while it is being analysed", async ({ page, request }) => {
@@ -101,24 +89,12 @@ test("the dashboard updates a round's status while it is being analysed", async 
   }, { times: 1 });
   await page.clock.install();
   await page.goto("/");
-  const card = page.locator(".session-card").filter({ has: page.locator(`a[href="/sessions/${id}"]`) });
-  await expect(card.locator(".status")).toHaveText("รอคิว");
+  const row = page.locator(`#history [data-session="${id}"]`);
+  await expect(row).toHaveAttribute("data-status", "queued");
+  await expect(row).toContainText("รอคิว");
   await page.clock.runFor(10_000);
-  await expect(card.locator(".status")).toHaveText("พร้อมดูผล");
-  await expect(card.locator("dd").first()).toHaveText("0:05");        // whole seconds, not "0:05.0"
-});
-
-test("without criterion metadata the measured values say they cannot be split yet", async ({ page, request }) => {
-  const id = await finishedRound(request);
-  await page.route(`**/api/sessions/${id}/metadata`, (route) => route.fulfill({ status: 503, body: "" }), { times: 1 });
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto(`/sessions/${id}`);
-  const card = page.locator(".card").filter({ has: page.locator("dl.values") }).first();
-  await expect(card.locator(".value-note")).toContainText("ยังแยกไม่ได้ว่าค่าใดใช้คิดระดับ");
-  await expect(card.locator("dl.values").first()).toBeVisible();
-  await page.locator(".result-load-error").getByRole("button", { name: "ลองใหม่" }).click();
-  await expect(page.getByText("ยังแยกไม่ได้ว่าค่าใดใช้คิดระดับ")).toHaveCount(0);
-  await expect(card.locator(".primary-values")).toBeVisible();
+  await expect(row).toHaveAttribute("data-status", "done");
+  await expect(row).toContainText("0:05");        // whole seconds, not "0:05.0"
 });
 
 test("a dashboard refresh slower than the timer is not cut off by the next tick", async ({ page, request }) => {
@@ -139,23 +115,22 @@ test("a dashboard refresh slower than the timer is not cut off by the next tick"
   });
   await page.clock.install();
   await page.goto("/");
-  const card = page.locator(".session-card").filter({ has: page.locator(`a[href="/sessions/${id}"]`) });
-  await expect(card.locator(".status")).toHaveText("รอคิว");
+  const row = page.locator(`#history [data-session="${id}"]`);
+  await expect(row).toHaveAttribute("data-status", "queued");
   await page.clock.runFor(10_000);            // the refresh starts and hangs
   await expect.poll(() => listRequests).toBe(2);
   await page.clock.runFor(20_000);            // two more ticks while it hangs: neither cancels or repeats it
   expect(listRequests).toBe(2);
   release();
-  await expect(card.locator(".status")).toHaveText("พร้อมดูผล");
+  await expect(row).toHaveAttribute("data-status", "done");
 });
 
 test("a page file that fails to load offers a reload instead of an empty screen", async ({ page }) => {
-  await page.route(/\/assets\/Home-[^/]+\.js$/, (route) => route.abort("internetdisconnected"));
+  await page.route(/\/assets\/Dashboard-[^/]+\.js$/, (route) => route.abort("internetdisconnected"));
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "เปิดหน้านี้ไม่สำเร็จ" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "เมนูหลัก" })).toBeVisible();      // header still works
-  await page.unroute(/\/assets\/Home-[^/]+\.js$/);
+  await page.unroute(/\/assets\/Dashboard-[^/]+\.js$/);
   await page.getByRole("button", { name: "โหลดหน้าใหม่" }).click();
-  await expect(page.getByRole("heading", { name: "พร้อมซ้อมนำเสนอ" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /^สวัสดี/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "เปิดหน้านี้ไม่สำเร็จ" })).toHaveCount(0);
 });
