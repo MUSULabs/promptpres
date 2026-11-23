@@ -45,6 +45,20 @@ D-065 (ใช้อีกครั้งตั้งแต่ 23 พ.ย.): โ�
 
 โดเมนจริง (23 พ.ย. 2569): `promptpres.app` บน Vercel ส่งต่อ (308) ไป `https://www.promptpres.app` เบราว์เซอร์จึงส่ง Origin เป็น `www` · ต้องมีครบทั้ง `https://www.promptpres.app`, `https://promptpres.app` และ `https://promptpres.vercel.app` ใน `-Origin` ไม่อย่างนั้นการเข้าสู่ระบบและทุกคำขอเขียนจะได้ 403 "คำขอต้องมาจากหน้าเว็บ PromptPre's" · เปลี่ยน secret แล้วต้อง `modal deploy deploy_modal.py` เพื่อให้เครื่องที่รันอยู่ได้ค่าใหม่
 
+**พรีวิว `dev.promptpres.app` (24 พ.ย. 2569, D-070):** branch `dev` ขึ้นเป็น Vercel Preview ที่โดเมน `dev.promptpres.app` (Vercel → Settings → Domains ผูกกับ Git branch `dev` + CNAME `dev` ที่ DNS) ใช้ backend ชุดเดียวกับเว็บจริง (Modal + Supabase เดียวกัน) · `-Origin` มี 4 ที่อยู่:
+
+```powershell
+& ./tools/set_modal_secret.ps1 -Origin "https://www.promptpres.app,https://promptpres.app,https://promptpres.vercel.app,https://dev.promptpres.app" -DirectOrigin "https://shinrakit--promptpres-web.us-east.modal.run" -Replace
+```
+
+- **ค่า secret ใหม่ยังไม่มีผลทันที:** ถ้าโค้ดไม่เปลี่ยน `modal deploy` จะตอบ "Deployment skipped" และเครื่อง `web` ที่รันอยู่ยังใช้ค่าเดิม (อ่าน secret ตอนเครื่องเริ่ม) ไปจนกว่าเครื่องนั้นจะดับเอง (ว่าง 5 นาที) ให้หยุดเครื่องนั้นเองด้วย `modal container list` แล้ว `modal container stop --yes <id>` คำขอถัดไปจะเปิดเครื่องใหม่ที่ได้ค่าใหม่ (ช้าลงไม่กี่วินาที คำขอที่ค้างอยู่ตอนนั้นอาจต้องลองใหม่)
+- **ตรวจว่ารับแล้ว:** ส่งคำขอ OPTIONS แบบที่เบราว์เซอร์ส่ง ถ้าได้ 200 พร้อม `Access-Control-Allow-Origin` ตรงกับที่อยู่ แปลว่ารับ ถ้าได้ 400 แปลว่ายังไม่รับ
+  ```powershell
+  curl.exe -s -o NUL -D - -X OPTIONS https://shinrakit--promptpres-web.us-east.modal.run/api/auth/guest -H "Origin: https://dev.promptpres.app" -H "Access-Control-Request-Method: POST"
+  ```
+- **Vercel ล็อกพรีวิวไว้โดยค่าเริ่มต้น** (Settings → Deployment Protection → Vercel Authentication) คนนอกทีมจะเจอหน้าเข้าสู่ระบบ Vercel ก่อน ตอนนี้ปิดไว้เพื่อให้ทีมและอาจารย์เปิดได้
+- รวม `dev` เข้า `main` = ขึ้นเว็บจริงทันที (Vercel deploy `main` เป็น Production) ทำเมื่อเจ้าของตรวจพรีวิวแล้วเท่านั้น
+
 งานประจำ `maintain` (ทุก 15 นาที) ปลุกฐานข้อมูล (`SELECT 1` กัน Supabase Free หยุดหลังไม่ใช้ 7 วัน) ซ่อมคิวที่ค้าง และลบวิดีโอตามระยะเก็บใน `config/storage-v0.yaml`: Guest 7 วัน บัญชีสมาชิก 30 วัน ไฟล์ดิบที่วิเคราะห์ไม่สำเร็จ 1 วัน ผลวิเคราะห์ (`result_json`) เก็บถาวร ดูสถานะด้วย `modal app logs promptpres` และ `modal volume ls promptpres-media runs` · D-063: `maintain` ใช้ CPU 0.25 หน่วยความจำ 256 MiB ไม่ปักภูมิภาค และปิดเครื่อง 2 วินาทีหลังทำเสร็จ (ค่าเฉลี่ยตอนไม่มีผู้ใช้เดิม ≈ 0.0016 USD/ชั่วโมง เกือบทั้งหมดเป็นเวลาว่าง 60 วินาทีของงานนี้) ดูค่าใช้จ่ายรายชั่วโมงด้วย `modal billing report --for today -r h --show-resources`
 
 **กันเครดิตหมด (D-063, `config/storage-v0.yaml` `guard`):** ก่อนรับวิดีโอเข้าคิว ระบบตรวจทั้งตอนขอตั๋วอัปโหลดและตอนอัปโหลดเสร็จ — บัญชีเดียวรอวิเคราะห์ได้ไม่เกิน 2 รอบ (HTTP 429) · ทั้งระบบรอ/กำลังวิเคราะห์ไม่เกิน 8 รอบ และส่งวิเคราะห์ไม่เกิน 80 รอบใน 24 ชั่วโมง (HTTP 503) · การตรวจครั้งสุดท้ายจองที่ไว้จนบันทึกเข้าคิวเสร็จ วิดีโอที่อัปโหลดเสร็จพร้อมกันจึงผ่านเกินจำนวนไม่ได้ · ชิ้นไฟล์ของการอัปโหลดที่ค้าง (ทุกรอบ) ถูกลบเมื่อเกินอายุตั๋วทุกครั้งที่มีการขอตั๋วใหม่ · การเรียก LLM ระหว่างวิเคราะห์บน GPU ลองซ้ำเฉพาะตามที่ SDK ตั้งไว้ (`llm.max_retries`) ไม่ซ้อนรอบรอเพิ่ม ส่วนการอ่าน PDF ที่ผู้ใช้รออยู่ลองซ้ำหลัง 1/2/4/8 วินาทีภายในเวลาที่กำหนด · ขอตั๋ววิดีโอจากที่อยู่ IP เดียวไม่เกิน 120 ครั้ง/ชั่วโมง (พอสำหรับห้องเรียนหลัง NAT เดียว) · D-066: อ่าน PDF ด้วย LLM ไม่เกิน 100 ไฟล์ใน 24 ชั่วโมงทั้งระบบ (นับตอนเริ่มเรียก รวมครั้งที่ไม่สำเร็จ; HTTP 503) และอัปโหลด PDF ไม่เกิน 30 ครั้ง/ชั่วโมง/IP · ขีดจำกัดต่อ IP เพียงชะลอสคริปต์ เพราะผู้ที่เรียก Modal ตรงตั้ง `X-Real-IP` เองได้ ด่านจริงคือยอดรวมทั้งระบบ · งานที่ทำให้เครื่อง GPU ล้มซ้ำวิเคราะห์ไม่เกิน `runner.max_attempts` = 2 ครั้งแล้วเป็น `failed` และลบไฟล์ดิบ · ตั้งวงเงินใช้จ่ายของ workspace ใน Modal dashboard (Settings → Usage/Billing) เป็นด่านสุดท้าย
